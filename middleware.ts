@@ -41,6 +41,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow setup API routes (for initialization)
+  if (request.nextUrl.pathname.startsWith('/api/setup')) {
+    return NextResponse.next();
+  }
+
   // Redirect to login if no session
   if (!session) {
     return NextResponse.redirect(new URL('/login', request.url));

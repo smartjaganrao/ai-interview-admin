@@ -1,11 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { loginWithEmail, logout } from '@/lib/firebase-client';
+import { loginWithEmail, loginWithGoogle, logout } from '@/lib/firebase-client';
 
 export function useAdminAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loginGoogle = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await loginWithGoogle();
+      return result;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Google sign-in failed. Please try again.';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -35,6 +50,7 @@ export function useAdminAuth() {
   };
 
   return {
+    loginGoogle,
     login,
     logout: handleLogout,
     isLoading,
