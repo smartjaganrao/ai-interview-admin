@@ -26,8 +26,20 @@ async function getSession(): Promise<Session | null> {
 export async function middleware(request: NextRequest) {
   const session = await getSession();
 
-  // Allow login page without session
+  // Public routes (no auth needed)
+  if (request.nextUrl.pathname === '/' ||
+      request.nextUrl.pathname.startsWith('/static') ||
+      request.nextUrl.pathname.match(/\.(css|js|jpg|jpeg|png|gif|svg|ico)$/)) {
+    return NextResponse.next();
+  }
+
+  // Allow old login page (redirect to admin login)
   if (request.nextUrl.pathname === '/login') {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+
+  // Allow admin login without session
+  if (request.nextUrl.pathname === '/admin/login') {
     return NextResponse.next();
   }
 
@@ -46,9 +58,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect to login if no session
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Admin routes require session
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
   }
 
   return NextResponse.next();

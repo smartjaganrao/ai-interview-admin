@@ -3,17 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const navItems = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Users', href: '/users' },
-  { name: 'Analytics', href: '/analytics' },
-  { name: 'Audit Logs', href: '/audit' },
-  { name: 'Support', href: '/support' },
-  { name: 'Settings', href: '/settings' },
-];
+const getNavItems = (isAdmin: boolean = false) => {
+  const prefix = isAdmin ? '/admin' : '';
+  return [
+    { name: 'Dashboard', href: `${prefix}/dashboard` },
+    { name: 'Users', href: `${prefix}/users` },
+    { name: 'Analytics', href: `${prefix}/analytics` },
+    { name: 'Audit Logs', href: `${prefix}/audit` },
+    { name: 'Support', href: `${prefix}/support` },
+    { name: 'Settings', href: `${prefix}/settings` },
+  ];
+};
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin = true }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const navItems = getNavItems(isAdmin);
 
   return (
     <aside className="w-64 border-r border-gray-700 bg-gray-900">
