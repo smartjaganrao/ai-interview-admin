@@ -1,163 +1,145 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
+import AdminShell from '@/components/AdminShell';
 
 export default function SettingsPage() {
-  const [email, setEmail] = useState('');
+  const [tab, setTab] = useState<'org' | 'admins' | 'apikeys'>('org');
+  const [inviteEmail, setInviteEmail] = useState('');
 
   const admins = [
     { uid: '1', email: 'admin@company.com', role: 'super-admin', invited: '2026-01-01' },
-    { uid: '2', email: 'moderator@company.com', role: 'moderator', invited: '2026-02-15' },
+    { uid: '2', email: 'mod@company.com', role: 'moderator', invited: '2026-02-15' },
+    { uid: '3', email: 'analyst@company.com', role: 'analyst', invited: '2026-03-20' },
   ];
 
   const apiKeys = [
-    { id: '1', name: 'Analytics API', scopes: 'read-only', created: '2026-03-10', lastUsed: '2026-05-24', status: 'active' },
-    { id: '2', name: 'Bulk Operations', scopes: 'write', created: '2026-02-01', lastUsed: '2026-05-20', status: 'active' },
+    { id: '1', name: 'Analytics API', scopes: 'read-only', created: '2026-03-10', lastUsed: '2026-05-27', status: 'active' },
+    { id: '2', name: 'Bulk Operations', scopes: 'read-write', created: '2026-02-01', lastUsed: '2026-05-20', status: 'active' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-slate-900 border-r border-slate-800">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"></div>
-            <span className="text-lg font-bold text-white">Admin Panel</span>
-          </div>
-
-          <nav className="space-y-2">
-            {[
-              { label: 'Dashboard', href: '/', icon: '📊' },
-              { label: 'Users', href: '/users', icon: '👥' },
-              { label: 'Analytics', href: '/analytics', icon: '📈' },
-              { label: 'Audit Logs', href: '/audit', icon: '📋' },
-              { label: 'Support', href: '/support', icon: '💬' },
-              { label: 'Settings', href: '/settings', icon: '⚙️' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition text-slate-300 ${
-                  item.href === '/settings' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="absolute bottom-6 left-6 right-6">
-          <Link
-            href="/login"
-            className="w-full py-2 px-4 rounded-lg border border-slate-700 text-sm text-center text-slate-300 hover:text-white hover:border-slate-600 transition"
+    <AdminShell title="Settings">
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 border-b border-white/10">
+        {[
+          { id: 'org', label: '🏢 Organization' },
+          { id: 'admins', label: '👥 Admin Users' },
+          { id: 'apikeys', label: '🔑 API Keys' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id as typeof tab)}
+            className={`px-4 py-3 font-medium transition-smooth border-b-2 ${
+              tab === t.id ? 'border-indigo-500 text-white' : 'border-transparent text-slate-400 hover:text-white'
+            }`}
           >
-            Sign Out
-          </Link>
-        </div>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Main Content */}
-      <div className="ml-64 p-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">Settings</h1>
-
-          {/* Organization Settings */}
-          <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Organization</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Company Name</label>
-                <input
-                  type="text"
-                  defaultValue="AI Interview Helper"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Support Email</label>
-                <input
-                  type="email"
-                  defaultValue="support@aiinterview.com"
-                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <button className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-white font-semibold">
-                Save Changes
-              </button>
+      <div className="max-w-3xl">
+        {/* Organization */}
+        {tab === 'org' && (
+          <div className="card space-y-5">
+            <h2 className="text-lg font-bold text-white">Organization Settings</h2>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Company Name</label>
+              <input type="text" defaultValue="AI Interview Helper" className="input" />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Support Email</label>
+              <input type="email" defaultValue="support@aiinterview.com" className="input" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Default Currency</label>
+              <select className="input">
+                <option>INR (₹)</option>
+                <option>USD ($)</option>
+                <option>EUR (€)</option>
+              </select>
+            </div>
+            <button className="btn btn-primary">Save Changes</button>
           </div>
+        )}
 
-          {/* Admin Management */}
-          <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Admin Users</h2>
-
-            <div className="mb-6">
-              <div className="flex gap-2">
+        {/* Admins */}
+        {tab === 'admins' && (
+          <div className="space-y-6">
+            <div className="card">
+              <h2 className="text-lg font-bold text-white mb-4">Invite New Admin</h2>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
-                  placeholder="Enter email to invite..."
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  placeholder="email@company.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="input flex-1"
                 />
-                <select className="px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-blue-500">
+                <select className="input sm:w-40">
                   <option>Admin</option>
                   <option>Moderator</option>
                   <option>Analyst</option>
                 </select>
-                <button className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-white font-semibold">
-                  Invite
-                </button>
+                <button className="btn btn-primary">Send Invite</button>
               </div>
             </div>
 
-            <div className="space-y-2">
-              {admins.map((admin) => (
-                <div key={admin.uid} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                  <div>
-                    <p className="text-white font-medium">{admin.email}</p>
-                    <p className="text-slate-400 text-sm">{admin.role.replace('-', ' ').toUpperCase()} • Invited {admin.invited}</p>
+            <div className="card">
+              <h2 className="text-lg font-bold text-white mb-4">Current Admins</h2>
+              <div className="space-y-2">
+                {admins.map((a) => (
+                  <div key={a.uid} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-smooth">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-sm font-bold text-white">
+                        {a.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{a.email}</div>
+                        <div className="text-xs text-slate-400">Invited {a.invited}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`badge ${a.role === 'super-admin' ? 'badge-purple' : a.role === 'moderator' ? 'badge-indigo' : 'badge-slate'}`}>
+                        {a.role.replace('-', ' ')}
+                      </span>
+                      {a.role !== 'super-admin' && <button className="btn btn-sm btn-danger">Remove</button>}
+                    </div>
                   </div>
-                  <button className="px-3 py-1 rounded text-xs font-semibold text-red-400 hover:bg-red-500/20 transition">
-                    Remove
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
+        )}
 
-          {/* API Keys */}
-          <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50">
-            <h2 className="text-xl font-semibold text-white mb-4">API Keys</h2>
-
-            <button className="mb-6 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-white font-semibold">
-              + Generate New Key
-            </button>
-
+        {/* API Keys */}
+        {tab === 'apikeys' && (
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">API Keys</h2>
+              <button className="btn btn-primary btn-sm">+ Generate Key</button>
+            </div>
             <div className="space-y-3">
-              {apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-800">
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{key.name}</p>
-                    <p className="text-slate-400 text-sm">Scopes: {key.scopes} • Last used: {key.lastUsed}</p>
+              {apiKeys.map((k) => (
+                <div key={k.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 border border-white/5">
+                  <div>
+                    <div className="text-white font-medium">{k.name}</div>
+                    <div className="text-xs text-slate-400">Scopes: {k.scopes} • Last used: {k.lastUsed}</div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400">
-                      {key.status}
-                    </span>
-                    <button className="px-3 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition">
-                      Revoke
-                    </button>
+                  <div className="flex items-center gap-3">
+                    <span className="badge badge-green">{k.status}</span>
+                    <button className="btn btn-sm btn-danger">Revoke</button>
                   </div>
                 </div>
               ))}
             </div>
+            <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-sm text-yellow-300">
+              ⚠️ API keys grant programmatic access. Keep them secret and revoke unused keys.
+            </div>
           </div>
-        </div>
+        )}
       </div>
-    </div>
+    </AdminShell>
   );
 }

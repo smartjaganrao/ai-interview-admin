@@ -1,102 +1,89 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
+import AdminShell from '@/components/AdminShell';
+
+const LOGS = [
+  { id: 1, admin: 'admin@company.com', action: 'user_upgrade', target: 'alice@example.com', details: 'Free → Pro', timestamp: '2026-05-27 14:30', ip: '192.168.1.1' },
+  { id: 2, admin: 'admin@company.com', action: 'quota_reset', target: 'bob@example.com', details: 'Reset all quotas', timestamp: '2026-05-27 13:15', ip: '192.168.1.1' },
+  { id: 3, admin: 'mod@company.com', action: 'user_ban', target: 'spammer@example.com', details: 'Spam detected', timestamp: '2026-05-27 11:45', ip: '192.168.1.5' },
+  { id: 4, admin: 'admin@company.com', action: 'user_upgrade', target: 'charlie@example.com', details: 'Pro → Power', timestamp: '2026-05-26 16:20', ip: '192.168.1.1' },
+  { id: 5, admin: 'admin@company.com', action: 'refund_issued', target: 'diana@example.com', details: '₹499 refunded', timestamp: '2026-05-26 10:05', ip: '192.168.1.1' },
+  { id: 6, admin: 'mod@company.com', action: 'content_delete', target: 'evan@example.com', details: 'Flagged answer removed', timestamp: '2026-05-25 18:30', ip: '192.168.1.5' },
+];
+
+const actionBadge: Record<string, string> = {
+  user_upgrade: 'badge-indigo', quota_reset: 'badge-yellow', user_ban: 'badge-red',
+  refund_issued: 'badge-orange', content_delete: 'badge-purple',
+};
 
 export default function AuditPage() {
-  const logs = [
-    { id: 1, admin: 'admin@company.com', action: 'user_upgrade', target: 'alice@example.com', details: 'Free → Pro', timestamp: '2026-05-24 14:30', ip: '192.168.1.1' },
-    { id: 2, admin: 'admin@company.com', action: 'quota_reset', target: 'bob@example.com', details: 'Reset tokens', timestamp: '2026-05-24 13:15', ip: '192.168.1.1' },
-    { id: 3, admin: 'admin@company.com', action: 'user_ban', target: 'spammer@example.com', details: 'Spam detected', timestamp: '2026-05-24 11:45', ip: '192.168.1.1' },
-    { id: 4, admin: 'admin@company.com', action: 'user_upgrade', target: 'charlie@example.com', details: 'Pro → Power', timestamp: '2026-05-23 16:20', ip: '192.168.1.1' },
-  ];
+  const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('all');
+
+  const filtered = LOGS.filter((l) => {
+    const s = search.toLowerCase();
+    const matchSearch = l.target.toLowerCase().includes(s) || l.admin.toLowerCase().includes(s);
+    const matchAction = actionFilter === 'all' || l.action === actionFilter;
+    return matchSearch && matchAction;
+  });
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-slate-900 border-r border-slate-800">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"></div>
-            <span className="text-lg font-bold text-white">Admin Panel</span>
+    <AdminShell title="Audit Logs">
+      <div className="card mb-6">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
+            <input
+              type="text"
+              placeholder="Search by admin or target user..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input pl-10"
+            />
           </div>
-
-          <nav className="space-y-2">
-            {[
-              { label: 'Dashboard', href: '/', icon: '📊' },
-              { label: 'Users', href: '/users', icon: '👥' },
-              { label: 'Analytics', href: '/analytics', icon: '📈' },
-              { label: 'Audit Logs', href: '/audit', icon: '📋' },
-              { label: 'Support', href: '/support', icon: '💬' },
-              { label: 'Settings', href: '/settings', icon: '⚙️' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition text-slate-300 ${
-                  item.href === '/audit' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="absolute bottom-6 left-6 right-6">
-          <Link
-            href="/login"
-            className="w-full py-2 px-4 rounded-lg border border-slate-700 text-sm text-center text-slate-300 hover:text-white hover:border-slate-600 transition"
-          >
-            Sign Out
-          </Link>
+          <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="input md:w-52">
+            <option value="all">All Actions</option>
+            <option value="user_upgrade">Plan Upgrade</option>
+            <option value="quota_reset">Quota Reset</option>
+            <option value="user_ban">User Ban</option>
+            <option value="refund_issued">Refund</option>
+            <option value="content_delete">Content Delete</option>
+          </select>
+          <button className="btn btn-secondary">📥 Export</button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="ml-64 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">Audit Logs</h1>
-
-          <div className="rounded-lg border border-slate-800 overflow-hidden bg-slate-900/50">
-            <table className="w-full">
-              <thead className="bg-slate-800/50 border-b border-slate-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Admin</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Action</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Target</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Details</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Timestamp</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">IP Address</th>
+      <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+                <th>Timestamp</th>
+                <th>IP Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((log) => (
+                <tr key={log.id}>
+                  <td className="text-white font-medium">{log.admin}</td>
+                  <td><span className={`badge ${actionBadge[log.action] || 'badge-slate'}`}>{log.action.replace(/_/g, ' ')}</span></td>
+                  <td className="text-slate-300">{log.target}</td>
+                  <td className="text-slate-400">{log.details}</td>
+                  <td className="text-slate-400 text-sm font-mono">{log.timestamp}</td>
+                  <td className="text-slate-500 text-sm font-mono">{log.ip}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-800/30 transition">
-                    <td className="px-6 py-4 text-sm text-white">{log.admin}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-semibold">
-                        {log.action.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-white">{log.target}</td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{log.details}</td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{log.timestamp}</td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{log.ip}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 flex justify-between items-center">
-            <p className="text-slate-400 text-sm">{logs.length} audit logs</p>
-            <button className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition text-white text-sm font-semibold">
-              📥 Export Logs
-            </button>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </div>
+
+      <p className="text-slate-400 text-sm mt-4">{filtered.length} audit entries • Immutable log</p>
+    </AdminShell>
   );
 }

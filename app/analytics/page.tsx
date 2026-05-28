@@ -1,115 +1,160 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
+import AdminShell from '@/components/AdminShell';
+import {
+  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
+
+const dauData = Array.from({ length: 30 }, (_, i) => ({
+  day: `${i + 1}`,
+  users: Math.round(100 + Math.random() * 80 + i * 2),
+}));
+
+const usageData = [
+  { week: 'W1', answers: 4200, voice: 1800, screenshots: 600 },
+  { week: 'W2', answers: 5100, voice: 2200, screenshots: 720 },
+  { week: 'W3', answers: 4800, voice: 2000, screenshots: 680 },
+  { week: 'W4', answers: 6200, voice: 2800, screenshots: 910 },
+];
+
+const revenueData = [
+  { month: 'Jan', pro: 14000, power: 8000 },
+  { month: 'Feb', pro: 15500, power: 9000 },
+  { month: 'Mar', pro: 16000, power: 10000 },
+  { month: 'Apr', pro: 16500, power: 11000 },
+  { month: 'May', pro: 17000, power: 12000 },
+];
+
+const planData = [
+  { name: 'Free', value: 245, color: '#64748b' },
+  { name: 'Pro', value: 76, color: '#6366f1' },
+  { name: 'Power', value: 21, color: '#a855f7' },
+];
+
+const tooltipStyle = { background: '#1e293b', border: '1px solid rgba(148,163,184,0.2)', borderRadius: '0.5rem', color: '#fff' };
 
 export default function AnalyticsPage() {
+  const [range, setRange] = useState('30d');
+
   const metrics = [
-    { label: 'Total Users', value: '342', change: '+12%' },
-    { label: 'Active Users (7d)', value: '156', change: '+8%' },
-    { label: 'MRR Revenue', value: '₹24,500', change: '+15%' },
-    { label: 'Churn Rate', value: '2.3%', change: '-0.5%' },
-    { label: 'Avg Session', value: '18 min', change: '+2 min' },
-    { label: 'Trial Conversion', value: '12%', change: '+3%' },
+    { label: 'Total Users', value: '342', change: '+12%', up: true },
+    { label: 'Active (7d)', value: '156', change: '+8%', up: true },
+    { label: 'MRR', value: '₹24,500', change: '+15%', up: true },
+    { label: 'Churn', value: '2.3%', change: '-0.5%', up: true },
+    { label: 'Avg Session', value: '18m', change: '+2m', up: true },
+    { label: 'Conversion', value: '12%', change: '+3%', up: true },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-slate-900 border-r border-slate-800">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"></div>
-            <span className="text-lg font-bold text-white">Admin Panel</span>
-          </div>
-
-          <nav className="space-y-2">
-            {[
-              { label: 'Dashboard', href: '/', icon: '📊' },
-              { label: 'Users', href: '/users', icon: '👥' },
-              { label: 'Analytics', href: '/analytics', icon: '📈' },
-              { label: 'Audit Logs', href: '/audit', icon: '📋' },
-              { label: 'Support', href: '/support', icon: '💬' },
-              { label: 'Settings', href: '/settings', icon: '⚙️' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition text-slate-300 ${
-                  item.href === '/analytics' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="absolute bottom-6 left-6 right-6">
-          <Link
-            href="/login"
-            className="w-full py-2 px-4 rounded-lg border border-slate-700 text-sm text-center text-slate-300 hover:text-white hover:border-slate-600 transition"
-          >
-            Sign Out
-          </Link>
+    <AdminShell title="Analytics">
+      {/* Range selector */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <p className="text-slate-400">Performance metrics and trends</p>
+        <div className="flex items-center gap-2 p-1 rounded-xl glass">
+          {['7d', '30d', '90d', '1y'].map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-smooth ${
+                range === r ? 'gradient-primary text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="ml-64 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">Analytics Dashboard</h1>
-
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {metrics.map((metric, idx) => (
-              <div key={idx} className="p-6 rounded-lg bg-slate-900/50 border border-slate-800">
-                <p className="text-slate-400 text-sm mb-2">{metric.label}</p>
-                <div className="flex items-end justify-between">
-                  <p className="text-2xl font-bold text-white">{metric.value}</p>
-                  <p className="text-sm text-green-400">{metric.change}</p>
-                </div>
-              </div>
-            ))}
+      {/* Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        {metrics.map((m, i) => (
+          <div key={i} className="card py-4">
+            <div className="text-xs text-slate-400 mb-1">{m.label}</div>
+            <div className="text-2xl font-black text-white">{m.value}</div>
+            <div className={`text-xs ${m.up ? 'text-green-400' : 'text-red-400'}`}>{m.change}</div>
           </div>
+        ))}
+      </div>
 
-          {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50">
-              <h2 className="text-lg font-semibold text-white mb-4">Revenue Trend (Last 12 months)</h2>
-              <div className="h-80 bg-slate-800/50 rounded flex items-center justify-center text-slate-500">
-                [Revenue Line Chart - Recharts Ready]
-              </div>
-            </div>
+      {/* DAU + Plan */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <div className="card lg:col-span-2">
+          <h2 className="text-lg font-bold text-white mb-1">Daily Active Users</h2>
+          <p className="text-sm text-slate-400 mb-4">Last 30 days</p>
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={dauData}>
+              <defs>
+                <linearGradient id="dau" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
+              <XAxis dataKey="day" stroke="#64748b" fontSize={11} interval={4} />
+              <YAxis stroke="#64748b" fontSize={11} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Area type="monotone" dataKey="users" stroke="#8b5cf6" strokeWidth={2} fill="url(#dau)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
 
-            <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50">
-              <h2 className="text-lg font-semibold text-white mb-4">Plan Distribution</h2>
-              <div className="h-80 bg-slate-800/50 rounded flex items-center justify-center text-slate-500">
-                [Plan Pie Chart - Recharts Ready]
-              </div>
-            </div>
-
-            <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50">
-              <h2 className="text-lg font-semibold text-white mb-4">Daily Active Users</h2>
-              <div className="h-80 bg-slate-800/50 rounded flex items-center justify-center text-slate-500">
-                [DAU Line Chart - Recharts Ready]
-              </div>
-            </div>
-
-            <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/50">
-              <h2 className="text-lg font-semibold text-white mb-4">Feature Usage</h2>
-              <div className="h-80 bg-slate-800/50 rounded flex items-center justify-center text-slate-500">
-                [Feature Bar Chart - Recharts Ready]
-              </div>
-            </div>
-          </div>
-
-          {/* Export */}
-          <button className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition text-white font-semibold">
-            📊 Export to CSV
-          </button>
+        <div className="card">
+          <h2 className="text-lg font-bold text-white mb-1">Plan Mix</h2>
+          <p className="text-sm text-slate-400 mb-4">By subscription</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={planData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
+                {planData.map((e, i) => <Cell key={i} fill={e.color} stroke="none" />)}
+              </Pie>
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
-    </div>
+
+      {/* Revenue + Usage */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="card">
+          <h2 className="text-lg font-bold text-white mb-1">Revenue by Plan</h2>
+          <p className="text-sm text-slate-400 mb-4">Pro vs Power (monthly)</p>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={revenueData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
+              <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+              <YAxis stroke="#64748b" fontSize={12} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => `₹${Number(v).toLocaleString()}`} />
+              <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+              <Bar dataKey="pro" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="power" fill="#a855f7" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <h2 className="text-lg font-bold text-white mb-1">Feature Usage</h2>
+          <p className="text-sm text-slate-400 mb-4">Weekly activity</p>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={usageData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
+              <XAxis dataKey="week" stroke="#64748b" fontSize={12} />
+              <YAxis stroke="#64748b" fontSize={12} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+              <Line type="monotone" dataKey="answers" stroke="#6366f1" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="voice" stroke="#22c55e" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="screenshots" stroke="#f59e0b" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button className="btn btn-primary">📊 Export Report (CSV)</button>
+      </div>
+    </AdminShell>
   );
 }

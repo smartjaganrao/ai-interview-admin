@@ -1,146 +1,221 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
+import AdminShell from '@/components/AdminShell';
+
+interface User {
+  uid: string;
+  email: string;
+  name: string;
+  plan: 'free' | 'pro' | 'power';
+  status: 'active' | 'inactive' | 'banned';
+  joined: string;
+  lastActive: string;
+  questions: number;
+}
+
+const ALL_USERS: User[] = [
+  { uid: '1', email: 'alice@example.com', name: 'Alice Chen', plan: 'pro', status: 'active', joined: '2026-01-15', lastActive: '2 min ago', questions: 342 },
+  { uid: '2', email: 'bob@example.com', name: 'Bob Smith', plan: 'free', status: 'active', joined: '2026-02-10', lastActive: '1 hour ago', questions: 28 },
+  { uid: '3', email: 'charlie@example.com', name: 'Charlie Davis', plan: 'power', status: 'active', joined: '2026-01-20', lastActive: '5 min ago', questions: 891 },
+  { uid: '4', email: 'diana@example.com', name: 'Diana Prince', plan: 'free', status: 'inactive', joined: '2025-12-01', lastActive: '3 weeks ago', questions: 12 },
+  { uid: '5', email: 'evan@example.com', name: 'Evan Wright', plan: 'pro', status: 'active', joined: '2026-03-05', lastActive: '1 day ago', questions: 156 },
+  { uid: '6', email: 'fiona@example.com', name: 'Fiona Gallagher', plan: 'power', status: 'active', joined: '2026-02-22', lastActive: '30 min ago', questions: 523 },
+  { uid: '7', email: 'spammer@example.com', name: 'Spam Account', plan: 'free', status: 'banned', joined: '2026-05-01', lastActive: 'banned', questions: 3 },
+];
+
+const planBadge = { free: 'badge-slate', pro: 'badge-indigo', power: 'badge-purple' };
+const statusBadge = { active: 'badge-green', inactive: 'badge-slate', banned: 'badge-red' };
 
 export default function UsersPage() {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [planFilter, setPlanFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [detailUser, setDetailUser] = useState<User | null>(null);
 
-  const users = [
-    { uid: '1', email: 'alice@example.com', name: 'Alice', plan: 'pro', status: 'active', joined: '2026-01-15' },
-    { uid: '2', email: 'bob@example.com', name: 'Bob', plan: 'free', status: 'active', joined: '2026-02-10' },
-    { uid: '3', email: 'charlie@example.com', name: 'Charlie', plan: 'power', status: 'active', joined: '2026-01-20' },
-    { uid: '4', email: 'diana@example.com', name: 'Diana', plan: 'free', status: 'inactive', joined: '2025-12-01' },
-  ];
-
-  const filteredUsers = users.filter(u => {
-    const matchesSearch = u.email.includes(search) || u.name.includes(search);
-    const matchesFilter = filter === 'all' || u.plan === filter;
-    return matchesSearch && matchesFilter;
+  const filtered = ALL_USERS.filter((u) => {
+    const s = search.toLowerCase();
+    const matchSearch = u.email.toLowerCase().includes(s) || u.name.toLowerCase().includes(s);
+    const matchPlan = planFilter === 'all' || u.plan === planFilter;
+    const matchStatus = statusFilter === 'all' || u.status === statusFilter;
+    return matchSearch && matchPlan && matchStatus;
   });
 
+  const toggleSelect = (uid: string) =>
+    setSelected((prev) => (prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]));
+
+  const toggleAll = () =>
+    setSelected(selected.length === filtered.length ? [] : filtered.map((u) => u.uid));
+
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-slate-900 border-r border-slate-800">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"></div>
-            <span className="text-lg font-bold text-white">Admin Panel</span>
+    <AdminShell title="Users Management">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[
+          { label: 'Total Users', value: ALL_USERS.length, color: 'badge-indigo' },
+          { label: 'Active', value: ALL_USERS.filter((u) => u.status === 'active').length, color: 'badge-green' },
+          { label: 'Paid', value: ALL_USERS.filter((u) => u.plan !== 'free').length, color: 'badge-purple' },
+          { label: 'Banned', value: ALL_USERS.filter((u) => u.status === 'banned').length, color: 'badge-red' },
+        ].map((s, i) => (
+          <div key={i} className="card py-4">
+            <div className="text-2xl font-black text-white">{s.value}</div>
+            <div className="text-xs text-slate-400">{s.label}</div>
           </div>
-
-          <nav className="space-y-2">
-            {[
-              { label: 'Dashboard', href: '/', icon: '📊' },
-              { label: 'Users', href: '/users', icon: '👥' },
-              { label: 'Analytics', href: '/analytics', icon: '📈' },
-              { label: 'Audit Logs', href: '/audit', icon: '📋' },
-              { label: 'Support', href: '/support', icon: '💬' },
-              { label: 'Settings', href: '/settings', icon: '⚙️' },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition text-slate-300 ${
-                  item.href === '/users' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="absolute bottom-6 left-6 right-6">
-          <Link
-            href="/login"
-            className="w-full py-2 px-4 rounded-lg border border-slate-700 text-sm text-center text-slate-300 hover:text-white hover:border-slate-600 transition"
-          >
-            Sign Out
-          </Link>
-        </div>
+        ))}
       </div>
 
-      {/* Main Content */}
-      <div className="ml-64 p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">Users Management</h1>
-
-          {/* Filters */}
-          <div className="flex gap-4 mb-6">
+      {/* Filters */}
+      <div className="card mb-6">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
             <input
               type="text"
-              placeholder="Search by email or name..."
+              placeholder="Search by name or email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="input pl-10"
             />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="all">All Plans</option>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="power">Power</option>
-            </select>
           </div>
-
-          {/* Users Table */}
-          <div className="rounded-lg border border-slate-800 overflow-hidden bg-slate-900/50">
-            <table className="w-full">
-              <thead className="bg-slate-800/50 border-b border-slate-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Email</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Plan</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Joined</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {filteredUsers.map((user) => (
-                  <tr key={user.uid} className="hover:bg-slate-800/30 transition">
-                    <td className="px-6 py-4 text-sm text-white">{user.email}</td>
-                    <td className="px-6 py-4 text-sm text-white">{user.name}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400' :
-                        user.plan === 'power' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-slate-700/50 text-slate-300'
-                      }`}>
-                        {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-400'
-                      }`}>
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{user.joined}</td>
-                    <td className="px-6 py-4 text-sm flex gap-2">
-                      <button className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 transition text-white text-xs font-semibold">
-                        Upgrade
-                      </button>
-                      <button className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 transition text-white text-xs font-semibold">
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="text-slate-400 text-sm mt-4">{filteredUsers.length} users found</p>
+          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="input md:w-40">
+            <option value="all">All Plans</option>
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+            <option value="power">Power</option>
+          </select>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input md:w-40">
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="banned">Banned</option>
+          </select>
+          <button className="btn btn-secondary">📥 Export CSV</button>
         </div>
+
+        {selected.length > 0 && (
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+            <span className="text-sm text-slate-300">{selected.length} selected</span>
+            <button className="btn btn-sm btn-secondary">Upgrade</button>
+            <button className="btn btn-sm btn-secondary">Email</button>
+            <button className="btn btn-sm btn-danger">Ban</button>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Table */}
+      <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th className="w-12">
+                  <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded" />
+                </th>
+                <th>User</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Questions</th>
+                <th>Last Active</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u) => (
+                <tr key={u.uid}>
+                  <td>
+                    <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggleSelect(u.uid)} className="rounded" />
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-sm font-bold text-white">
+                        {u.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-white font-medium">{u.name}</div>
+                        <div className="text-xs text-slate-400">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className={`badge ${planBadge[u.plan]}`}>{u.plan.toUpperCase()}</span></td>
+                  <td><span className={`badge ${statusBadge[u.status]}`}>{u.status}</span></td>
+                  <td className="text-slate-300">{u.questions}</td>
+                  <td className="text-slate-400 text-sm">{u.lastActive}</td>
+                  <td className="text-slate-400 text-sm">{u.joined}</td>
+                  <td>
+                    <div className="flex gap-2">
+                      <button onClick={() => setDetailUser(u)} className="btn btn-sm btn-secondary">View</button>
+                      <button className="btn btn-sm btn-ghost">⋯</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {filtered.length === 0 && (
+          <div className="text-center py-12 text-slate-400">No users match your filters</div>
+        )}
+      </div>
+
+      <p className="text-slate-400 text-sm mt-4">
+        Showing {filtered.length} of {ALL_USERS.length} users
+      </p>
+
+      {/* User Detail Drawer */}
+      {detailUser && (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setDetailUser(null)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative w-full max-w-md h-full glass-heavy p-6 overflow-y-auto animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">User Details</h2>
+              <button onClick={() => setDetailUser(null)} className="btn btn-ghost btn-sm">✕</button>
+            </div>
+
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center text-3xl font-bold text-white mx-auto mb-3">
+                {detailUser.name.charAt(0)}
+              </div>
+              <div className="text-xl font-bold text-white">{detailUser.name}</div>
+              <div className="text-slate-400">{detailUser.email}</div>
+              <div className="flex justify-center gap-2 mt-3">
+                <span className={`badge ${planBadge[detailUser.plan]}`}>{detailUser.plan.toUpperCase()}</span>
+                <span className={`badge ${statusBadge[detailUser.status]}`}>{detailUser.status}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {[
+                { label: 'User ID', value: detailUser.uid },
+                { label: 'Questions Practiced', value: detailUser.questions },
+                { label: 'Last Active', value: detailUser.lastActive },
+                { label: 'Member Since', value: detailUser.joined },
+              ].map((row, i) => (
+                <div key={i} className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-slate-400 text-sm">{row.label}</span>
+                  <span className="text-white text-sm font-medium">{row.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-slate-300">Actions</div>
+              <select className="input">
+                <option>Change Plan...</option>
+                <option>Free</option>
+                <option>Pro</option>
+                <option>Power</option>
+              </select>
+              <button className="btn btn-primary w-full">Apply Plan Change</button>
+              <button className="btn btn-secondary w-full">Reset Quota</button>
+              <button className="btn btn-danger w-full">
+                {detailUser.status === 'banned' ? 'Unban User' : 'Ban User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminShell>
   );
 }
