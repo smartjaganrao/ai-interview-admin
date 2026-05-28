@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import AdminShell from '@/components/AdminShell';
+import { useAdminData, dataSourceLabel } from '@/lib/useAdminData';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -14,22 +15,46 @@ const revenueData = [
   { month: 'Mar', mrr: 24100 }, { month: 'Apr', mrr: 24300 }, { month: 'May', mrr: 24500 },
 ];
 
-const planData = [
-  { name: 'Free', value: 245, color: '#64748b' },
-  { name: 'Pro', value: 76, color: '#6366f1' },
-  { name: 'Power', value: 21, color: '#a855f7' },
-];
+interface Kpis {
+  totalUsers: number;
+  totalMRR: number;
+  activeThisWeek: number;
+  churnRate: number;
+  usersByPlan: { free: number; pro: number; power: number };
+}
+
+const DEMO_KPIS: Kpis = {
+  totalUsers: 342,
+  totalMRR: 24500,
+  activeThisWeek: 156,
+  churnRate: 2.3,
+  usersByPlan: { free: 245, pro: 76, power: 21 },
+};
 
 export default function AdminDashboard() {
+  const { data: k, reason } = useAdminData<Kpis>('/api/analytics/kpis', DEMO_KPIS);
+  const badge = dataSourceLabel(reason);
+
   const kpis = [
-    { label: 'Total Users', value: '342', change: '+12%', up: true, icon: '👥', color: 'from-blue-500 to-cyan-500' },
-    { label: 'MRR Revenue', value: '₹24,500', change: '+15%', up: true, icon: '💰', color: 'from-green-500 to-emerald-500' },
-    { label: 'Active This Week', value: '156', change: '+8%', up: true, icon: '⚡', color: 'from-indigo-500 to-purple-500' },
-    { label: 'Churn Rate', value: '2.3%', change: '-0.5%', up: false, icon: '📉', color: 'from-orange-500 to-red-500' },
+    { label: 'Total Users', value: String(k.totalUsers), icon: '👥', color: 'from-blue-500 to-cyan-500' },
+    { label: 'MRR Revenue', value: `₹${k.totalMRR.toLocaleString()}`, icon: '💰', color: 'from-green-500 to-emerald-500' },
+    { label: 'Active This Week', value: String(k.activeThisWeek), icon: '⚡', color: 'from-indigo-500 to-purple-500' },
+    { label: 'Churn Rate', value: `${k.churnRate}%`, icon: '📉', color: 'from-orange-500 to-red-500' },
+  ];
+
+  const planData = [
+    { name: 'Free', value: k.usersByPlan.free, color: '#64748b' },
+    { name: 'Pro', value: k.usersByPlan.pro, color: '#6366f1' },
+    { name: 'Power', value: k.usersByPlan.power, color: '#a855f7' },
   ];
 
   return (
     <AdminShell title="Dashboard">
+      {/* Data source badge */}
+      <div className="mb-4">
+        <span className={`badge ${badge.className}`}>{badge.text}</span>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {kpis.map((kpi, i) => (
@@ -38,9 +63,6 @@ export default function AdminDashboard() {
               <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${kpi.color} flex items-center justify-center text-xl`}>
                 {kpi.icon}
               </div>
-              <span className={`badge ${kpi.up ? 'badge-green' : 'badge-red'}`}>
-                {kpi.up ? '↑' : '↓'} {kpi.change}
-              </span>
             </div>
             <div className="text-3xl font-black text-white mb-1">{kpi.value}</div>
             <div className="text-sm text-slate-400">{kpi.label}</div>

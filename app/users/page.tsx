@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
+import { useAdminData, dataSourceLabel } from '@/lib/useAdminData';
 
 interface User {
   uid: string;
@@ -14,7 +15,15 @@ interface User {
   questions: number;
 }
 
-const ALL_USERS: User[] = [
+interface ApiUser {
+  id: string;
+  email: string;
+  name: string;
+  plan: 'free' | 'pro' | 'power';
+  createdAt: number;
+}
+
+const DEMO_USERS: User[] = [
   { uid: '1', email: 'alice@example.com', name: 'Alice Chen', plan: 'pro', status: 'active', joined: '2026-01-15', lastActive: '2 min ago', questions: 342 },
   { uid: '2', email: 'bob@example.com', name: 'Bob Smith', plan: 'free', status: 'active', joined: '2026-02-10', lastActive: '1 hour ago', questions: 28 },
   { uid: '3', email: 'charlie@example.com', name: 'Charlie Davis', plan: 'power', status: 'active', joined: '2026-01-20', lastActive: '5 min ago', questions: 891 },
@@ -34,7 +43,26 @@ export default function UsersPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [detailUser, setDetailUser] = useState<User | null>(null);
 
-  const filtered = ALL_USERS.filter((u) => {
+  const { data: users, reason } = useAdminData<User[]>(
+    '/api/users/list?limit=100',
+    DEMO_USERS,
+    (json) => {
+      const arr = ((json as { users?: ApiUser[] }).users) || [];
+      return arr.map((u) => ({
+        uid: u.id,
+        email: u.email,
+        name: u.name || u.email?.split('@')[0] || 'User',
+        plan: u.plan || 'free',
+        status: 'active' as const,
+        joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : '—',
+        lastActive: '—',
+        questions: 0,
+      }));
+    }
+  );
+  const badge = dataSourceLabel(reason);
+
+  const filtered = users.filter((u) => {
     const s = search.toLowerCase();
     const matchSearch = u.email.toLowerCase().includes(s) || u.name.toLowerCase().includes(s);
     const matchPlan = planFilter === 'all' || u.plan === planFilter;
@@ -50,13 +78,18 @@ export default function UsersPage() {
 
   return (
     <AdminShell title="Users Management">
+      {/* Data source badge */}
+      <div className="mb-4">
+        <span className={`badge ${badge.className}`}>{badge.text}</span>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Users', value: ALL_USERS.length, color: 'badge-indigo' },
-          { label: 'Active', value: ALL_USERS.filter((u) => u.status === 'active').length, color: 'badge-green' },
-          { label: 'Paid', value: ALL_USERS.filter((u) => u.plan !== 'free').length, color: 'badge-purple' },
-          { label: 'Banned', value: ALL_USERS.filter((u) => u.status === 'banned').length, color: 'badge-red' },
+          { label: 'Total Users', value: users.length, color: 'badge-indigo' },
+          { label: 'Active', value: users.filter((u) => u.status === 'active').length, color: 'badge-green' },
+          { label: 'Paid', value: users.filter((u) => u.plan !== 'free').length, color: 'badge-purple' },
+          { label: 'Banned', value: users.filter((u) => u.status === 'banned').length, color: 'badge-red' },
         ].map((s, i) => (
           <div key={i} className="card py-4">
             <div className="text-2xl font-black text-white">{s.value}</div>
@@ -160,7 +193,7 @@ export default function UsersPage() {
       </div>
 
       <p className="text-slate-400 text-sm mt-4">
-        Showing {filtered.length} of {ALL_USERS.length} users
+        Showing {filtered.length} of {users.length} users
       </p>
 
       {/* User Detail Drawer */}

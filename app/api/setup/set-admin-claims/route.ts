@@ -3,6 +3,24 @@ import { auth } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: this route grants admin privileges, so it must be gated.
+    // Require a setup secret that only the project owner knows (set SETUP_SECRET
+    // in the environment). Without it configured, the route is disabled entirely
+    // so it can never be an open backdoor in production.
+    const setupSecret = process.env.SETUP_SECRET;
+    if (!setupSecret) {
+      return NextResponse.json(
+        { error: 'Setup is disabled. Set SETUP_SECRET in the environment to enable admin bootstrap.' },
+        { status: 403 }
+      );
+    }
+    if (request.headers.get('x-setup-secret') !== setupSecret) {
+      return NextResponse.json(
+        { error: 'Invalid or missing x-setup-secret header.' },
+        { status: 403 }
+      );
+    }
+
     // Check if Firebase Admin SDK is initialized
     if (!auth) {
       return NextResponse.json(
