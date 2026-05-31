@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSession } from '@/lib/session-server';
+import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.isAdmin) {
+    if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -80,16 +79,22 @@ export async function GET(request: NextRequest) {
     thisMonthStart.setDate(1);
     thisMonthStart.setHours(0, 0, 0, 0);
 
-    const logsSnapshot = await db
-      .collection('admin_logs')
-      .where('timestamp', '>=', thisMonthStart.getTime())
-      .where('action', '==', 'user_upgrade')
-      .get();
-
-    const downgrades = logsSnapshot.docs.filter((doc: any) => {
-      const details = doc.data().details;
-      return details.newPlan === 'free'; // Downgrade to free = churn
-    }).length;
+    // Single-field equality query (auto-indexed) + in-memory filtering, to
+    // avoid requiring a composite Firestore index (timestamp range + action).
+    // Wrapped so an empty/absent admin_logs collection never breaks KPIs.
+    let downgrades = 0;
+    try {
+      const logsSnapshot = await db
+        .collection('admin_logs')
+        .where('action', '==', 'user_upgrade')
+        .get();
+      downgrades = logsSnapshot.docs.filter((doc: any) => {
+        const d = doc.data();
+        return (d.timestamp || 0) >= thisMonthStart.getTime() && d.details?.newPlan === 'free';
+      }).length;
+    } catch {
+      downgrades = 0;
+    }
 
     const activeSubscribers = Object.values(usersByPlan).reduce((a, b) => a + b, 0) - usersByPlan.free;
     const churnRate = activeSubscribers > 0 ? (downgrades / activeSubscribers) * 100 : 0;

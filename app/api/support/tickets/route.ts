@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSession } from '@/lib/session-server';
+import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.isAdmin) {
+    if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -27,25 +26,15 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(limit, 100);
     const offset = (page - 1) * pageSize;
 
-    // Build query
-    let queryRef: any = db.collection('support_tickets');
-
-    if (statusFilter && statusFilter !== 'all') {
-      queryRef = queryRef.where('status', '==', statusFilter);
-    }
-
-    // Get total count
-    const countSnapshot = await queryRef.count().get();
-    const totalCount = countSnapshot.data().count;
-
-    // Fetch tickets
-    const snapshot = await queryRef
+    // Order by a single field only (auto-indexed) and filter status in memory —
+    // avoids needing a composite index (status + updatedAt).
+    const snapshot = await db
+      .collection('support_tickets')
       .orderBy('updatedAt', 'desc')
-      .offset(offset)
-      .limit(pageSize)
+      .limit(500)
       .get();
 
-    const tickets = snapshot.docs.map((doc: any) => ({
+    let tickets = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       userId: doc.data().userId || '',
       userEmail: doc.data().userEmail || '',
@@ -59,8 +48,15 @@ export async function GET(request: NextRequest) {
       messageCount: (doc.data().messages || []).length,
     }));
 
+    if (statusFilter && statusFilter !== 'all') {
+      tickets = tickets.filter((t: any) => t.status === statusFilter);
+    }
+
+    const totalCount = tickets.length;
+    const paged = tickets.slice(offset, offset + pageSize);
+
     return NextResponse.json({
-      tickets,
+      tickets: paged,
       total: totalCount,
       page,
       limit: pageSize,
