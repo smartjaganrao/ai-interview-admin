@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSession } from '@/lib/session-server';
+import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.isAdmin) {
+    if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -28,25 +27,15 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(limit, 100);
     const offset = (page - 1) * pageSize;
 
-    // Build query
-    let queryRef: any = db.collection('admin_logs');
-
-    if (actionFilter && actionFilter !== 'all') {
-      queryRef = queryRef.where('action', '==', actionFilter);
-    }
-
-    // Get total count
-    const countSnapshot = await queryRef.count().get();
-    const totalCount = countSnapshot.data().count;
-
-    // Fetch logs with pagination
-    const snapshot = await queryRef
+    // Order by a single field only (auto-indexed) and apply the action/admin
+    // filters in memory — avoids needing a composite index (action + timestamp).
+    const snapshot = await db
+      .collection('admin_logs')
       .orderBy('timestamp', 'desc')
-      .offset(offset)
-      .limit(pageSize)
+      .limit(500)
       .get();
 
-    const logs = snapshot.docs.map((doc: any) => ({
+    let logs = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       adminEmail: doc.data().adminEmail || 'Unknown',
       action: doc.data().action || 'unknown',
@@ -56,15 +45,20 @@ export async function GET(request: NextRequest) {
       ipAddress: doc.data().ipAddress || 'unknown',
     }));
 
-    // Filter by admin email (client-side for simplicity)
-    const filtered = adminFilter
-      ? logs.filter((log: any) =>
-          log.adminEmail.toLowerCase().includes(adminFilter.toLowerCase())
-        )
-      : logs;
+    if (actionFilter && actionFilter !== 'all') {
+      logs = logs.filter((l: any) => l.action === actionFilter);
+    }
+    if (adminFilter) {
+      logs = logs.filter((l: any) =>
+        l.adminEmail.toLowerCase().includes(adminFilter.toLowerCase())
+      );
+    }
+
+    const totalCount = logs.length;
+    const paged = logs.slice(offset, offset + pageSize);
 
     return NextResponse.json({
-      logs: filtered,
+      logs: paged,
       total: totalCount,
       page,
       limit: pageSize,

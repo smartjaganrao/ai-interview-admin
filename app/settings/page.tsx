@@ -3,139 +3,121 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 
+const ADMINS = [
+  { uid:'1', email:'admin@company.com', role:'super-admin', since:'2026-01-01' },
+  { uid:'2', email:'mod@company.com', role:'moderator', since:'2026-02-15' },
+  { uid:'3', email:'analyst@company.com', role:'analyst', since:'2026-03-20' },
+];
+const API_KEYS = [
+  { id:'1', name:'Analytics API', scopes:'read-only', created:'2026-03-10', lastUsed:'2026-05-27', status:'active' },
+  { id:'2', name:'Bulk Operations', scopes:'read-write', created:'2026-02-01', lastUsed:'2026-05-20', status:'active' },
+];
+
+const ROLE_BADGE: Record<string,string> = { 'super-admin':'badge-purple', moderator:'badge-indigo', analyst:'badge-slate' };
+
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'org' | 'admins' | 'apikeys'>('org');
-  const [inviteEmail, setInviteEmail] = useState('');
-
-  const admins = [
-    { uid: '1', email: 'admin@company.com', role: 'super-admin', invited: '2026-01-01' },
-    { uid: '2', email: 'mod@company.com', role: 'moderator', invited: '2026-02-15' },
-    { uid: '3', email: 'analyst@company.com', role: 'analyst', invited: '2026-03-20' },
-  ];
-
-  const apiKeys = [
-    { id: '1', name: 'Analytics API', scopes: 'read-only', created: '2026-03-10', lastUsed: '2026-05-27', status: 'active' },
-    { id: '2', name: 'Bulk Operations', scopes: 'read-write', created: '2026-02-01', lastUsed: '2026-05-20', status: 'active' },
-  ];
+  const [tab, setTab] = useState<'org'|'admins'|'apikeys'>('org');
+  const [invite, setInvite] = useState('');
 
   return (
     <AdminShell title="Settings">
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-white/10">
-        {[
-          { id: 'org', label: '🏢 Organization' },
-          { id: 'admins', label: '👥 Admin Users' },
-          { id: 'apikeys', label: '🔑 API Keys' },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id as typeof tab)}
-            className={`px-4 py-3 font-medium transition-smooth border-b-2 ${
-              tab === t.id ? 'border-indigo-500 text-white' : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
+      <div className="tabs">
+        {[{id:'org',label:'Organization'},{id:'admins',label:'Admin Users'},{id:'apikeys',label:'API Keys'}].map((t) => (
+          <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id as typeof tab)}>
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="max-w-3xl">
+      <div style={{ maxWidth: 720 }}>
         {/* Organization */}
         {tab === 'org' && (
-          <div className="card space-y-5">
-            <h2 className="text-lg font-bold text-white">Organization Settings</h2>
+          <div className="card" style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Company Name</label>
-              <input type="text" defaultValue="AI Interview Helper" className="input" />
+              <div className="font-semibold mb-4" style={{ fontSize:14 }}>Organization Settings</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                {[
+                  { label:'Company Name', type:'text', defaultValue:'AI Interview Helper' },
+                  { label:'Support Email', type:'email', defaultValue:'support@aiinterview.com' },
+                ].map((f,i) => (
+                  <div key={i}>
+                    <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>{f.label}</label>
+                    <input type={f.type} defaultValue={f.defaultValue} className="input"/>
+                  </div>
+                ))}
+                <div>
+                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Default Currency</label>
+                  <select className="input">
+                    <option>INR (₹)</option><option>USD ($)</option><option>EUR (€)</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Support Email</label>
-              <input type="email" defaultValue="support@aiinterview.com" className="input" />
+              <button className="btn btn-primary">Save Changes</button>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Default Currency</label>
-              <select className="input">
-                <option>INR (₹)</option>
-                <option>USD ($)</option>
-                <option>EUR (€)</option>
-              </select>
-            </div>
-            <button className="btn btn-primary">Save Changes</button>
           </div>
         )}
 
-        {/* Admins */}
+        {/* Admin Users */}
         {tab === 'admins' && (
-          <div className="space-y-6">
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
             <div className="card">
-              <h2 className="text-lg font-bold text-white mb-4">Invite New Admin</h2>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  placeholder="email@company.com"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="input flex-1"
-                />
-                <select className="input sm:w-40">
-                  <option>Admin</option>
-                  <option>Moderator</option>
-                  <option>Analyst</option>
+              <div className="font-semibold mb-3" style={{ fontSize:14 }}>Invite New Admin</div>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <input type="email" placeholder="email@company.com" value={invite} onChange={(e) => setInvite(e.target.value)} className="input" style={{ flex:1, minWidth:200 }}/>
+                <select className="input" style={{ width:140 }}>
+                  <option>Admin</option><option>Moderator</option><option>Analyst</option>
                 </select>
                 <button className="btn btn-primary">Send Invite</button>
               </div>
             </div>
 
-            <div className="card">
-              <h2 className="text-lg font-bold text-white mb-4">Current Admins</h2>
-              <div className="space-y-2">
-                {admins.map((a) => (
-                  <div key={a.uid} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-smooth">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-sm font-bold text-white">
-                        {a.email.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="text-white font-medium">{a.email}</div>
-                        <div className="text-xs text-slate-400">Invited {a.invited}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`badge ${a.role === 'super-admin' ? 'badge-purple' : a.role === 'moderator' ? 'badge-indigo' : 'badge-slate'}`}>
-                        {a.role.replace('-', ' ')}
-                      </span>
-                      {a.role !== 'super-admin' && <button className="btn btn-sm btn-danger">Remove</button>}
-                    </div>
-                  </div>
-                ))}
+            <div className="card-flat">
+              <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', fontSize:14, fontWeight:600 }}>
+                Current Admins
               </div>
+              {ADMINS.map((a) => (
+                <div key={a.uid} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid var(--border)' }}>
+                  <div className="avatar">{a.email.charAt(0).toUpperCase()}</div>
+                  <div style={{ flex:1 }}>
+                    <div className="font-medium">{a.email}</div>
+                    <div className="text-sm text-muted">Invited {a.since}</div>
+                  </div>
+                  <span className={`badge ${ROLE_BADGE[a.role]||'badge-slate'}`}>{a.role.replace('-',' ')}</span>
+                  {a.role !== 'super-admin' && <button className="btn btn-danger btn-sm">Remove</button>}
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* API Keys */}
         {tab === 'apikeys' && (
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">API Keys</h2>
-              <button className="btn btn-primary btn-sm">+ Generate Key</button>
+          <div className="card-flat">
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid var(--border)' }}>
+              <div className="font-semibold" style={{ fontSize:14 }}>API Keys</div>
+              <button className="btn btn-primary btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Generate Key
+              </button>
             </div>
-            <div className="space-y-3">
-              {apiKeys.map((k) => (
-                <div key={k.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 border border-white/5">
-                  <div>
-                    <div className="text-white font-medium">{k.name}</div>
-                    <div className="text-xs text-slate-400">Scopes: {k.scopes} • Last used: {k.lastUsed}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="badge badge-green">{k.status}</span>
-                    <button className="btn btn-sm btn-danger">Revoke</button>
-                  </div>
+            {API_KEYS.map((k) => (
+              <div key={k.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ flex:1 }}>
+                  <div className="font-medium">{k.name}</div>
+                  <div className="text-sm text-muted">Scopes: {k.scopes} · Last used: {k.lastUsed}</div>
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-sm text-yellow-300">
-              ⚠️ API keys grant programmatic access. Keep them secret and revoke unused keys.
+                <span className="badge badge-green">{k.status}</span>
+                <button className="btn btn-danger btn-sm">Revoke</button>
+              </div>
+            ))}
+            <div style={{ padding:'12px 16px' }}>
+              <div className="alert alert-warning">
+                <strong>Warning:</strong> API keys grant programmatic access. Keep them secret and revoke unused keys.
+              </div>
             </div>
           </div>
         )}
