@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSession } from '@/lib/session-server';
+import { isAdminRequest, getSession } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.isAdmin) {
+    if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
+    const session = await getSession();
 
     if (!db) {
       return NextResponse.json(
@@ -44,8 +44,8 @@ export async function POST(
 
     // Log action
     await db.collection('admin_logs').add({
-      adminUid: session.uid,
-      adminEmail: session.email,
+      adminUid: session?.uid || 'system',
+      adminEmail: session?.email || 'system',
       action: 'ticket_update',
       targetId: ticketId,
       details: updateData,

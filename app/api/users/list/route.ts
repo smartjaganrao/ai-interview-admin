@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
       email: doc.data().email || '',
       name: doc.data().name || '',
       plan: doc.data().plan || 'free',
+      status: doc.data().status || 'active',
       createdAt: doc.data().createdAt || 0,
       settings: doc.data().settings || {},
     }));
