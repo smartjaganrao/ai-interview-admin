@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const NAV_ITEMS = [
   {
@@ -67,6 +67,18 @@ const NAV_ITEMS = [
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [adminEmail, setAdminEmail] = useState('');
+
+  useEffect(() => {
+    // Read admin email from session cookie (set at login)
+    try {
+      const cookie = document.cookie.split('; ').find((r) => r.startsWith('admin-session='));
+      if (cookie) {
+        const session = JSON.parse(decodeURIComponent(cookie.split('=')[1]));
+        setAdminEmail(session?.email || '');
+      }
+    } catch { /* cookie not available or parse error — leave blank */ }
+  }, []);
 
   return (
     <>
@@ -101,10 +113,12 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <div className="sidebar-user-avatar">S</div>
+          <div className="sidebar-user-avatar">
+            {adminEmail ? adminEmail.charAt(0).toUpperCase() : 'A'}
+          </div>
           <div className="sidebar-user-info">
-            <div className="sidebar-user-name">Super Admin</div>
-            <div className="sidebar-user-email">admin@company.com</div>
+            <div className="sidebar-user-name">Admin</div>
+            <div className="sidebar-user-email">{adminEmail || 'admin'}</div>
           </div>
         </div>
         <button

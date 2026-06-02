@@ -72,7 +72,7 @@ export default function UsersPage() {
     setActing(true);
     const r = await postAdmin('/api/users/upgrade', { userId: detail.uid, newPlan: planChoice });
     setActing(false);
-    if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); refetch(); }
+    if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); setPlanChoice(''); refetch(); }
     else flash('err', r.error || 'Failed to change plan');
   };
 
@@ -95,13 +95,32 @@ export default function UsersPage() {
 
   const bulkSetPlan = async (plan: string) => {
     setActing(true);
-    for (const uid of selected) await postAdmin('/api/users/upgrade', { userId: uid, newPlan: plan });
-    setActing(false); const n = selected.length; setSelected([]); flash('ok', `Set ${n} user(s) to ${plan}`); refetch();
+    let failed = 0;
+    // Sequential to avoid overwhelming the API
+    for (const uid of selected) {
+      const r = await postAdmin('/api/users/upgrade', { userId: uid, newPlan: plan });
+      if (!r.ok) failed++;
+    }
+    setActing(false);
+    const n = selected.length;
+    setSelected([]);
+    flash(failed === 0 ? 'ok' : 'err',
+      failed === 0 ? `Set ${n} user(s) to ${plan}` : `${failed}/${n} failed — check network`);
+    refetch();
   };
   const bulkBan = async () => {
     setActing(true);
-    for (const uid of selected) await postAdmin('/api/users/ban', { userId: uid, ban: true });
-    setActing(false); const n = selected.length; setSelected([]); flash('ok', `Banned ${n} user(s)`); refetch();
+    let failed = 0;
+    for (const uid of selected) {
+      const r = await postAdmin('/api/users/ban', { userId: uid, ban: true });
+      if (!r.ok) failed++;
+    }
+    setActing(false);
+    const n = selected.length;
+    setSelected([]);
+    flash(failed === 0 ? 'ok' : 'err',
+      failed === 0 ? `Banned ${n} user(s)` : `${failed}/${n} failed`);
+    refetch();
   };
 
   return (
@@ -184,7 +203,7 @@ export default function UsersPage() {
                       <td><input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/></td>
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="avatar" style={{ background: AVATAR_COLORS[u.name.charCodeAt(0) % AVATAR_COLORS.length] }}>
+                          <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
                             {u.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
