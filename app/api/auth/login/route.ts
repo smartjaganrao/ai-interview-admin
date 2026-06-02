@@ -1,56 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth as adminAuth } from '@/lib/firebase-admin';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { createSession } from '@/lib/session-server';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * Verifies a Firebase ID token WITHOUT the Admin SDK.
+ *
+ * Firebase ID tokens are RS256 JWTs signed by Google's secure-token service,
+ * and custom claims (admin, role) are embedded in the payload. We can verify
+ * them against Google's PUBLIC keys — no FIREBASE_ADMIN_SDK_JSON service-account
+ * secret required. This is the same cryptographic check the Admin SDK performs:
+ *   - signature valid against Google's published JWKS
+ *   - iss === https://securetoken.google.com/<projectId>
+ *   - aud === <projectId>
+ *   - not expired
+ * Then we gate on the `admin` custom claim.
+ */
+const JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
+);
+
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'ai-interview-tutor';
 
 export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
 
     if (!idToken) {
+      return NextResponse.json({ error: 'ID token required' }, { status: 400 });
+    }
+
+    let payload;
+    try {
+      const result = await jwtVerify(idToken, JWKS, {
+        issuer: `https://securetoken.google.com/${PROJECT_ID}`,
+        audience: PROJECT_ID,
+      });
+      payload = result.payload as Record<string, unknown>;
+    } catch (err) {
+      console.error('[auth/login] token verification failed:', err);
       return NextResponse.json(
-        { error: 'ID token required' },
-        { status: 400 }
+        { error: 'Invalid or expired sign-in token. Please try again.' },
+        { status: 401 }
       );
     }
 
-    // Check if Firebase is configured
-    if (!adminAuth) {
-      return NextResponse.json(
-        { error: 'Firebase Admin SDK not configured. Please add FIREBASE_ADMIN_SDK_JSON to .env.local' },
-        { status: 500 }
-      );
-    }
-
-    // Verify token and get claims
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-
-    // Check if user has admin claim
-    if (!decodedToken.admin) {
+    // Gate on the admin custom claim (embedded in the verified token)
+    if (payload.admin !== true) {
       return NextResponse.json(
         { error: 'You do not have admin access' },
         { status: 403 }
       );
     }
 
-    // Create session
+    const role = (payload.role as 'super-admin' | 'admin' | 'moderator' | 'analyst') || 'admin';
     const session = {
-      uid: decodedToken.uid,
-      email: decodedToken.email || '',
-      role: (decodedToken.role as 'super-admin' | 'admin' | 'moderator' | 'analyst') || 'admin',
+      uid: (payload.user_id as string) || (payload.sub as string) || '',
+      email: (payload.email as string) || '',
+      role,
       isAdmin: true,
     };
 
     await createSession(session);
 
-    return NextResponse.json(
-      { success: true, user: session },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Authentication failed' },
-      { status: 401 }
-    );
+    return NextResponse.json({ success: true, user: session }, { status: 200 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Authentication failed';
+    console.error('[auth/login] error:', message);
+    return NextResponse.json({ error: message }, { status: 401 });
   }
 }
