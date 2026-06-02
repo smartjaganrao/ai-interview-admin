@@ -1,38 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+export type Reason = 'live' | 'unauthorized' | 'not-configured' | 'error' | 'loading';
 
 interface AdminDataState<T> {
   data: T;
   isLive: boolean;
   loading: boolean;
-  /** Set when the API responded but auth/config is missing, so the UI can hint at setup. */
-  reason: 'live' | 'unauthorized' | 'not-configured' | 'error' | 'loading';
+  reason: Reason;
+  refetch: () => void;
 }
 
 /**
- * Fetches an admin API route and falls back to demo data when the backend
- * isn't fully wired yet (no Admin SDK secret, no admin session, etc.).
+ * Fetches an admin API route. NO mock/demo fallback — while the request is in
+ * flight `loading` is true (show a loader); on success `data` is the real
+ * payload; on failure `data` stays at the empty `initial` value and `reason`
+ * explains why (so the UI can render an error state instead of fake numbers).
  *
- * - 200            -> live data, isLive = true
- * - 401/403        -> demo data, reason = 'unauthorized' (need admin session)
- * - 500            -> demo data, reason = 'not-configured' (need FIREBASE_ADMIN_SDK_JSON)
- * - network/parse  -> demo data, reason = 'error'
+ * - 200            -> real data, isLive = true, reason = 'live'
+ * - 401/403        -> reason = 'unauthorized' (not signed in as admin)
+ * - 500/503        -> reason = 'not-configured' (Admin SDK secret missing)
+ * - network/parse  -> reason = 'error'
  */
 export function useAdminData<T>(
   url: string,
-  fallback: T,
+  initial: T,
   select?: (json: unknown) => T
 ): AdminDataState<T> {
-  const [state, setState] = useState<AdminDataState<T>>({
-    data: fallback,
+  const [state, setState] = useState<Omit<AdminDataState<T>, 'refetch'>>({
+    data: initial,
     isLive: false,
     loading: true,
     reason: 'loading',
   });
+  const [nonce, setNonce] = useState(0);
+
+  const refetch = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
+    setState((s) => ({ ...s, loading: true, reason: 'loading' }));
 
     fetch(url, { credentials: 'include' })
       .then(async (res) => {
@@ -42,39 +50,33 @@ export function useAdminData<T>(
           const data = select ? select(json) : (json as T);
           setState({ data, isLive: true, loading: false, reason: 'live' });
         } else {
-          const reason = res.status === 500 ? 'not-configured' : 'unauthorized';
-          setState({ data: fallback, isLive: false, loading: false, reason });
+          const reason: Reason = res.status >= 500 ? 'not-configured' : 'unauthorized';
+          setState({ data: initial, isLive: false, loading: false, reason });
         }
       })
       .catch(() => {
         if (cancelled) return;
-        setState({ data: fallback, isLive: false, loading: false, reason: 'error' });
+        setState({ data: initial, isLive: false, loading: false, reason: 'error' });
       });
 
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url]);
+  }, [url, nonce]);
 
-  return state;
+  return { ...state, refetch };
 }
 
-/** Small badge shown on data-backed pages to indicate live vs. demo. */
-export function dataSourceLabel(reason: AdminDataState<unknown>['reason']): {
-  text: string;
-  className: string;
-} {
+export function errorMessage(reason: Reason): string {
   switch (reason) {
-    case 'live':
-      return { text: '● Live data', className: 'badge-green' };
-    case 'not-configured':
-      return { text: 'Demo · backend not configured', className: 'badge-yellow' };
     case 'unauthorized':
-      return { text: 'Demo · sign in as admin for live data', className: 'badge-yellow' };
-    case 'loading':
-      return { text: 'Loading…', className: 'badge-slate' };
+      return 'Not authorized. Please sign in with an admin account.';
+    case 'not-configured':
+      return 'The server isn’t configured to read data yet (Firebase Admin SDK key missing on the deployment).';
+    case 'error':
+      return 'Couldn’t reach the server. Check your connection and try again.';
     default:
-      return { text: 'Demo data', className: 'badge-slate' };
+      return 'Something went wrong.';
   }
 }
