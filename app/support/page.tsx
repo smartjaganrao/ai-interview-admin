@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
+import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
 
 interface Ticket {
@@ -35,6 +36,16 @@ export default function SupportPage() {
       assigned:t.assignedTo, messageCount:t.messageCount,
     }));
   });
+
+  const [changingStatus, setChangingStatus] = useState(false);
+  const changeStatus = async (newStatus: string) => {
+    if (!active || newStatus === active.status) return;
+    setChangingStatus(true);
+    const r = await postAdmin(`/api/support/tickets/${active.id}/update`, { status: newStatus });
+    setChangingStatus(false);
+    if (r.ok) { setActive(null); refetch(); }
+    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
+  };
 
   const sendReply = async () => {
     if (!active||!reply.trim()) return;
@@ -133,6 +144,22 @@ export default function SupportPage() {
             <div className="text-sm text-muted">From: <span style={{ color:'var(--text)' }}>{active.user}</span></div>
             <div className="divider"/>
             <div className="text-sm text-muted">{active.messageCount} message{active.messageCount===1?'':'s'} in this ticket.</div>
+
+            {/* Status change */}
+            <div>
+              <div className="text-sm font-semibold mb-2">Set status</div>
+              <select
+                className="input"
+                value={active.status}
+                disabled={changingStatus}
+                onChange={(e) => changeStatus(e.target.value)}
+              >
+                <option value="open">Open</option>
+                <option value="in-progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Type your reply…" rows={3} className="input" style={{ resize:'none' }}/>
               <button className="btn btn-primary" onClick={sendReply} disabled={sending||!reply.trim()}>

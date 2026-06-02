@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
+import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
 
 interface User {
@@ -57,8 +58,59 @@ export default function UsersPage() {
     banned: users.filter((u) => u.status === 'banned').length,
   };
 
+  // ── Mutations ───────────────────────────────────────────────────────────
+  const [planChoice, setPlanChoice] = useState('');
+  const [acting, setActing] = useState(false);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const flash = (kind: 'ok' | 'err', text: string) => {
+    setToast({ kind, text });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const applyPlan = async () => {
+    if (!detail || !planChoice) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/upgrade', { userId: detail.uid, newPlan: planChoice });
+    setActing(false);
+    if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); refetch(); }
+    else flash('err', r.error || 'Failed to change plan');
+  };
+
+  const toggleBan = async () => {
+    if (!detail) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/ban', { userId: detail.uid, ban: detail.status !== 'banned' });
+    setActing(false);
+    if (r.ok) { flash('ok', detail.status === 'banned' ? 'User unbanned' : 'User banned'); setDetail(null); refetch(); }
+    else flash('err', r.error || 'Failed');
+  };
+
+  const resetQuota = async () => {
+    if (!detail) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/reset-quota', { userId: detail.uid });
+    setActing(false);
+    flash(r.ok ? 'ok' : 'err', r.ok ? (r.message || 'Quota reset') : (r.error || 'Failed'));
+  };
+
+  const bulkSetPlan = async (plan: string) => {
+    setActing(true);
+    for (const uid of selected) await postAdmin('/api/users/upgrade', { userId: uid, newPlan: plan });
+    setActing(false); const n = selected.length; setSelected([]); flash('ok', `Set ${n} user(s) to ${plan}`); refetch();
+  };
+  const bulkBan = async () => {
+    setActing(true);
+    for (const uid of selected) await postAdmin('/api/users/ban', { userId: uid, ban: true });
+    setActing(false); const n = selected.length; setSelected([]); flash('ok', `Banned ${n} user(s)`); refetch();
+  };
+
   return (
     <AdminShell title="Users">
+      {toast && (
+        <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
+          {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
+        </div>
+      )}
       {loading ? (
         <Loader label="Loading users…" />
       ) : reason !== 'live' ? (
@@ -99,8 +151,9 @@ export default function UsersPage() {
             {selected.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted">{selected.length} selected</span>
-                <button className="btn btn-secondary btn-sm">Upgrade</button>
-                <button className="btn btn-danger btn-sm">Ban</button>
+                <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('pro')}>Make Pro</button>
+                <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('power')}>Make Power</button>
+                <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkBan}>Ban</button>
               </div>
             )}
             <div className="filter-bar-right">
@@ -143,7 +196,7 @@ export default function UsersPage() {
                       <td><span className={`badge ${PLAN_BADGE[u.plan]}`}>{u.plan.toUpperCase()}</span></td>
                       <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
                       <td className="text-muted">{u.joined}</td>
-                      <td><button className="btn btn-secondary btn-sm" onClick={() => setDetail(u)}>View</button></td>
+                      <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(u); setPlanChoice(''); }}>View</button></td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
@@ -194,10 +247,20 @@ export default function UsersPage() {
             </div>
             <div>
               <div className="text-sm font-semibold mb-2">Actions</div>
-              <select className="input mb-2"><option>Change Plan…</option><option>Free</option><option>Pro</option><option>Power</option></select>
+              <select className="input mb-2" value={planChoice} onChange={(e) => setPlanChoice(e.target.value)}>
+                <option value="">Change Plan…</option>
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+                <option value="power">Power</option>
+              </select>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <button className="btn btn-primary w-full">Apply Plan Change</button>
-                <button className="btn btn-danger w-full">{detail.status === 'banned' ? 'Unban User' : 'Ban User'}</button>
+                <button className="btn btn-primary w-full" disabled={acting || !planChoice} onClick={applyPlan}>
+                  {acting ? 'Working…' : 'Apply Plan Change'}
+                </button>
+                <button className="btn btn-secondary w-full" disabled={acting} onClick={resetQuota}>Reset Usage Quota</button>
+                <button className="btn btn-danger w-full" disabled={acting} onClick={toggleBan}>
+                  {detail.status === 'banned' ? 'Unban User' : 'Ban User'}
+                </button>
               </div>
             </div>
           </div>
