@@ -18,10 +18,11 @@ interface AdminDataState<T> {
  * payload; on failure `data` stays at the empty `initial` value and `reason`
  * explains why (so the UI can render an error state instead of fake numbers).
  *
- * - 200            -> real data, isLive = true, reason = 'live'
- * - 401/403        -> reason = 'unauthorized' (not signed in as admin)
- * - 500/503        -> reason = 'not-configured' (Admin SDK secret missing)
- * - network/parse  -> reason = 'error'
+ * - 200        -> real data, isLive = true, reason = 'live'
+ * - 401/403    -> reason = 'unauthorized' (not signed in as admin)
+ * - 503        -> reason = 'not-configured' (Admin SDK secret missing on server)
+ * - 500/502    -> reason = 'error' (real server error)
+ * - network    -> reason = 'error'
  */
 export function useAdminData<T>(
   url: string,
@@ -50,7 +51,12 @@ export function useAdminData<T>(
           const data = select ? select(json) : (json as T);
           setState({ data, isLive: true, loading: false, reason: 'live' });
         } else {
-          const reason: Reason = res.status >= 500 ? 'not-configured' : 'unauthorized';
+          // 503 = Firebase Admin SDK not configured on deployment
+          // 5xx = real server error; 4xx = auth/permission issue
+          const reason: Reason =
+            res.status === 503 ? 'not-configured'
+            : res.status >= 500 ? 'error'
+            : 'unauthorized';
           setState({ data: initial, isLive: false, loading: false, reason });
         }
       })
@@ -59,9 +65,7 @@ export function useAdminData<T>(
         setState({ data: initial, isLive: false, loading: false, reason: 'error' });
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, nonce]);
 
@@ -73,9 +77,9 @@ export function errorMessage(reason: Reason): string {
     case 'unauthorized':
       return 'Not authorized. Please sign in with an admin account.';
     case 'not-configured':
-      return 'The server isn’t configured to read data yet (Firebase Admin SDK key missing on the deployment).';
+      return 'The server is not configured to read data yet (Firebase Admin SDK key missing on the deployment).';
     case 'error':
-      return 'Couldn’t reach the server. Check your connection and try again.';
+      return 'Could not reach the server. Check your connection and try again.';
     default:
       return 'Something went wrong.';
   }

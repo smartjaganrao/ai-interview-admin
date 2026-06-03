@@ -9,74 +9,57 @@ export async function GET(request: NextRequest) {
     if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-
     if (!db) {
-      return NextResponse.json(
-        { error: 'Database not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const search = searchParams.get('search') || '';
-    const plan = searchParams.get('plan') || '';
+    const page   = Math.max(1, parseInt(searchParams.get('page')  || '1'));
+    const limit  = Math.min(100, parseInt(searchParams.get('limit') || '50'));
+    const search = (searchParams.get('search') || '').toLowerCase().trim();
+    const plan   = searchParams.get('plan') || '';
 
-    const pageSize = Math.min(limit, 100); // Max 100 per page
-    const offset = (page - 1) * pageSize;
-
-    // Build base collection reference
-    const usersCollection = db.collection('users');
-
-    // Build query with filters
-    let queryRef: any = usersCollection;
+    let queryRef: FirebaseFirestore.Query = db.collection('users');
 
     if (plan && plan !== 'all') {
       queryRef = queryRef.where('plan', '==', plan);
     }
 
-    // Get total count
-    const countSnapshot = await queryRef.count().get();
-    const totalCount = countSnapshot.data().count;
+    // Fetch ALL matching users so search applies BEFORE pagination (bug fix:
+    // previously search was applied after offset/limit, hiding results).
+    // Capped at 500 to avoid unbounded reads; increase if needed.
+    const snapshot = await queryRef.orderBy('createdAt', 'desc').limit(500).get();
 
-    // Fetch users with pagination
-    const snapshot = await queryRef
-      .orderBy('createdAt', 'desc')
-      .offset(offset)
-      .limit(pageSize)
-      .get();
-
-    const users = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      email: doc.data().email || '',
-      name: doc.data().name || '',
-      plan: doc.data().plan || 'free',
-      status: doc.data().status || 'active',
-      createdAt: doc.data().createdAt || 0,
-      settings: doc.data().settings || {},
+    let users = snapshot.docs.map((doc) => ({
+      id:        doc.id,
+      email:     (doc.data().email     || '') as string,
+      name:      (doc.data().name      || '') as string,
+      plan:      (doc.data().plan      || 'free') as string,
+      status:    (doc.data().status    || 'active') as string,
+      createdAt: (doc.data().createdAt || 0) as number,
     }));
 
-    // Filter by search term (client-side for simplicity)
-    const filtered = users.filter(
-      (user: any) =>
-        user.email.toLowerCase().includes(search.toLowerCase()) ||
-        user.name.toLowerCase().includes(search.toLowerCase())
-    );
+    // Apply search filter server-side before pagination
+    if (search) {
+      users = users.filter(
+        (u) => u.email.toLowerCase().includes(search) || u.name.toLowerCase().includes(search)
+      );
+    }
+
+    const total    = users.length;
+    const offset   = (page - 1) * limit;
+    const paginated = users.slice(offset, offset + limit);
 
     return NextResponse.json({
-      users: filtered,
-      total: totalCount,
+      users:   paginated,
+      total,
       page,
-      limit: pageSize,
-      hasMore: offset + pageSize < totalCount,
+      limit,
+      hasMore: offset + limit < total,
     });
-  } catch (error: any) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch users' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch users';
+    console.error('[users/list]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
