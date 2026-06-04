@@ -1,124 +1,185 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminShell from '@/components/AdminShell';
-
-const ADMINS = [
-  { uid:'1', email:'admin@company.com', role:'super-admin', since:'2026-01-01' },
-  { uid:'2', email:'mod@company.com', role:'moderator', since:'2026-02-15' },
-  { uid:'3', email:'analyst@company.com', role:'analyst', since:'2026-03-20' },
-];
-const API_KEYS = [
-  { id:'1', name:'Analytics API', scopes:'read-only', created:'2026-03-10', lastUsed:'2026-05-27', status:'active' },
-  { id:'2', name:'Bulk Operations', scopes:'read-write', created:'2026-02-01', lastUsed:'2026-05-20', status:'active' },
-];
 
 const ROLE_BADGE: Record<string,string> = { 'super-admin':'badge-purple', moderator:'badge-indigo', analyst:'badge-slate' };
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'org'|'admins'|'apikeys'>('org');
-  const [invite, setInvite] = useState('');
+  const [tab, setTab] = useState<'org'|'aikeys'>('aikeys');
+
+  // ── AI Keys tab state ────────────────────────────────────────────────────
+  const [keyInfo, setKeyInfo]       = useState<{ groqKeySet:boolean; groqKeyMasked:string; updatedAt:number|null; updatedBy:string|null } | null>(null);
+  const [newGroqKey, setNewGroqKey] = useState('');
+  const [showKey, setShowKey]       = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'ok'|'err'>('idle');
+  const [saveMsg, setSaveMsg]       = useState('');
+
+  useEffect(() => {
+    if (tab !== 'aikeys') return;
+    fetch('/api/settings/api-keys', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setKeyInfo(d))
+      .catch(() => {});
+  }, [tab]);
+
+  const saveGroqKey = async () => {
+    if (!newGroqKey.trim()) return;
+    setSaveStatus('saving');
+    try {
+      const r = await fetch('/api/settings/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ groqApiKey: newGroqKey.trim() }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        setSaveStatus('ok');
+        setSaveMsg('Groq API key saved. All desktop users will use it immediately.');
+        setNewGroqKey('');
+        setShowKey(false);
+        // Refresh the masked preview
+        fetch('/api/settings/api-keys', { credentials: 'include' })
+          .then(r2 => r2.ok ? r2.json() : null)
+          .then(d => d && setKeyInfo(d))
+          .catch(() => {});
+      } else {
+        setSaveStatus('err');
+        setSaveMsg(data.error || 'Failed to save key');
+      }
+    } catch {
+      setSaveStatus('err');
+      setSaveMsg('Network error — try again');
+    }
+    setTimeout(() => setSaveStatus('idle'), 4000);
+  };
 
   return (
     <AdminShell title="Settings">
       <div className="tabs">
-        {[{id:'org',label:'Organization'},{id:'admins',label:'Admin Users'},{id:'apikeys',label:'API Keys'}].map((t) => (
+        {[{id:'aikeys',label:'AI Keys'},{id:'org',label:'Organization'}].map((t) => (
           <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id as typeof tab)}>
             {t.label}
           </button>
         ))}
       </div>
 
-      <div style={{ maxWidth: 720 }}>
-        {/* Organization */}
+      <div style={{ maxWidth: 680 }}>
+
+        {/* ── AI Keys ─────────────────────────────────────────────────── */}
+        {tab === 'aikeys' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* How it works */}
+            <div className="card" style={{ background: 'var(--accent-faint)', border: '1px solid var(--accent)' }}>
+              <div className="font-semibold mb-2" style={{ fontSize: 13 }}>🔑 How the Groq key works</div>
+              <div className="text-sm text-muted" style={{ lineHeight: 1.7 }}>
+                The Groq API key is stored server-side in Firestore and read by the JavihAI proxy on <strong>javihai.in</strong>.
+                Desktop users <em>never</em> have the key — they sign in with their account, the proxy verifies their
+                Firebase token, and AI responses stream back. Update the key here and all users benefit instantly,
+                no app reinstall needed.
+              </div>
+            </div>
+
+            {/* Current key */}
+            <div className="card">
+              <div className="font-semibold mb-4" style={{ fontSize: 14 }}>Current Groq Key</div>
+              {keyInfo === null ? (
+                <div className="text-muted text-sm">Loading…</div>
+              ) : keyInfo.groqKeySet ? (
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                    <code style={{ background:'var(--bg-secondary)', padding:'6px 12px', borderRadius:6, fontSize:13, flex:1, color:'var(--text-primary)', letterSpacing:'0.05em' }}>
+                      {keyInfo.groqKeyMasked}
+                    </code>
+                    <span className="badge badge-green">Active</span>
+                  </div>
+                  {keyInfo.updatedAt && (
+                    <div className="text-sm text-muted">
+                      Last updated {new Date(keyInfo.updatedAt).toLocaleString()} by {keyInfo.updatedBy}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="alert alert-warning" style={{ fontSize: 13 }}>
+                  ⚠ No Groq key configured — AI features are disabled for all users. Add your key below.
+                </div>
+              )}
+            </div>
+
+            {/* Update key */}
+            <div className="card">
+              <div className="font-semibold mb-4" style={{ fontSize: 14 }}>
+                {keyInfo?.groqKeySet ? 'Rotate / Update Key' : 'Add Groq API Key'}
+              </div>
+              <div className="text-sm text-muted mb-4">
+                Get your key from{' '}
+                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
+                   style={{ color:'var(--accent)' }}>console.groq.com/keys</a>.
+                It starts with <code>gsk_</code>.
+              </div>
+
+              <div style={{ display:'flex', gap:8, marginBottom: 12 }}>
+                <div style={{ flex:1, position:'relative' }}>
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
+                    value={newGroqKey}
+                    onChange={(e) => setNewGroqKey(e.target.value)}
+                    className="input"
+                    style={{ paddingRight: 40 }}
+                    autoComplete="off"
+                  />
+                  <button
+                    onClick={() => setShowKey(v => !v)}
+                    style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:14 }}
+                  >
+                    {showKey ? '🙈' : '👁'}
+                  </button>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  disabled={saveStatus === 'saving' || !newGroqKey.trim()}
+                  onClick={saveGroqKey}
+                >
+                  {saveStatus === 'saving' ? 'Saving…' : 'Save Key'}
+                </button>
+              </div>
+
+              {saveStatus === 'ok' && (
+                <div className="alert alert-success" style={{ fontSize: 13 }}>✓ {saveMsg}</div>
+              )}
+              {saveStatus === 'err' && (
+                <div className="alert alert-error" style={{ fontSize: 13 }}>⚠ {saveMsg}</div>
+              )}
+
+              <div className="text-sm text-muted" style={{ marginTop: 12, lineHeight: 1.6 }}>
+                🔒 The key is encrypted in Firestore. It is never returned to browsers — only the JavihAI
+                server proxy reads it via the Admin SDK to make Groq API calls on behalf of signed-in users.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Organization ────────────────────────────────────────────── */}
         {tab === 'org' && (
           <div className="card" style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div>
               <div className="font-semibold mb-4" style={{ fontSize:14 }}>Organization Settings</div>
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {[
-                  { label:'Company Name', type:'text', defaultValue:'AI Interview Helper' },
-                  { label:'Support Email', type:'email', defaultValue:'support@aiinterview.com' },
+                  { label:'Product Name', type:'text', defaultValue:'JavihAI' },
+                  { label:'Support Email', type:'email', defaultValue:'support@javihai.in' },
                 ].map((f,i) => (
                   <div key={i}>
                     <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>{f.label}</label>
                     <input type={f.type} defaultValue={f.defaultValue} className="input"/>
                   </div>
                 ))}
-                <div>
-                  <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Default Currency</label>
-                  <select className="input">
-                    <option>INR (₹)</option><option>USD ($)</option><option>EUR (€)</option>
-                  </select>
-                </div>
               </div>
             </div>
-            <div>
-              <button className="btn btn-primary">Save Changes</button>
-            </div>
-          </div>
-        )}
-
-        {/* Admin Users */}
-        {tab === 'admins' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <div className="card">
-              <div className="font-semibold mb-3" style={{ fontSize:14 }}>Invite New Admin</div>
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                <input type="email" placeholder="email@company.com" value={invite} onChange={(e) => setInvite(e.target.value)} className="input" style={{ flex:1, minWidth:200 }}/>
-                <select className="input" style={{ width:140 }}>
-                  <option>Admin</option><option>Moderator</option><option>Analyst</option>
-                </select>
-                <button className="btn btn-primary">Send Invite</button>
-              </div>
-            </div>
-
-            <div className="card-flat">
-              <div style={{ padding:'14px 16px', borderBottom:'1px solid var(--border)', fontSize:14, fontWeight:600 }}>
-                Current Admins
-              </div>
-              {ADMINS.map((a) => (
-                <div key={a.uid} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid var(--border)' }}>
-                  <div className="avatar">{a.email.charAt(0).toUpperCase()}</div>
-                  <div style={{ flex:1 }}>
-                    <div className="font-medium">{a.email}</div>
-                    <div className="text-sm text-muted">Invited {a.since}</div>
-                  </div>
-                  <span className={`badge ${ROLE_BADGE[a.role]||'badge-slate'}`}>{a.role.replace('-',' ')}</span>
-                  {a.role !== 'super-admin' && <button className="btn btn-danger btn-sm">Remove</button>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* API Keys */}
-        {tab === 'apikeys' && (
-          <div className="card-flat">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid var(--border)' }}>
-              <div className="font-semibold" style={{ fontSize:14 }}>API Keys</div>
-              <button className="btn btn-primary btn-sm">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                Generate Key
-              </button>
-            </div>
-            {API_KEYS.map((k) => (
-              <div key={k.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:'1px solid var(--border)' }}>
-                <div style={{ flex:1 }}>
-                  <div className="font-medium">{k.name}</div>
-                  <div className="text-sm text-muted">Scopes: {k.scopes} · Last used: {k.lastUsed}</div>
-                </div>
-                <span className="badge badge-green">{k.status}</span>
-                <button className="btn btn-danger btn-sm">Revoke</button>
-              </div>
-            ))}
-            <div style={{ padding:'12px 16px' }}>
-              <div className="alert alert-warning">
-                <strong>Warning:</strong> API keys grant programmatic access. Keep them secret and revoke unused keys.
-              </div>
-            </div>
+            <button className="btn btn-primary" style={{ alignSelf:'flex-start' }}>Save Changes</button>
           </div>
         )}
       </div>

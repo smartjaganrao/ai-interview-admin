@@ -84,10 +84,11 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <>
       {/* Logo */}
       <Link href="/" onClick={onNavigate} className="sidebar-logo">
-        <div className="sidebar-logo-icon">AI</div>
+        <img src="/logo.svg" alt="JavihAI" style={{ height: 32, width: 32, objectFit: 'contain', borderRadius: 6 }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         <div className="sidebar-logo-text">
-          <div className="sidebar-logo-title">AI Interview</div>
-          <div className="sidebar-logo-sub">Admin Console</div>
+          <div className="sidebar-logo-title">JavihAI</div>
+          <div className="sidebar-logo-sub">Admin</div>
         </div>
       </Link>
 
