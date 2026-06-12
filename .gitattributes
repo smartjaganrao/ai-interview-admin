@@ -1,0 +1,12 @@
+# Normalize line endings to LF on commit (cross-platform safety)
+* text=auto eol=lf
+
+# Binary files — never touch
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.woff2 binary
+*.woff binary
+*.ttf binary
+*.eot binary
