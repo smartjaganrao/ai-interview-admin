@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const SESSION_COOKIE = 'admin-session';
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout', '/api/health'];
+const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/logout', '/api/health'];
+
+const DEV_BYPASS =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_ADMIN_DEV_NO_AUTH === 'true';
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths and Next.js internals
+  // Skip for Next.js internals and static assets
   if (
-    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/logo')
   ) {
+    return NextResponse.next();
+  }
+
+  // Dev bypass: skip auth entirely, redirect /login → / so user lands on dashboard
+  if (DEV_BYPASS) {
+    if (pathname.startsWith('/login')) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Allow public API paths (but not /login page — that's handled below)
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
@@ -28,15 +44,12 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Dev-only bypass — lets local dev skip the admin-claim login dance.
-  // Double-gated: NODE_ENV must not be 'production' AND the flag must be explicit.
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    process.env.ADMIN_DEV_NO_AUTH === 'true'
-  ) {
+  // Already on login page — let them stay there
+  if (pathname.startsWith('/login')) {
     return NextResponse.next();
   }
 
+  // Not authenticated → redirect to login
   if (!isAdmin) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);

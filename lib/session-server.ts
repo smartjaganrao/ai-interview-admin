@@ -53,7 +53,7 @@ export async function clearSession() {
 export async function isAdminRequest(): Promise<boolean> {
   if (
     process.env.NODE_ENV !== 'production' &&
-    process.env.ADMIN_DEV_NO_AUTH === 'true'
+    process.env.NEXT_PUBLIC_ADMIN_DEV_NO_AUTH === 'true'
   ) {
     return true;
   }
