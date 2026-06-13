@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { logout } from '@/lib/firebase-client';
 
 const NAV_ITEMS = [
   {
@@ -123,7 +124,10 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         </div>
         <button
-          onClick={() => router.push('/login')}
+          onClick={async () => {
+            await logout();
+            router.push('/login');
+          }}
           className="btn btn-ghost w-full"
           style={{ justifyContent: 'flex-start', fontSize: '12px', padding: '6px 8px' }}
         >
