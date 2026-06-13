@@ -3,7 +3,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
-  signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
@@ -49,24 +48,6 @@ export async function loginWithGoogle() {
 
   if (!response.ok) {
     throw new Error('Admin verification failed. Only admins can access this panel. Contact your super admin.');
-  }
-
-  return response.json();
-}
-
-export async function loginWithEmail(email: string, password: string) {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  const idToken = await userCredential.user.getIdToken();
-
-  // Send token to backend to verify admin claim
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Admin verification failed. Are you an admin?');
   }
 
   return response.json();

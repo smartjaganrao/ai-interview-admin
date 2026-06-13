@@ -28,6 +28,15 @@ export function proxy(request: NextRequest) {
     }
   }
 
+  // Dev-only bypass — lets local dev skip the admin-claim login dance.
+  // Double-gated: NODE_ENV must not be 'production' AND the flag must be explicit.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.ADMIN_DEV_NO_AUTH === 'true'
+  ) {
+    return NextResponse.next();
+  }
+
   if (!isAdmin) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
