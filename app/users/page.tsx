@@ -93,6 +93,16 @@ export default function UsersPage() {
     flash(r.ok ? 'ok' : 'err', r.ok ? (r.message || 'Quota reset') : (r.error || 'Failed'));
   };
 
+  const refundUser = async () => {
+    if (!detail) return;
+    if (!window.confirm(`Record a refund for ${detail.email}? This downgrades them to Free and claws back any unpaid creator commission. Issue the actual money refund in Razorpay separately.`)) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/refund', { userId: detail.uid });
+    setActing(false);
+    if (r.ok) { flash('ok', r.message || 'Refund recorded'); setDetail(null); refetch(); }
+    else flash('err', r.error || 'Failed to record refund');
+  };
+
   const bulkSetPlan = async (plan: string) => {
     setActing(true);
     let failed = 0;
@@ -277,6 +287,7 @@ export default function UsersPage() {
                   {acting ? 'Working…' : 'Apply Plan Change'}
                 </button>
                 <button className="btn btn-secondary w-full" disabled={acting} onClick={resetQuota}>Reset Usage Quota</button>
+                <button className="btn btn-secondary w-full" disabled={acting} onClick={refundUser}>Record Refund &amp; Downgrade</button>
                 <button className="btn btn-danger w-full" disabled={acting} onClick={toggleBan}>
                   {detail.status === 'banned' ? 'Unban User' : 'Ban User'}
                 </button>
