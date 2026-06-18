@@ -26,10 +26,10 @@ interface ApiLog { adminEmail: string; action: string; targetUserEmail: string; 
 
 // Current desktop release shown on the dashboard. Bump on each release.
 const DESKTOP_APP = {
-  version: 'v1.3.1',
-  releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/tag/v1.3.1',
-  windowsUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.1/JavihAI-v1.3.1-portable-win-x64.exe',
-  macUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.1/JavihAI-v1.3.1-mac-universal.dmg',
+  version: 'v1.3.2',
+  releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/tag/v1.3.2',
+  windowsUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.2/JavihAI-v1.3.2-portable-win-x64.exe',
+  macUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.2/JavihAI-v1.3.2-mac-universal.dmg',
 };
 
 const tooltipStyle = { background: '#161B27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#C9D1D9' };
