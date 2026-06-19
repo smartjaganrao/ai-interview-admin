@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
 
-// Collections to wipe. Adjust the list if you add new top-level collections.
+// User data collections to wipe.
+// Intentionally EXCLUDED (important config):
+//   settings  — Groq API key, app config
+//   pricing   — plan prices & active offers
 const COLLECTIONS = [
+  'users',
   'subscriptions',
   'usage_tracking',
   'referrals',
-  'referral_codes',
+  'credit_redemptions',
   'creators',
+  'creator_attributions',
+  'creator_commissions',
   'orders',
-  'audit_logs',
-  'user_profiles',
+  'admin_logs',
   'support_tickets',
 ];
 

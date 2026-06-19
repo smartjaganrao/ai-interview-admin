@@ -203,8 +203,11 @@ export default function SettingsPage() {
             <div className="card" style={{ border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.05)' }}>
               <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Clear All Database Data</div>
               <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
-                Permanently deletes all Firestore data — subscriptions, usage tracking, referrals, creators, orders, and audit logs.
-                This is useful for a clean launch. <strong style={{ color:'#f87171' }}>This action cannot be undone.</strong>
+                Deletes all <strong>user data</strong> — accounts, subscriptions, usage, referrals, creators, orders, and logs.
+                <br />
+                <span style={{ color:'#4ade80' }}>✓ Keeps:</span> Groq API key, pricing config, and plan settings.
+                <br />
+                <strong style={{ color:'#f87171' }}>This cannot be undone.</strong>
               </div>
               <button className="btn" onClick={openClearModal}
                 style={{ background:'rgba(248,113,113,0.15)', color:'#f87171', border:'1px solid rgba(248,113,113,0.4)' }}>
@@ -259,7 +262,7 @@ export default function SettingsPage() {
               <>
                 <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Confirm: Delete All Data</div>
                 <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
-                  This will permanently delete <strong>all records</strong> from Firestore — users' subscriptions, usage, orders, referrals, and logs. There is no undo.
+                  Deletes all user data — accounts, subscriptions, usage, referrals, creators, orders, and logs. <strong style={{ color:'#4ade80' }}>Groq API key and pricing config are preserved.</strong> There is no undo.
                 </div>
                 <div className="text-sm" style={{ marginBottom:8, fontWeight:600 }}>
                   Type <code style={{ color:'#f87171' }}>DELETE ALL DATA</code> to confirm:
