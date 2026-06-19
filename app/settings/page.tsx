@@ -6,7 +6,40 @@ import AdminShell from '@/components/AdminShell';
 const ROLE_BADGE: Record<string,string> = { 'super-admin':'badge-purple', moderator:'badge-indigo', analyst:'badge-slate' };
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'org'|'aikeys'>('aikeys');
+  const [tab, setTab] = useState<'org'|'aikeys'|'danger'>('aikeys');
+
+  // ── Clear DB state ───────────────────────────────────────────────────────
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [confirmText, setConfirmText]       = useState('');
+  const [clearStatus, setClearStatus]       = useState<'idle'|'clearing'|'done'|'err'>('idle');
+  const [clearResult, setClearResult]       = useState<{ total: number; results: Record<string,number> } | null>(null);
+  const [clearError, setClearError]         = useState('');
+
+  const openClearModal = () => { setConfirmText(''); setClearStatus('idle'); setClearResult(null); setClearError(''); setShowClearModal(true); };
+
+  const runClearDb = async () => {
+    if (confirmText !== 'DELETE ALL DATA') return;
+    setClearStatus('clearing');
+    try {
+      const r = await fetch('/api/settings/clear-db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ confirm: 'DELETE ALL DATA' }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        setClearStatus('done');
+        setClearResult(data);
+      } else {
+        setClearStatus('err');
+        setClearError(data.error || 'Failed');
+      }
+    } catch {
+      setClearStatus('err');
+      setClearError('Network error');
+    }
+  };
 
   // ── AI Keys tab state ────────────────────────────────────────────────────
   const [keyInfo, setKeyInfo]       = useState<{ groqKeySet:boolean; groqKeyMasked:string; updatedAt:number|null; updatedBy:string|null } | null>(null);
@@ -58,8 +91,10 @@ export default function SettingsPage() {
   return (
     <AdminShell title="Settings" subtitle="API keys &amp; organization configuration">
       <div className="tabs">
-        {[{id:'aikeys',label:'AI Keys'},{id:'org',label:'Organization'}].map((t) => (
-          <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id as typeof tab)}>
+        {[{id:'aikeys',label:'AI Keys'},{id:'org',label:'Organization'},{id:'danger',label:'⚠ Danger Zone'}].map((t) => (
+          <button key={t.id} className={`tab${tab===t.id?' active':''}`}
+            style={t.id==='danger' ? { color: tab==='danger' ? '#f87171' : '#f87171', opacity: tab==='danger' ? 1 : 0.7 } : {}}
+            onClick={() => setTab(t.id as typeof tab)}>
             {t.label}
           </button>
         ))}
@@ -162,6 +197,23 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* ── Danger Zone ─────────────────────────────────────────────── */}
+        {tab === 'danger' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div className="card" style={{ border:'1px solid rgba(248,113,113,0.3)', background:'rgba(248,113,113,0.05)' }}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Clear All Database Data</div>
+              <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
+                Permanently deletes all Firestore data — subscriptions, usage tracking, referrals, creators, orders, and audit logs.
+                This is useful for a clean launch. <strong style={{ color:'#f87171' }}>This action cannot be undone.</strong>
+              </div>
+              <button className="btn" onClick={openClearModal}
+                style={{ background:'rgba(248,113,113,0.15)', color:'#f87171', border:'1px solid rgba(248,113,113,0.4)' }}>
+                Clear All Data…
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Organization ────────────────────────────────────────────── */}
         {tab === 'org' && (
           <div className="card" style={{ display:'flex', flexDirection:'column', gap:18 }}>
@@ -183,6 +235,65 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      {/* ── Clear DB Confirm Modal ───────────────────────────────────── */}
+      {showClearModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div className="card" style={{ width:460, border:'1px solid rgba(248,113,113,0.4)', background:'var(--surface)' }}>
+            {clearStatus === 'done' ? (
+              <>
+                <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>✅</div>
+                <div style={{ fontWeight:700, fontSize:15, textAlign:'center', marginBottom:8 }}>Database Cleared</div>
+                <div className="text-sm text-muted" style={{ textAlign:'center', marginBottom:16 }}>
+                  {clearResult?.total ?? 0} documents deleted.
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:16 }}>
+                  {Object.entries(clearResult?.results ?? {}).filter(([,n])=>n>0).map(([col,n])=>(
+                    <div key={col} className="text-sm" style={{ display:'flex', justifyContent:'space-between' }}>
+                      <span className="text-muted">{col}</span><span>{n} docs</span>
+                    </div>
+                  ))}
+                </div>
+                <button className="btn btn-primary" style={{ width:'100%' }} onClick={() => setShowClearModal(false)}>Close</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Confirm: Delete All Data</div>
+                <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
+                  This will permanently delete <strong>all records</strong> from Firestore — users' subscriptions, usage, orders, referrals, and logs. There is no undo.
+                </div>
+                <div className="text-sm" style={{ marginBottom:8, fontWeight:600 }}>
+                  Type <code style={{ color:'#f87171' }}>DELETE ALL DATA</code> to confirm:
+                </div>
+                <input
+                  className="input"
+                  placeholder="DELETE ALL DATA"
+                  value={confirmText}
+                  onChange={e => setConfirmText(e.target.value)}
+                  style={{ marginBottom:16, borderColor: confirmText === 'DELETE ALL DATA' ? '#f87171' : undefined }}
+                  autoFocus
+                />
+                {clearStatus === 'err' && (
+                  <div className="alert alert-warning" style={{ fontSize:13, marginBottom:12 }}>⚠ {clearError}</div>
+                )}
+                <div style={{ display:'flex', gap:8 }}>
+                  <button className="btn" style={{ flex:1 }} onClick={() => setShowClearModal(false)}
+                    disabled={clearStatus === 'clearing'}>
+                    Cancel
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ flex:1, background:'rgba(248,113,113,0.2)', color:'#f87171', border:'1px solid rgba(248,113,113,0.5)' }}
+                    disabled={confirmText !== 'DELETE ALL DATA' || clearStatus === 'clearing'}
+                    onClick={runClearDb}
+                  >
+                    {clearStatus === 'clearing' ? 'Deleting…' : 'Delete All Data'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
