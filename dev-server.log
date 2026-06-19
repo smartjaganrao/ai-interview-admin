@@ -42,3 +42,10 @@
  GET / 200 in 13ms (next.js: 1548µs, proxy.ts: 1928µs, application-code: 10ms)
  POST /api/auth/logout 200 in 15ms (next.js: 6ms, proxy.ts: 4ms, application-code: 5ms)
  GET / 200 in 7ms (next.js: 1637µs, proxy.ts: 1600µs, application-code: 4ms)
+ GET / 200 in 201ms (next.js: 52ms, proxy.ts: 35ms, application-code: 114ms)
+ GET / 200 in 13ms (next.js: 1299µs, proxy.ts: 1176µs, application-code: 11ms)
+ GET /tools/merge-pdf 404 in 20ms (next.js: 9ms, proxy.ts: 989µs, application-code: 10ms)
+ GET /tools/pdf-to-word 404 in 11ms (next.js: 1413µs, proxy.ts: 914µs, application-code: 9ms)
+ POST /api/razorpay/order 404 in 11ms (next.js: 1237µs, proxy.ts: 1022µs, application-code: 9ms)
+ GET / 200 in 11ms (next.js: 697µs, proxy.ts: 918µs, application-code: 9ms)
+[?25h

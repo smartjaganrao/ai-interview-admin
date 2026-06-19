@@ -34,13 +34,26 @@ async function deleteCollection(colPath: string, batchSize = 400) {
   return deleted;
 }
 
+// For collections with subcollections (e.g. usage_tracking/{uid}/days/*), Firestore
+// does not cascade document deletes to subcollections. Use recursiveDelete which
+// walks the full subtree. Count top-level docs first for the result display.
+async function deleteCollectionDeep(colPath: string): Promise<number> {
+  if (!db) return 0;
+  const snap = await db.collection(colPath).get();
+  const count = snap.size;
+  if (count > 0) {
+    await db.recursiveDelete(db.collection(colPath));
+  }
+  return count;
+}
+
 export async function POST(req: NextRequest) {
   if (!db || !auth) {
     return NextResponse.json({ error: 'Firebase not configured' }, { status: 503 });
   }
 
   // Verify super-admin session cookie
-  const cookie = req.cookies.get('admin_session')?.value;
+  const cookie = req.cookies.get('admin-session')?.value;
   if (!cookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -59,9 +72,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Confirmation text mismatch' }, { status: 400 });
   }
 
+  // usage_tracking has subcollections (usage_tracking/{uid}/days/*) that Firestore
+  // does not cascade-delete; use recursiveDelete for it.
+  const DEEP_COLLECTIONS = new Set(['usage_tracking']);
+
   const results: Record<string, number> = {};
   for (const col of COLLECTIONS) {
-    results[col] = await deleteCollection(col);
+    results[col] = await (DEEP_COLLECTIONS.has(col)
+      ? deleteCollectionDeep(col)
+      : deleteCollection(col));
   }
 
   const total = Object.values(results).reduce((a, b) => a + b, 0);
