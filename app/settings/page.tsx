@@ -56,7 +56,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <AdminShell title="Settings">
+    <AdminShell title="Settings" subtitle="API keys &amp; organization configuration">
       <div className="tabs">
         {[{id:'aikeys',label:'AI Keys'},{id:'org',label:'Organization'}].map((t) => (
           <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id as typeof tab)}>
@@ -72,7 +72,7 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* How it works */}
-            <div className="card" style={{ background: 'var(--accent-faint)', border: '1px solid var(--accent)' }}>
+            <div className="card" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
               <div className="font-semibold mb-2" style={{ fontSize: 13 }}>🔑 How the Groq key works</div>
               <div className="text-sm text-muted" style={{ lineHeight: 1.7 }}>
                 The Groq API key is stored server-side in Firestore and read by the JavihAI proxy on <strong>javihai.in</strong>.
@@ -90,7 +90,7 @@ export default function SettingsPage() {
               ) : keyInfo.groqKeySet ? (
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
-                    <code style={{ background:'var(--bg-secondary)', padding:'6px 12px', borderRadius:6, fontSize:13, flex:1, color:'var(--text-primary)', letterSpacing:'0.05em' }}>
+                    <code style={{ background:'var(--surface-2)', padding:'6px 12px', borderRadius:6, fontSize:13, flex:1, color:'var(--text)', letterSpacing:'0.05em' }}>
                       {keyInfo.groqKeyMasked}
                     </code>
                     <span className="badge badge-green">Active</span>
@@ -116,7 +116,7 @@ export default function SettingsPage() {
               <div className="text-sm text-muted mb-4">
                 Get your key from{' '}
                 <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer"
-                   style={{ color:'var(--accent)' }}>console.groq.com/keys</a>.
+                   style={{ color:'var(--primary-light)' }}>console.groq.com/keys</a>.
                 It starts with <code>gsk_</code>.
               </div>
 
@@ -151,7 +151,7 @@ export default function SettingsPage() {
                 <div className="alert alert-success" style={{ fontSize: 13 }}>✓ {saveMsg}</div>
               )}
               {saveStatus === 'err' && (
-                <div className="alert alert-error" style={{ fontSize: 13 }}>⚠ {saveMsg}</div>
+                <div className="alert alert-warning" style={{ fontSize: 13 }}>⚠ {saveMsg}</div>
               )}
 
               <div className="text-sm text-muted" style={{ marginTop: 12, lineHeight: 1.6 }}>

@@ -70,14 +70,14 @@ export default function SupportPage() {
   };
 
   return (
-    <AdminShell title="Support">
+    <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution">
       {loading ? (
         <Loader label="Loading tickets…" />
       ) : reason !== 'live' ? (
         <ErrorState reason={reason} onRetry={refetch} />
       ) : (
         <>
-          <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
           <div className="stats-grid" style={{ marginBottom: 20 }}>
             {[

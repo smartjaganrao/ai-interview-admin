@@ -72,7 +72,7 @@ export default function CreatorsPage() {
   };
 
   return (
-    <AdminShell title="Creators">
+    <AdminShell title="Creators" subtitle="Referral partners, commissions &amp; payouts">
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
@@ -84,7 +84,7 @@ export default function CreatorsPage() {
         <ErrorState reason={reason} onRetry={refetch} />
       ) : (
         <>
-          <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
           {/* Stats */}
           <div className="stats-grid" style={{ marginBottom: 20 }}>

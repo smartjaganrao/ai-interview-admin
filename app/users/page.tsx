@@ -134,7 +134,7 @@ export default function UsersPage() {
   };
 
   return (
-    <AdminShell title="Users">
+    <AdminShell title="Users" subtitle="Manage accounts, plans &amp; access">
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
@@ -146,7 +146,7 @@ export default function UsersPage() {
         <ErrorState reason={reason} onRetry={refetch} />
       ) : (
         <>
-          <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
           {/* Stats */}
           <div className="stats-grid" style={{ marginBottom: 20 }}>

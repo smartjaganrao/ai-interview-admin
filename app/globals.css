@@ -206,6 +206,7 @@ body {
 .nav-item.active {
   background: rgba(99, 102, 241, 0.12);
   color: var(--primary-light);
+  box-shadow: inset 2px 0 0 var(--primary);
 }
 
 .nav-item.active svg {
@@ -1284,6 +1285,97 @@ body {
 }
 
 /* ================================================================
+   MISSING VARIABLE ALIASES (settings.tsx legacy references)
+   ================================================================ */
+:root {
+  --accent: var(--primary-light);
+  --accent-faint: rgba(99, 102, 241, 0.08);
+  --bg-secondary: var(--surface-2);
+  --text-primary: var(--text);
+}
+
+/* ================================================================
+   TOPBAR HAMBURGER — hidden on desktop, shown on mobile
+   ================================================================ */
+.topbar-hamburger {
+  display: none;
+}
+
+/* ================================================================
+   LIVE INDICATOR — pulsing dot + badge
+   ================================================================ */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.live-indicator::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ================================================================
+   PAGE HEADER — consistent title/subtitle/actions strip
+   ================================================================ */
+.page-hdr {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-hdr-left { flex: 1; min-width: 0; }
+
+.page-hdr-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.page-hdr-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.page-hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* ================================================================
+   SIDEBAR DIVIDER — thin rule between nav groups
+   ================================================================ */
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 12px;
+}
+
+/* ================================================================
    MOBILE OVERRIDES
    ================================================================ */
 
@@ -1307,5 +1399,9 @@ body {
 
   .drawer {
     width: 100%;
+  }
+
+  .topbar-hamburger {
+    display: flex;
   }
 }

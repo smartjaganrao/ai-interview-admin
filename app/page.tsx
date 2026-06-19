@@ -26,10 +26,10 @@ interface ApiLog { adminEmail: string; action: string; targetUserEmail: string; 
 
 // Current desktop release shown on the dashboard. Bump on each release.
 const DESKTOP_APP = {
-  version: 'v1.3.3',
-  releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/tag/v1.3.3',
-  windowsUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.3/JavihAI-v1.3.3-portable-win-x64.exe',
-  macUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.3/JavihAI-v1.3.3-mac-universal.dmg',
+  version: 'v1.3.4',
+  releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/tag/v1.3.4',
+  windowsUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.4/JavihAI-v1.3.4-portable-win-x64.exe',
+  macUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.4/JavihAI-v1.3.4-mac-universal.dmg',
 };
 
 const tooltipStyle = { background: '#161B27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#C9D1D9' };
@@ -76,8 +76,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <AdminShell title="Dashboard">
-      <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+    <AdminShell title="Dashboard" subtitle="Overview of your product metrics">
+      <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
       {/* KPI Cards */}
       <div className="stats-grid">

@@ -43,8 +43,8 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <AdminShell title="Analytics">
-      <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+    <AdminShell title="Analytics" subtitle="Revenue &amp; feature usage metrics">
+      <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
       {/* Metrics (real only) */}
       <div className="stats-grid">

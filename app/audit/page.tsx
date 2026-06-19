@@ -47,14 +47,14 @@ export default function AuditPage() {
   });
 
   return (
-    <AdminShell title="Audit Logs">
+    <AdminShell title="Audit Logs" subtitle="Immutable record of all admin actions">
       {loading ? (
         <Loader label="Loading audit logs…" />
       ) : reason !== 'live' ? (
         <ErrorState reason={reason} onRetry={refetch} />
       ) : (
         <>
-          <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
           <div className="filter-bar">
             <div className="input-group" style={{ width: 280 }}>

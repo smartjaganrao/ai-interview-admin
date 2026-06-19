@@ -52,7 +52,7 @@ export default function AdminPricingPage() {
       : base;
 
   return (
-    <AdminShell title="Pricing & Offers">
+    <AdminShell title="Pricing & Offers" subtitle="Control plan prices &amp; active discounts">
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
@@ -64,7 +64,7 @@ export default function AdminPricingPage() {
         <ErrorState reason={reason} onRetry={refetch} />
       ) : (
         <div style={{ maxWidth: 720 }}>
-          <div className="mb-4"><span className="badge badge-green">● Live data</span></div>
+          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
 
           {/* Plan prices */}
           <div className="card-flat" style={{ padding: 20, marginBottom: 20 }}>
