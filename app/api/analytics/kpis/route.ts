@@ -34,10 +34,21 @@ export async function GET(request: NextRequest) {
     );
     const activeThisWeek = activeUserIds.size;
 
-    // Get MRR (monthly recurring revenue)
+    // Get MRR — prices from admin-managed settings/pricing (same source as checkout)
+    let proPrice = 499;
+    let powerPrice = 999;
+    try {
+      const pricingDoc = await db.collection('settings').doc('pricing').get();
+      if (pricingDoc.exists) {
+        const pd = pricingDoc.data() ?? {};
+        proPrice = Number(pd.plans?.pro?.monthly ?? proPrice);
+        powerPrice = Number(pd.plans?.power?.monthly ?? powerPrice);
+      }
+    } catch { /* use defaults */ }
+
     const subsSnapshot = await db.collection('subscriptions').get();
     let mrrByPlan = { free: 0, pro: 0, power: 0 };
-    const planPrices: any = { pro: 499, power: 999 };
+    const planPrices: any = { pro: proPrice, power: powerPrice };
 
     subsSnapshot.docs.forEach((doc: any) => {
       const plan = doc.data().plan || 'free';
