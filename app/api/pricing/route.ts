@@ -5,7 +5,7 @@ import { isAdminRequest, getSession } from '@/lib/session-server';
 export const dynamic = 'force-dynamic';
 
 const DEFAULTS = {
-  plans: { pro: { monthly: 499, yearly: 4990 }, power: { monthly: 999, yearly: 9990 } },
+  plans: { pro: { monthly: 0, yearly: 0 }, power: { monthly: 0, yearly: 0 } },
   offer: { active: false, label: '', percentOff: 0, appliesTo: 'all' as const, expiresAt: null as number | null },
 };
 

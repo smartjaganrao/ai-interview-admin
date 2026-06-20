@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     const activeThisWeek = activeUserIds.size;
 
     // Get MRR — prices from admin-managed settings/pricing (same source as checkout)
-    let proPrice = 499;
-    let powerPrice = 999;
+    let proPrice = 0;
+    let powerPrice = 0;
     try {
       const pricingDoc = await db.collection('settings').doc('pricing').get();
       if (pricingDoc.exists) {

@@ -17,7 +17,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const planPrices: any = { pro: 499, power: 999 };
+    // Prices from admin-managed settings/pricing
+    let proPrice = 0, powerPrice = 0;
+    try {
+      const pd = await db.collection('settings').doc('pricing').get();
+      if (pd.exists) {
+        proPrice = Number(pd.data()?.plans?.pro?.monthly ?? 0);
+        powerPrice = Number(pd.data()?.plans?.power?.monthly ?? 0);
+      }
+    } catch { /* leave at 0 */ }
+    const planPrices: any = { pro: proPrice, power: powerPrice };
 
     // Get last 12 months of revenue data
     const revenueByMonth: any = {};
