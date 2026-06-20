@@ -6,15 +6,19 @@ import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
 
+interface Message {
+  senderType: 'user' | 'admin'; senderEmail: string; message: string; timestamp: number;
+}
 interface Ticket {
   id: string|number; title: string; user: string;
   status: 'open'|'in-progress'|'resolved'; priority: 'low'|'medium'|'high'|'critical';
   category: string; created: string; assigned: string|null; messageCount: number;
+  messages: Message[];
 }
 interface ApiTicket {
   id: string; userEmail: string; title: string; status: 'open'|'in-progress'|'resolved';
   priority: 'low'|'medium'|'high'|'critical'; category: string; assignedTo: string|null;
-  createdAt: number; messageCount: number;
+  createdAt: number; messageCount: number; messages?: Message[];
 }
 
 const STATUS_BADGE: Record<string,string> = { open:'badge-indigo', 'in-progress':'badge-yellow', resolved:'badge-green' };
@@ -33,7 +37,7 @@ export default function SupportPage() {
     return arr.map((t) => ({
       id:t.id, title:t.title, user:t.userEmail||'—', status:t.status, priority:t.priority,
       category:t.category||'other', created: t.createdAt ? new Date(t.createdAt).toISOString().slice(0,10):'—',
-      assigned:t.assignedTo, messageCount:t.messageCount,
+      assigned:t.assignedTo, messageCount:t.messageCount, messages: t.messages||[],
     }));
   });
 
@@ -143,7 +147,32 @@ export default function SupportPage() {
             </div>
             <div className="text-sm text-muted">From: <span style={{ color:'var(--text)' }}>{active.user}</span></div>
             <div className="divider"/>
-            <div className="text-sm text-muted">{active.messageCount} message{active.messageCount===1?'':'s'} in this ticket.</div>
+
+            {/* Conversation thread */}
+            <div style={{ display:'flex', flexDirection:'column', gap:10, maxHeight:320, overflowY:'auto', padding:'4px 0' }}>
+              {active.messages.length === 0 ? (
+                <div className="text-sm text-muted">No messages yet.</div>
+              ) : active.messages.map((m, i) => (
+                <div key={i} style={{
+                  alignSelf: m.senderType === 'admin' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                }}>
+                  <div style={{
+                    background: m.senderType === 'admin' ? 'rgba(99,102,241,0.18)' : 'var(--surface-2)',
+                    border: m.senderType === 'admin' ? '1px solid rgba(99,102,241,0.3)' : '1px solid var(--border)',
+                    borderRadius: m.senderType === 'admin' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    padding: '8px 12px',
+                  }}>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>
+                      {m.senderType === 'admin' ? '🛡 You (admin)' : `👤 ${m.senderEmail}`}
+                      {' · '}{m.timestamp ? new Date(m.timestamp).toLocaleString() : ''}
+                    </div>
+                    <div style={{ fontSize:13, color:'var(--text)', lineHeight:1.5, whiteSpace:'pre-wrap' }}>{m.message}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="divider"/>
 
             {/* Status change */}
             <div>

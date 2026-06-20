@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       assignedTo: doc.data().assignedTo || null,
       createdAt: doc.data().createdAt || 0,
       updatedAt: doc.data().updatedAt || 0,
+      messages: doc.data().messages || [],
       messageCount: (doc.data().messages || []).length,
     }));
 
