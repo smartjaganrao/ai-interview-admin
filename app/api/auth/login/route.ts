@@ -31,17 +31,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID token required' }, { status: 400 });
     }
 
-    // Dev bypass: skip admin-claim check so local dev works without granting claims
-    // in the dev Firebase project. Double-gated — never active in production.
-    if (
-      process.env.NODE_ENV !== 'production' &&
-      process.env.NEXT_PUBLIC_ADMIN_DEV_NO_AUTH === 'true'
-    ) {
-      const devSession = { uid: 'dev', email: 'dev@local', role: 'super-admin' as const, isAdmin: true };
-      await createSession(devSession);
-      return NextResponse.json({ success: true, user: devSession }, { status: 200 });
-    }
-
     let payload;
     try {
       const result = await jwtVerify(idToken, JWKS, {
