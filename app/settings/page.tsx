@@ -3,10 +3,71 @@
 import { useState, useEffect } from 'react';
 import AdminShell from '@/components/AdminShell';
 
-const ROLE_BADGE: Record<string,string> = { 'super-admin':'badge-purple', moderator:'badge-indigo', analyst:'badge-slate' };
-
 export default function SettingsPage() {
-  const [tab, setTab] = useState<'org'|'aikeys'>('aikeys');
+  const [tab, setTab] = useState<'org'|'aikeys'|'backup'>('aikeys');
+
+  // ── Backup tab state ─────────────────────────────────────────────────────
+  const [exporting, setExporting] = useState(false);
+  const [exportMsg, setExportMsg] = useState<{ kind: 'ok'|'err'; text: string } | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importConfirm, setImportConfirm] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ kind: 'ok'|'err'; text: string } | null>(null);
+  const [importResult, setImportResult] = useState<{ restored: number; results: Record<string, number> } | null>(null);
+
+  const runExport = async () => {
+    setExporting(true);
+    setExportMsg(null);
+    try {
+      const res = await fetch('/api/settings/backup', { credentials: 'include' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Export failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `javihai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportMsg({ kind: 'ok', text: 'Backup downloaded.' });
+    } catch (e) {
+      setExportMsg({ kind: 'err', text: e instanceof Error ? e.message : 'Export failed' });
+    }
+    setExporting(false);
+  };
+
+  const runImport = async () => {
+    if (!importFile || importConfirm !== 'RESTORE') return;
+    setImporting(true);
+    setImportMsg(null);
+    setImportResult(null);
+    try {
+      const text = await importFile.text();
+      const parsed = JSON.parse(text);
+      const res = await fetch('/api/settings/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(parsed),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImportMsg({ kind: 'ok', text: `Restored ${data.restored} documents.` });
+        setImportResult({ restored: data.restored, results: data.results });
+        setImportFile(null);
+        setImportConfirm('');
+      } else {
+        setImportMsg({ kind: 'err', text: data.error || 'Import failed' });
+      }
+    } catch (e) {
+      setImportMsg({ kind: 'err', text: e instanceof Error ? `Invalid backup file: ${e.message}` : 'Import failed' });
+    }
+    setImporting(false);
+  };
 
   // ── AI Keys tab state ────────────────────────────────────────────────────
   const [keyInfo, setKeyInfo] = useState<{
@@ -107,7 +168,7 @@ export default function SettingsPage() {
   return (
     <AdminShell title="Settings" subtitle="API keys &amp; organization configuration">
       <div className="tabs">
-        {[{id:'aikeys',label:'AI Keys'},{id:'org',label:'Organization'}].map((t) => (
+        {[{id:'aikeys',label:'AI Keys'},{id:'backup',label:'Backup'},{id:'org',label:'Organization'}].map((t) => (
           <button key={t.id} className={`tab${tab===t.id?' active':''}`}
             onClick={() => setTab(t.id as typeof tab)}>
             {t.label}
@@ -303,6 +364,84 @@ export default function SettingsPage() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* ── Backup ──────────────────────────────────────────────────── */}
+        {tab === 'backup' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="card" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
+              <div className="font-semibold mb-2" style={{ fontSize: 13 }}>💾 About backups</div>
+              <div className="text-sm text-muted" style={{ lineHeight: 1.7 }}>
+                Exports every collection — users, subscriptions, usage, referrals, creators, orders, support
+                tickets, settings, and pricing — into one JSON file. Restoring overwrites any document that
+                shares an ID with the backup; documents not in the backup are left untouched (this is not a
+                wipe-then-restore). Take a fresh export before any risky operation.
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="font-semibold mb-4" style={{ fontSize: 14 }}>Export</div>
+              <div className="text-sm text-muted mb-4">Downloads a dated JSON file to your computer.</div>
+              <button className="btn btn-primary" disabled={exporting} onClick={runExport}>
+                {exporting ? 'Exporting…' : 'Download Backup'}
+              </button>
+              {exportMsg && (
+                <div className={`alert ${exportMsg.kind === 'ok' ? 'alert-success' : 'alert-warning'}`} style={{ fontSize: 13, marginTop: 12 }}>
+                  {exportMsg.kind === 'ok' ? '✓' : '⚠'} {exportMsg.text}
+                </div>
+              )}
+            </div>
+
+            <div className="card" style={{ border: '1px solid rgba(248,113,113,0.3)', background: 'rgba(248,113,113,0.05)' }}>
+              <div className="font-semibold mb-2" style={{ fontSize: 14, color: '#f87171' }}>⚠ Restore</div>
+              <div className="text-sm text-muted mb-4" style={{ lineHeight: 1.6 }}>
+                Upload a previously exported backup file. Every document in the file will <strong>overwrite</strong> the
+                current document with the same ID. This cannot be undone — take a fresh export first if unsure.
+              </div>
+              <input
+                type="file"
+                accept="application/json"
+                className="input mb-3"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              />
+              {importFile && (
+                <>
+                  <div className="text-sm" style={{ marginBottom: 8, fontWeight: 600 }}>
+                    Type <code style={{ color: '#f87171' }}>RESTORE</code> to confirm overwriting live data:
+                  </div>
+                  <input
+                    className="input mb-3"
+                    placeholder="RESTORE"
+                    value={importConfirm}
+                    onChange={(e) => setImportConfirm(e.target.value)}
+                    style={{ borderColor: importConfirm === 'RESTORE' ? '#f87171' : undefined }}
+                  />
+                </>
+              )}
+              <button
+                className="btn"
+                style={{ background: 'rgba(248,113,113,0.2)', color: '#f87171', border: '1px solid rgba(248,113,113,0.5)' }}
+                disabled={!importFile || importConfirm !== 'RESTORE' || importing}
+                onClick={runImport}
+              >
+                {importing ? 'Restoring…' : 'Restore from Backup'}
+              </button>
+              {importMsg && (
+                <div className={`alert ${importMsg.kind === 'ok' ? 'alert-success' : 'alert-warning'}`} style={{ fontSize: 13, marginTop: 12 }}>
+                  {importMsg.kind === 'ok' ? '✓' : '⚠'} {importMsg.text}
+                </div>
+              )}
+              {importResult && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 12 }}>
+                  {Object.entries(importResult.results).filter(([, n]) => n > 0).map(([col, n]) => (
+                    <div key={col} className="text-sm" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="text-muted">{col}</span><span>{n} docs</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
