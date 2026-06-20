@@ -153,19 +153,21 @@ export default function UsersPage() {
     const n = selected.length;
     if (!window.confirm(`Permanently delete ${n} selected user(s)? This cannot be undone.`)) return;
     setActing(true);
-    const r = await postAdmin('/api/users/delete', { userIds: selected });
+    const res = await fetch('/api/users/delete', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ userIds: selected }) });
+    const data = await res.json().catch(() => ({}));
     setActing(false);
     setSelected([]);
-    flash(r.ok ? 'ok' : 'err', r.ok ? `Deleted ${r.deleted} user(s)` : (r.error || 'Delete failed'));
+    flash(res.ok ? 'ok' : 'err', res.ok ? `Deleted ${data.deleted ?? n} user(s)` : (data.error || 'Delete failed'));
     refetch();
   };
 
   const runDeleteAll = async () => {
     if (deleteAllConfirm !== 'DELETE ALL DATA') return;
     setDeleteStatus('deleting');
-    const r = await postAdmin('/api/users/delete', { deleteAll: true });
-    if (r.ok) { setDeleteStatus('done'); setDeleteResult({ deleted: r.deleted, failed: r.failed }); refetch(); }
-    else { setDeleteStatus('err'); flash('err', r.error || 'Delete all failed'); setShowDeleteAllModal(false); }
+    const res = await fetch('/api/users/delete', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ deleteAll: true }) });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) { setDeleteStatus('done'); setDeleteResult({ deleted: data.deleted ?? 0, failed: data.failed ?? 0 }); refetch(); }
+    else { setDeleteStatus('err'); flash('err', data.error || 'Delete all failed'); setShowDeleteAllModal(false); }
   };
 
   return (
