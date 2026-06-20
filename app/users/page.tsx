@@ -133,6 +133,41 @@ export default function UsersPage() {
     refetch();
   };
 
+  // ── Delete ──────────────────────────────────────────────────────────────
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState('');
+  const [deleteStatus, setDeleteStatus] = useState<'idle'|'deleting'|'done'|'err'>('idle');
+  const [deleteResult, setDeleteResult] = useState<{ deleted: number; failed: number } | null>(null);
+
+  const deleteUser = async () => {
+    if (!detail) return;
+    if (!window.confirm(`Permanently delete ${detail.email}? This removes all their data and cannot be undone.`)) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/delete', { userIds: [detail.uid] });
+    setActing(false);
+    if (r.ok) { flash('ok', 'User deleted'); setDetail(null); refetch(); }
+    else flash('err', r.error || 'Delete failed');
+  };
+
+  const bulkDelete = async () => {
+    const n = selected.length;
+    if (!window.confirm(`Permanently delete ${n} selected user(s)? This cannot be undone.`)) return;
+    setActing(true);
+    const r = await postAdmin('/api/users/delete', { userIds: selected });
+    setActing(false);
+    setSelected([]);
+    flash(r.ok ? 'ok' : 'err', r.ok ? `Deleted ${r.deleted} user(s)` : (r.error || 'Delete failed'));
+    refetch();
+  };
+
+  const runDeleteAll = async () => {
+    if (deleteAllConfirm !== 'DELETE ALL DATA') return;
+    setDeleteStatus('deleting');
+    const r = await postAdmin('/api/users/delete', { deleteAll: true });
+    if (r.ok) { setDeleteStatus('done'); setDeleteResult({ deleted: r.deleted, failed: r.failed }); refetch(); }
+    else { setDeleteStatus('err'); flash('err', r.error || 'Delete all failed'); setShowDeleteAllModal(false); }
+  };
+
   return (
     <AdminShell title="Users" subtitle="Manage accounts, plans &amp; access">
       {toast && (
@@ -183,6 +218,7 @@ export default function UsersPage() {
                 <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('pro')}>Make Pro</button>
                 <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('power')}>Make Power</button>
                 <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkBan}>Ban</button>
+                <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkDelete}>Delete</button>
               </div>
             )}
             <div className="filter-bar-right">
@@ -234,11 +270,61 @@ export default function UsersPage() {
                 </tbody>
               </table>
             </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)' }}>
-              Showing {filtered.length} of {users.length} users
+            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Showing {filtered.length} of {users.length} users</span>
+              <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
+                ⚠ Delete All Users
+              </button>
             </div>
           </div>
         </>
+      )}
+
+      {/* Delete All Modal */}
+      {showDeleteAllModal && (
+        <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div className="card" style={{ width:460, border:'1px solid rgba(248,113,113,0.4)', background:'var(--surface)' }}>
+            {deleteStatus === 'done' ? (
+              <>
+                <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>✅</div>
+                <div style={{ fontWeight:700, fontSize:15, textAlign:'center', marginBottom:8 }}>All Users Deleted</div>
+                <div className="text-sm text-muted" style={{ textAlign:'center', marginBottom:16 }}>
+                  {deleteResult?.deleted ?? 0} deleted · {deleteResult?.failed ?? 0} failed
+                </div>
+                <button className="btn btn-primary" style={{ width:'100%' }} onClick={() => setShowDeleteAllModal(false)}>Close</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Delete All Users</div>
+                <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
+                  Permanently deletes <strong>all {users.length} users</strong> — accounts, subscriptions, usage, referrals, orders, and logs. <strong style={{ color:'#4ade80' }}>Groq API key and pricing config are preserved.</strong> There is no undo.
+                </div>
+                <div className="text-sm" style={{ marginBottom:8, fontWeight:600 }}>
+                  Type <code style={{ color:'#f87171' }}>DELETE ALL DATA</code> to confirm:
+                </div>
+                <input
+                  className="input"
+                  placeholder="DELETE ALL DATA"
+                  value={deleteAllConfirm}
+                  onChange={e => setDeleteAllConfirm(e.target.value)}
+                  style={{ marginBottom:16, borderColor: deleteAllConfirm === 'DELETE ALL DATA' ? '#f87171' : undefined }}
+                  autoFocus
+                />
+                <div style={{ display:'flex', gap:8 }}>
+                  <button className="btn" style={{ flex:1 }} disabled={deleteStatus === 'deleting'} onClick={() => setShowDeleteAllModal(false)}>Cancel</button>
+                  <button
+                    className="btn"
+                    style={{ flex:1, background:'rgba(248,113,113,0.2)', color:'#f87171', border:'1px solid rgba(248,113,113,0.5)' }}
+                    disabled={deleteAllConfirm !== 'DELETE ALL DATA' || deleteStatus === 'deleting'}
+                    onClick={runDeleteAll}
+                  >
+                    {deleteStatus === 'deleting' ? 'Deleting…' : 'Delete All Users'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Detail drawer */}
@@ -290,6 +376,10 @@ export default function UsersPage() {
                 <button className="btn btn-secondary w-full" disabled={acting} onClick={refundUser}>Record Refund &amp; Downgrade</button>
                 <button className="btn btn-danger w-full" disabled={acting} onClick={toggleBan}>
                   {detail.status === 'banned' ? 'Unban User' : 'Ban User'}
+                </button>
+                <button className="btn w-full" disabled={acting} onClick={deleteUser}
+                  style={{ background:'rgba(248,113,113,0.15)', color:'#f87171', border:'1px solid rgba(248,113,113,0.4)' }}>
+                  Delete User
                 </button>
               </div>
             </div>
