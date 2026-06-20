@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import { getSession } from '@/lib/session-server';
+import { getSession, isAdminRequest } from '@/lib/session-server';
 import { Resend } from 'resend';
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'JavihAI Support <onboarding@resend.dev>';
@@ -36,10 +36,10 @@ export async function POST(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.isAdmin) {
+    if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
+    const session = await getSession();
 
     if (!db) {
       return NextResponse.json(
@@ -75,8 +75,8 @@ export async function POST(
     const messages = ticketDoc.data()?.messages || [];
     messages.push({
       senderType: 'admin',
-      senderUid: session.uid,
-      senderEmail: session.email,
+      senderUid: session?.uid ?? 'admin',
+      senderEmail: session?.email ?? 'admin',
       message,
       timestamp: Date.now(),
     });
