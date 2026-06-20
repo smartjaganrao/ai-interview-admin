@@ -51,6 +51,17 @@ export default function SupportPage() {
     else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
   };
 
+  const [deleting, setDeleting] = useState(false);
+  const deleteTicket = async () => {
+    if (!active) return;
+    if (!window.confirm(`Permanently delete ticket "${active.title}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    const r = await postAdmin(`/api/support/tickets/${active.id}/delete`, {});
+    setDeleting(false);
+    if (r.ok) { setActive(null); refetch(); }
+    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
+  };
+
   const sendReply = async () => {
     if (!active||!reply.trim()) return;
     setSending(true); setSendStatus('');
@@ -117,6 +128,17 @@ export default function SupportPage() {
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <span className={`badge ${STATUS_BADGE[t.status]}`}>{t.status.replace('-',' ')}</span>
                     <div className="text-sm" style={{ color:'var(--text-dim)', marginTop:4 }}>{t.assigned||'Unassigned'}</div>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      style={{ marginTop: 6 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!window.confirm(`Permanently delete ticket "${t.title}"? This cannot be undone.`)) return;
+                        postAdmin(`/api/support/tickets/${t.id}/delete`, {}).then((r) => { if (r.ok) refetch(); });
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -131,11 +153,16 @@ export default function SupportPage() {
           <div className="drawer" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-header">
               <div className="drawer-title">Ticket #{active.id}</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setActive(null)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className="btn btn-danger btn-sm" disabled={deleting} onClick={deleteTicket}>
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+                <button className="btn btn-ghost btn-icon" onClick={() => setActive(null)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div>
               <div className="font-semibold mb-1" style={{ fontSize:15 }}>{active.title}</div>
