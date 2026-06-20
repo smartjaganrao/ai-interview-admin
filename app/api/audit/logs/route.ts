@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 
+export async function DELETE(request: NextRequest) {
+  try {
+    if (!(await isAdminRequest())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    if (!db) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+
+    const { logId, deleteAll } = (await request.json()) as { logId?: string; deleteAll?: boolean };
+
+    if (deleteAll) {
+      const snap = await db.collection('admin_logs').limit(500).get();
+      const batch = db.batch();
+      snap.docs.forEach((d: any) => batch.delete(d.ref));
+      await batch.commit();
+      return NextResponse.json({ ok: true, deleted: snap.size });
+    }
+
+    if (!logId) return NextResponse.json({ error: 'logId required' }, { status: 400 });
+    await db.collection('admin_logs').doc(logId).delete();
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Delete failed' }, { status: 500 });
+  }
+}
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {

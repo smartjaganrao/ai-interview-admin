@@ -30,6 +30,10 @@ function fmt(d: Record<string,unknown>|string): string {
 export default function AuditPage() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState('');
+  const [clearStatus, setClearStatus] = useState<'idle'|'deleting'|'done'>('idle');
 
   const url = `/api/audit/logs?limit=100${actionFilter !== 'all' ? `&action=${actionFilter}` : ''}`;
   const { data: logs, loading, reason, refetch } = useAdminData<Log[]>(url, [], (json) => {
@@ -46,8 +50,59 @@ export default function AuditPage() {
     return l.target.toLowerCase().includes(s) || l.admin.toLowerCase().includes(s);
   });
 
+  const deleteLog = async (id: string | number) => {
+    if (!window.confirm('Delete this audit entry?')) return;
+    setDeleting(String(id));
+    await fetch('/api/audit/logs', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ logId: String(id) }),
+    });
+    setDeleting(null);
+    refetch();
+  };
+
+  const clearAll = async () => {
+    if (clearConfirm !== 'CLEAR ALL') return;
+    setClearStatus('deleting');
+    await fetch('/api/audit/logs', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ deleteAll: true }),
+    });
+    setClearStatus('done');
+    setTimeout(() => {
+      setShowClearModal(false);
+      setClearConfirm('');
+      setClearStatus('idle');
+      refetch();
+    }, 1000);
+  };
+
   return (
-    <AdminShell title="Audit Logs" subtitle="Immutable record of all admin actions">
+    <AdminShell title="Audit Logs" subtitle="Record of all admin actions">
+      {/* Clear All modal */}
+      {showClearModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div className="card" style={{ maxWidth:440, width:'90%' }}>
+            <div className="font-semibold mb-2" style={{ color:'var(--error)', fontSize:16 }}>⚠ Clear All Audit Logs</div>
+            <p className="text-sm text-muted mb-4">This permanently deletes all audit log entries (up to 500 at a time). This cannot be undone.</p>
+            <p className="text-sm mb-2">Type <strong>CLEAR ALL</strong> to confirm:</p>
+            <input className="input mb-4" value={clearConfirm} onChange={e => setClearConfirm(e.target.value)} placeholder="CLEAR ALL" autoFocus />
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setShowClearModal(false); setClearConfirm(''); }}>Cancel</button>
+              <button className="btn btn-sm" style={{ background:'var(--error)', color:'#fff' }}
+                disabled={clearConfirm !== 'CLEAR ALL' || clearStatus === 'deleting'}
+                onClick={clearAll}>
+                {clearStatus === 'deleting' ? 'Clearing…' : clearStatus === 'done' ? 'Done ✓' : 'Clear All Logs'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <Loader label="Loading audit logs…" />
       ) : reason !== 'live' ? (
@@ -73,6 +128,10 @@ export default function AuditPage() {
             </select>
             <div className="filter-bar-right">
               <button className="btn btn-secondary btn-sm" onClick={refetch}>Refresh</button>
+              <button className="btn btn-sm" style={{ background:'rgba(239,68,68,0.15)', color:'#f87171', border:'1px solid rgba(239,68,68,0.3)' }}
+                onClick={() => setShowClearModal(true)}>
+                🗑 Clear All
+              </button>
             </div>
           </div>
 
@@ -80,7 +139,7 @@ export default function AuditPage() {
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
-                  <tr><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Timestamp</th><th>IP Address</th></tr>
+                  <tr><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Timestamp</th><th>IP Address</th><th></th></tr>
                 </thead>
                 <tbody>
                   {filtered.map((log) => (
@@ -91,16 +150,26 @@ export default function AuditPage() {
                       <td className="text-muted">{log.details}</td>
                       <td className="font-mono text-muted">{log.timestamp}</td>
                       <td className="font-mono" style={{ color: 'var(--text-dim)' }}>{log.ip}</td>
+                      <td>
+                        <button
+                          className="btn btn-sm"
+                          style={{ background:'rgba(239,68,68,0.1)', color:'#f87171', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 8px', fontSize:11 }}
+                          disabled={deleting === String(log.id)}
+                          onClick={() => deleteLog(log.id)}
+                        >
+                          {deleting === String(log.id) ? '…' : 'Delete'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6}><div className="empty-state"><div className="empty-state-text">{logs.length === 0 ? 'No audit entries yet' : 'No entries match your filters'}</div></div></td></tr>
+                    <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{logs.length === 0 ? 'No audit entries yet' : 'No entries match your filters'}</div></div></td></tr>
                   )}
                 </tbody>
               </table>
             </div>
             <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)' }}>
-              {filtered.length} entries — immutable log
+              {filtered.length} entries
             </div>
           </div>
         </>
