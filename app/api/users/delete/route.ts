@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
       userIds = body.userIds || [];
     }
 
+    // Never let an admin action delete the account currently performing it —
+    // this has repeatedly wiped the founder's own Firestore/Auth record
+    // during "Delete All Users" testing, forcing a fresh Google sign-in to
+    // recreate the account with zero claims each time.
+    if (session?.uid) {
+      userIds = userIds.filter(id => id !== session.uid);
+    }
+
     if (userIds.length === 0) {
       return NextResponse.json({ error: 'No users specified' }, { status: 400 });
     }
