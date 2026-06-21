@@ -44,7 +44,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  // Every admin API response reflects live Firestore reads — never let the
+  // browser or an intermediary cache serve a stale one after an add/delete.
+  if (pathname.startsWith('/api/')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  }
+  return response;
 }
 
 export const config = {

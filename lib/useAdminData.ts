@@ -43,7 +43,10 @@ export function useAdminData<T>(
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, reason: 'loading' }));
 
-    fetch(url, { credentials: 'include' })
+    // no-store: without this, the browser (and some CDNs) can serve a stale
+    // response after an admin add/delete — list pages would show pre-mutation
+    // data until a hard refresh.
+    fetch(url, { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
         if (cancelled) return;
         if (res.ok) {
