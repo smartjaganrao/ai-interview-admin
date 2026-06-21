@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, auth } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
+import { getSession } from '@/lib/session-server';
 
 // User data collections to wipe.
 // Intentionally EXCLUDED (important config):
@@ -66,26 +67,23 @@ async function deleteCollectionExcluding(colPath: string, excludeId: string, bat
 }
 
 export async function POST(req: NextRequest) {
-  if (!db || !auth) {
+  if (!db) {
     return NextResponse.json({ error: 'Firebase not configured' }, { status: 503 });
   }
 
-  // Verify super-admin session cookie
-  const cookie = req.cookies.get('admin-session')?.value;
-  if (!cookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  let callerUid = '';
-  try {
-    const decoded = await auth.verifySessionCookie(cookie, true);
-    const user = await auth.getUser(decoded.uid);
-    const role = (user.customClaims as Record<string, string> | undefined)?.role;
-    if (role !== 'super-admin') {
-      return NextResponse.json({ error: 'Forbidden — super-admin only' }, { status: 403 });
-    }
-    callerUid = decoded.uid;
-  } catch {
-    return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+  // Same session shape every other admin route uses — a plain JSON cookie
+  // set by /api/auth/login, NOT a Firebase-signed session cookie. The
+  // previous check called auth.verifySessionCookie() on this value, which
+  // always threw "Invalid session" since it's the wrong cookie format
+  // entirely — this endpoint never worked, regardless of who was logged in.
+  const session = await getSession();
+  if (!session?.isAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (session.role !== 'super-admin') {
+    return NextResponse.json({ error: 'Forbidden — super-admin only' }, { status: 403 });
+  }
+  const callerUid = session.uid;
 
   const { confirm } = await req.json();
   if (confirm !== 'DELETE ALL DATA') {
