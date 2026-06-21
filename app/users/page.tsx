@@ -11,7 +11,8 @@ interface User {
   plan: 'free' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
   joined: string; questions: number;
 }
-interface ApiUser { id: string; email: string; name: string; plan: 'free'|'pro'|'power'; createdAt: number; }
+interface ApiUser { id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number; }
+interface UserStats { total: number; active: number; paid: number; banned: number; }
 
 const PLAN_BADGE: Record<string, string> = { free:'badge-slate', pro:'badge-indigo', power:'badge-purple' };
 const STATUS_BADGE: Record<string, string> = { active:'badge-green', inactive:'badge-slate', banned:'badge-red' };
@@ -24,18 +25,23 @@ export default function UsersPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [detail, setDetail] = useState<User | null>(null);
 
-  const { data: users, loading, reason, refetch } = useAdminData<User[]>(
-    '/api/users/list?limit=100', [],
+  const { data, loading, reason, refetch } = useAdminData<{ list: User[]; stats: UserStats }>(
+    '/api/users/list?limit=100', { list: [], stats: { total: 0, active: 0, paid: 0, banned: 0 } },
     (json) => {
-      const arr = ((json as { users?: ApiUser[] }).users) || [];
-      return arr.map((u) => ({
-        uid: u.id, email: u.email, name: u.name || u.email?.split('@')[0] || 'User',
-        plan: u.plan || 'free', status: 'active' as const,
-        joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
-        questions: 0,
-      }));
+      const j = json as { users?: ApiUser[]; stats?: UserStats };
+      const arr = j.users || [];
+      return {
+        stats: j.stats || { total: arr.length, active: arr.length, paid: 0, banned: 0 },
+        list: arr.map((u) => ({
+          uid: u.id, email: u.email, name: u.name || u.email?.split('@')[0] || 'User',
+          plan: u.plan || 'free', status: (u.status as User['status']) || 'active',
+          joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
+          questions: 0,
+        })),
+      };
     }
   );
+  const users = data.list;
 
   const filtered = users.filter((u) => {
     const s = search.toLowerCase();
@@ -51,12 +57,7 @@ export default function UsersPage() {
   const toggleAll = () =>
     setSelected(selected.length === filtered.length ? [] : filtered.map((u) => u.uid));
 
-  const counts = {
-    total: users.length,
-    active: users.filter((u) => u.status === 'active').length,
-    paid: users.filter((u) => u.plan !== 'free').length,
-    banned: users.filter((u) => u.status === 'banned').length,
-  };
+  const counts = data.stats;
 
   // ── Mutations ───────────────────────────────────────────────────────────
   const [planChoice, setPlanChoice] = useState('');

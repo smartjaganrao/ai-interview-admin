@@ -50,9 +50,26 @@ export async function GET(request: NextRequest) {
     const offset   = (page - 1) * limit;
     const paginated = users.slice(offset, offset + limit);
 
+    // True counts across the WHOLE collection (not the 500-doc page-fetch
+    // cap above, and not the current plan/search filter) — so the stat
+    // cards on this page always agree with Analytics, which uses the same
+    // kind of unfiltered aggregate.
+    const [totalAgg, bannedAgg, paidAgg] = await Promise.all([
+      db.collection('users').count().get(),
+      db.collection('users').where('status', '==', 'banned').count().get(),
+      db.collection('users').where('plan', 'in', ['pro', 'power']).count().get(),
+    ]);
+    const stats = {
+      total: totalAgg.data().count,
+      banned: bannedAgg.data().count,
+      paid: paidAgg.data().count,
+      active: totalAgg.data().count - bannedAgg.data().count,
+    };
+
     return NextResponse.json({
       users:   paginated,
       total,
+      stats,
       page,
       limit,
       hasMore: offset + limit < total,
