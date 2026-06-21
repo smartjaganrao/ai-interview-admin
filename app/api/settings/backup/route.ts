@@ -5,8 +5,9 @@ import { getSession } from '@/lib/session-server';
 export const dynamic = 'force-dynamic';
 
 // Flat (non-subcollection) collections backed up wholesale.
-// usage_tracking is handled separately below — it has a months/ subcollection
-// per user that Firestore does not include in a plain collection().get().
+// usage_tracking is handled separately below — it has a days/ subcollection
+// per user (usage_tracking/{uid}/days/{YYYY-MM-DD}) that Firestore does not
+// include in a plain collection().get().
 const COLLECTIONS = [
   'users', 'subscriptions', 'referrals', 'credit_redemptions',
   'creators', 'creator_attributions', 'creator_commissions', 'creator_payouts',
@@ -32,7 +33,7 @@ function serialize(v: unknown): unknown {
 }
 
 interface DocRecord { id: string; data: unknown }
-interface UsageRecord extends DocRecord { months: DocRecord[] }
+interface UsageRecord extends DocRecord { days: DocRecord[] }
 
 /** GET — export every collection to a downloadable JSON file. */
 export async function GET() {
@@ -50,15 +51,15 @@ export async function GET() {
     collections[col] = snap.docs.map(d => ({ id: d.id, data: serialize(d.data()) }));
   }
 
-  // usage_tracking/{uid}/months/{YYYY-MM}
+  // usage_tracking/{uid}/days/{YYYY-MM-DD}
   const usageSnap = await db.collection('usage_tracking').get();
   const usage: UsageRecord[] = [];
   for (const doc of usageSnap.docs) {
-    const monthsSnap = await doc.ref.collection('months').get();
+    const daysSnap = await doc.ref.collection('days').get();
     usage.push({
       id: doc.id,
       data: serialize(doc.data()),
-      months: monthsSnap.docs.map(m => ({ id: m.id, data: serialize(m.data()) })),
+      days: daysSnap.docs.map(d => ({ id: d.id, data: serialize(d.data()) })),
     });
   }
   collections.usage_tracking = usage;
@@ -109,9 +110,9 @@ export async function POST(request: NextRequest) {
       for (const item of docs as UsageRecord[]) {
         const ref = db.collection('usage_tracking').doc(item.id);
         await ref.set((item.data as Record<string, unknown>) || {});
-        if (Array.isArray(item.months) && item.months.length > 0) {
+        if (Array.isArray(item.days) && item.days.length > 0) {
           const batch = db.batch();
-          for (const m of item.months) batch.set(ref.collection('months').doc(m.id), m.data as Record<string, unknown>);
+          for (const d of item.days) batch.set(ref.collection('days').doc(d.id), d.data as Record<string, unknown>);
           await batch.commit();
         }
       }

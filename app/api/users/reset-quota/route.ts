@@ -4,7 +4,7 @@ import { isAdminRequest, getSession } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
-/** POST { userId } — zeroes the user's usage for the current month. */
+/** POST { userId } — zeroes the user's AI usage for today. */
 export async function POST(request: NextRequest) {
   try {
     if (!(await isAdminRequest())) {
@@ -20,12 +20,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    // usage_tracking/{userId}/months/{YYYY-MM}
-    const month = new Date().toISOString().slice(0, 7);
+    // usage_tracking/{userId}/days/{YYYY-MM-DD} — matches dayKey() in
+    // landing's checkAiQuota and the desktop app's own usage.service.ts.
+    // (A previous version of this route wrote to a months/ subcollection
+    // that nothing else ever reads — this reset silently did nothing.)
+    const day = new Date().toISOString().slice(0, 10);
     await db
       .collection('usage_tracking').doc(userId)
-      .collection('months').doc(month)
-      .set({ tokensUsed: 0, voiceMinutes: 0, screenshotsUsed: 0, resetAt: Date.now() }, { merge: true });
+      .collection('days').doc(day)
+      .set({ tokensUsed: 0, voiceMinutes: 0, screenshotsUsed: 0, mockSessions: 0, resetAt: Date.now() }, { merge: false });
 
     const userDoc = await db.collection('users').doc(userId).get();
     await db.collection('admin_logs').add({
@@ -34,12 +37,12 @@ export async function POST(request: NextRequest) {
       action: 'quota_reset',
       targetUserId: userId,
       targetUserEmail: userDoc.data()?.email || '',
-      details: { month },
+      details: { day },
       timestamp: Date.now(),
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
 
-    return NextResponse.json({ success: true, message: `Quota reset for ${month}` });
+    return NextResponse.json({ success: true, message: `Quota reset for ${day}` });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to reset quota';
     console.error('[users/reset-quota]', message);
