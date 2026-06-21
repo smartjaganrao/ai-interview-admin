@@ -69,6 +69,37 @@ export default function SettingsPage() {
     setImporting(false);
   };
 
+  // ── Reset tab state ──────────────────────────────────────────────────────
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState('');
+  const [resetStatus, setResetStatus] = useState<'idle'|'resetting'|'done'|'err'>('idle');
+  const [resetResult, setResetResult] = useState<{ total: number; results: Record<string, number> } | null>(null);
+  const [resetError, setResetError] = useState('');
+
+  const runReset = async () => {
+    if (resetConfirm !== 'DELETE ALL DATA') return;
+    setResetStatus('resetting');
+    try {
+      const res = await fetch('/api/settings/clear-db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ confirm: 'DELETE ALL DATA' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetStatus('done');
+        setResetResult(data);
+      } else {
+        setResetStatus('err');
+        setResetError(data.error || 'Reset failed');
+      }
+    } catch {
+      setResetStatus('err');
+      setResetError('Network error');
+    }
+  };
+
   // ── AI Keys tab state ────────────────────────────────────────────────────
   const [keyInfo, setKeyInfo] = useState<{
     groqKeySet:boolean; groqKeyMasked:string;
@@ -440,6 +471,86 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            <div className="card" style={{ border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.06)' }}>
+              <div className="font-semibold mb-2" style={{ fontSize: 14, color: '#f87171' }}>⚠ Reset All Data</div>
+              <div className="text-sm text-muted mb-4" style={{ lineHeight: 1.6 }}>
+                Deletes every record — users, subscriptions, usage, referrals, creators, orders, support
+                tickets, and admin logs.{' '}
+                <strong style={{ color: '#4ade80' }}>Groq API key, Razorpay keys, and pricing settings are preserved</strong>{' '}
+                — you won&apos;t need to re-enter them. Your own admin account is also kept so you can&apos;t lock
+                yourself out. This cannot be undone — take a fresh export first if unsure.
+              </div>
+              <button
+                className="btn"
+                style={{ background: 'rgba(248,113,113,0.2)', color: '#f87171', border: '1px solid rgba(248,113,113,0.5)' }}
+                onClick={() => { setResetConfirm(''); setResetStatus('idle'); setResetResult(null); setShowResetModal(true); }}
+              >
+                Reset All Data…
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Reset Confirm Modal ─────────────────────────────────────── */}
+        {showResetModal && (
+          <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div className="card" style={{ width:460, border:'1px solid rgba(248,113,113,0.4)', background:'var(--surface)' }}>
+              {resetStatus === 'done' ? (
+                <>
+                  <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>✅</div>
+                  <div style={{ fontWeight:700, fontSize:15, textAlign:'center', marginBottom:8 }}>Data Reset Complete</div>
+                  <div className="text-sm text-muted" style={{ textAlign:'center', marginBottom:16 }}>
+                    {resetResult?.total ?? 0} documents deleted. API keys and pricing were preserved.
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:4, marginBottom:16 }}>
+                    {Object.entries(resetResult?.results ?? {}).filter(([,n])=>n>0).map(([col,n])=>(
+                      <div key={col} className="text-sm" style={{ display:'flex', justifyContent:'space-between' }}>
+                        <span className="text-muted">{col}</span><span>{n} docs</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="btn btn-primary" style={{ width:'100%' }} onClick={() => setShowResetModal(false)}>Close</button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#f87171', marginBottom:8 }}>⚠ Confirm: Reset All Data</div>
+                  <div className="text-sm text-muted" style={{ lineHeight:1.7, marginBottom:16 }}>
+                    Deletes all records — accounts, subscriptions, usage, referrals, creators, orders, support
+                    tickets, and logs. <strong style={{ color:'#4ade80' }}>Groq API key, Razorpay keys, and pricing config are preserved.</strong>{' '}
+                    There is no undo.
+                  </div>
+                  <div className="text-sm" style={{ marginBottom:8, fontWeight:600 }}>
+                    Type <code style={{ color:'#f87171' }}>DELETE ALL DATA</code> to confirm:
+                  </div>
+                  <input
+                    className="input"
+                    placeholder="DELETE ALL DATA"
+                    value={resetConfirm}
+                    onChange={e => setResetConfirm(e.target.value)}
+                    style={{ marginBottom:16, borderColor: resetConfirm === 'DELETE ALL DATA' ? '#f87171' : undefined }}
+                    autoFocus
+                  />
+                  {resetStatus === 'err' && (
+                    <div className="alert alert-warning" style={{ fontSize:13, marginBottom:12 }}>⚠ {resetError}</div>
+                  )}
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button className="btn" style={{ flex:1 }} onClick={() => setShowResetModal(false)}
+                      disabled={resetStatus === 'resetting'}>
+                      Cancel
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ flex:1, background:'rgba(248,113,113,0.2)', color:'#f87171', border:'1px solid rgba(248,113,113,0.5)' }}
+                      disabled={resetConfirm !== 'DELETE ALL DATA' || resetStatus === 'resetting'}
+                      onClick={runReset}
+                    >
+                      {resetStatus === 'resetting' ? 'Resetting…' : 'Reset All Data'}
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>

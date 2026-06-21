@@ -47,6 +47,24 @@ async function deleteCollectionDeep(colPath: string): Promise<number> {
   return count;
 }
 
+async function deleteCollectionExcluding(colPath: string, excludeId: string, batchSize = 400) {
+  if (!db) return 0;
+  let deleted = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const snap = await db.collection(colPath).limit(batchSize).get();
+    const docs = snap.docs.filter(d => d.id !== excludeId);
+    if (docs.length === 0) break;
+    const batch = db.batch();
+    docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    deleted += docs.length;
+    // If the only doc left in this page was the excluded one, we're done.
+    if (snap.size === 1 && snap.docs[0].id === excludeId) break;
+  }
+  return deleted;
+}
+
 export async function POST(req: NextRequest) {
   if (!db || !auth) {
     return NextResponse.json({ error: 'Firebase not configured' }, { status: 503 });
@@ -56,6 +74,7 @@ export async function POST(req: NextRequest) {
   const cookie = req.cookies.get('admin-session')?.value;
   if (!cookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  let callerUid = '';
   try {
     const decoded = await auth.verifySessionCookie(cookie, true);
     const user = await auth.getUser(decoded.uid);
@@ -63,6 +82,7 @@ export async function POST(req: NextRequest) {
     if (role !== 'super-admin') {
       return NextResponse.json({ error: 'Forbidden — super-admin only' }, { status: 403 });
     }
+    callerUid = decoded.uid;
   } catch {
     return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
   }
@@ -78,9 +98,15 @@ export async function POST(req: NextRequest) {
 
   const results: Record<string, number> = {};
   for (const col of COLLECTIONS) {
-    results[col] = await (DEEP_COLLECTIONS.has(col)
-      ? deleteCollectionDeep(col)
-      : deleteCollection(col));
+    if (col === 'users') {
+      // Never wipe the calling admin's own profile doc — this has already
+      // locked the founder out once when a different reset path did this.
+      results[col] = await deleteCollectionExcluding(col, callerUid);
+    } else {
+      results[col] = await (DEEP_COLLECTIONS.has(col)
+        ? deleteCollectionDeep(col)
+        : deleteCollection(col));
+    }
   }
 
   const total = Object.values(results).reduce((a, b) => a + b, 0);
