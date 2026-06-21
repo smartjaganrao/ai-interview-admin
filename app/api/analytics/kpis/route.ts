@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
     );
     const activeThisWeek = activeUserIds.size;
 
-    // Get MRR — prices from admin-managed settings/pricing (same source as checkout)
+    // Get MRR — current admin-configured prices, used ONLY as a fallback for
+    // legacy/simulated subscription docs that predate amount tracking.
     let proPrice = 0;
     let powerPrice = 0;
     try {
@@ -45,21 +46,34 @@ export async function GET(request: NextRequest) {
         powerPrice = Number(pd.plans?.power?.monthly ?? powerPrice);
       }
     } catch { /* use defaults */ }
+    const fallbackPrice: any = { pro: proPrice, power: powerPrice };
 
     const subsSnapshot = await db.collection('subscriptions').get();
     let mrrByPlan = { free: 0, pro: 0, power: 0 };
-    const planPrices: any = { pro: proPrice, power: powerPrice };
 
     subsSnapshot.docs.forEach((doc: any) => {
-      const plan = doc.data().plan || 'free';
-      const status = doc.data().status || 'inactive';
+      const d = doc.data();
+      const plan = d.plan || 'free';
+      const status = d.status || 'inactive';
+      if (status !== 'active' || !(plan in fallbackPrice)) return;
 
-      if (status === 'active' && plan in planPrices) {
-        mrrByPlan[plan as keyof typeof mrrByPlan] =
-          (mrrByPlan[plan as keyof typeof mrrByPlan] || 0) + planPrices[plan];
-      }
+      // Use what this subscriber actually paid, not the current list price —
+      // this stays correct across price changes and yearly billing. Only
+      // fall back to the live config price for old docs with no amount on
+      // record (e.g. pre-payment-tracking simulated subscriptions).
+      const amount = Number(d.amount) || 0;
+      const monthlyEquivalent = amount > 0
+        ? (d.billing === 'yearly' ? amount / 12 : amount)
+        : fallbackPrice[plan];
+
+      mrrByPlan[plan as keyof typeof mrrByPlan] += monthlyEquivalent;
     });
 
+    mrrByPlan = {
+      free: Math.round(mrrByPlan.free),
+      pro: Math.round(mrrByPlan.pro),
+      power: Math.round(mrrByPlan.power),
+    };
     const totalMRR = Object.values(mrrByPlan).reduce((a, b) => a + b, 0);
 
     // Get user distribution by plan
