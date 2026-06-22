@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
       plan:      (doc.data().plan      || 'free') as string,
       status:    (doc.data().status    || 'active') as string,
       createdAt: (doc.data().createdAt || 0) as number,
+      phone:           (doc.data().phone           || '') as string,
+      experienceLevel: (doc.data().experienceLevel || '') as string,
+      city:            (doc.data().city            || '') as string,
+      referralSource:  (doc.data().referralSource  || '') as string,
     }));
 
     // Apply search filter server-side before pagination

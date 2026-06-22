@@ -10,8 +10,12 @@ interface User {
   uid: string; email: string; name: string;
   plan: 'free' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
   joined: string; questions: number;
+  phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
 }
-interface ApiUser { id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number; }
+interface ApiUser {
+  id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number;
+  phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
+}
 interface UserStats { total: number; active: number; paid: number; banned: number; }
 
 const PLAN_BADGE: Record<string, string> = { free:'badge-slate', pro:'badge-indigo', power:'badge-purple' };
@@ -37,6 +41,7 @@ export default function UsersPage() {
           plan: u.plan || 'free', status: (u.status as User['status']) || 'active',
           joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
           questions: 0,
+          phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
         })),
       };
     }
@@ -356,6 +361,10 @@ export default function UsersPage() {
               {[
                 { label: 'User ID', value: detail.uid },
                 { label: 'Member Since', value: detail.joined },
+                { label: 'Mobile Number', value: detail.phone || '—' },
+                { label: 'Experience Level', value: detail.experienceLevel || '—' },
+                { label: 'City', value: detail.city || '—' },
+                { label: 'Heard About Us Via', value: detail.referralSource || '—' },
               ].map((row, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
                   <span className="text-muted text-sm">{row.label}</span>
