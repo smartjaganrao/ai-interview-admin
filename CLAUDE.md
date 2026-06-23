@@ -1,5 +1,7 @@
 @AGENTS.md
 
+See `../CLAUDE.md` for the 3-repo architecture, known Firestore gotchas, and the standard UI-change verify workflow — read it before broad exploration.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
