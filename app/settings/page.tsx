@@ -105,6 +105,7 @@ export default function SettingsPage() {
     groqKeySet:boolean; groqKeyMasked:string;
     rzpKeyIdSet:boolean; rzpKeyIdMasked:string;
     rzpSecretSet:boolean; rzpSecretMasked:string;
+    resendKeySet:boolean; resendKeyMasked:string; resendFromEmail:string;
     updatedAt:number|null; updatedBy:string|null;
   } | null>(null);
 
@@ -120,6 +121,13 @@ export default function SettingsPage() {
   const [showRzpSecret, setShowRzpSecret]     = useState(false);
   const [rzpStatus, setRzpStatus]             = useState<'idle'|'saving'|'ok'|'err'>('idle');
   const [rzpMsg, setRzpMsg]                   = useState('');
+
+  // Resend (email)
+  const [newResendKey, setNewResendKey]       = useState('');
+  const [newResendFrom, setNewResendFrom]     = useState('');
+  const [showResendKey, setShowResendKey]     = useState(false);
+  const [resendStatus, setResendStatus]       = useState<'idle'|'saving'|'ok'|'err'>('idle');
+  const [resendMsg, setResendMsg]             = useState('');
 
   useEffect(() => {
     if (tab !== 'aikeys') return;
@@ -194,6 +202,38 @@ export default function SettingsPage() {
       setRzpMsg('Network error — try again');
     }
     setTimeout(() => setRzpStatus('idle'), 4000);
+  };
+
+  const saveResendKeys = async () => {
+    if (!newResendKey.trim() && !newResendFrom.trim()) return;
+    setResendStatus('saving');
+    try {
+      const body: Record<string, string> = {};
+      if (newResendKey.trim())  body.resendApiKey   = newResendKey.trim();
+      if (newResendFrom.trim()) body.resendFromEmail = newResendFrom.trim();
+      const r = await fetch('/api/settings/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        setResendStatus('ok');
+        setResendMsg('Resend settings saved. Promotion emails will use them within 5 minutes.');
+        setNewResendKey('');
+        setNewResendFrom('');
+        setShowResendKey(false);
+        refreshKeyInfo();
+      } else {
+        setResendStatus('err');
+        setResendMsg(data.error || 'Failed to save Resend settings');
+      }
+    } catch {
+      setResendStatus('err');
+      setResendMsg('Network error — try again');
+    }
+    setTimeout(() => setResendStatus('idle'), 4000);
   };
 
   return (
@@ -392,6 +432,96 @@ export default function SettingsPage() {
               <div className="text-sm text-muted" style={{ marginTop:12, lineHeight:1.6 }}>
                 🔒 Key Secret is stored in Firestore and only read by the server. It never reaches the browser.
                 You can update Key ID and Secret independently — leave a field blank to keep the existing value.
+              </div>
+            </div>
+
+            {/* ── Resend (Email) ─────────────────────────────────────────── */}
+            <div className="card" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
+              <div className="font-semibold mb-2" style={{ fontSize: 13 }}>✉️ How the Resend key works</div>
+              <div className="text-sm text-muted" style={{ lineHeight: 1.7 }}>
+                The Resend API key powers the <strong>Promotions</strong> bulk emailer. It is stored in Firestore and read
+                server-side when you send — no redeploy or Vercel env change needed. Updates apply within 5 minutes.
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="font-semibold mb-4" style={{ fontSize: 14 }}>Current Resend Config</div>
+              {keyInfo === null ? (
+                <div className="text-muted text-sm">Loading…</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span className="text-sm text-muted" style={{ width:80, flexShrink:0 }}>API Key</span>
+                    {keyInfo.resendKeySet ? (
+                      <>
+                        <code style={{ background:'var(--surface-2)', padding:'4px 10px', borderRadius:6, fontSize:13, flex:1, color:'var(--text)', letterSpacing:'0.05em' }}>{keyInfo.resendKeyMasked}</code>
+                        <span className="badge badge-green">Active</span>
+                      </>
+                    ) : (
+                      <span className="badge badge-red">Not set</span>
+                    )}
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span className="text-sm text-muted" style={{ width:80, flexShrink:0 }}>From</span>
+                    {keyInfo.resendFromEmail ? (
+                      <code style={{ background:'var(--surface-2)', padding:'4px 10px', borderRadius:6, fontSize:13, flex:1, color:'var(--text)' }}>{keyInfo.resendFromEmail}</code>
+                    ) : (
+                      <span className="text-sm text-muted">default (onboarding@resend.dev)</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <div className="font-semibold mb-4" style={{ fontSize: 14 }}>Update Resend Settings</div>
+              <div className="text-sm text-muted mb-4">
+                Get your key from{' '}
+                <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer"
+                   style={{ color:'var(--primary-light)' }}>resend.com → API Keys</a>.
+                Verify the <code>javihai.in</code> domain under Resend → Domains so the From address can use it.
+              </div>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:12 }}>
+                <div style={{ position:'relative' }}>
+                  <input
+                    type={showResendKey ? 'text' : 'password'}
+                    placeholder="API Key  (re_…)"
+                    value={newResendKey}
+                    onChange={(e) => setNewResendKey(e.target.value)}
+                    className="input"
+                    style={{ paddingRight: 40 }}
+                    autoComplete="off"
+                  />
+                  <button
+                    onClick={() => setShowResendKey(v => !v)}
+                    style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:14 }}
+                  >
+                    {showResendKey ? '🙈' : '👁'}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="From  (e.g. JavihAI <noreply@javihai.in>)"
+                  value={newResendFrom}
+                  onChange={(e) => setNewResendFrom(e.target.value)}
+                  className="input"
+                  autoComplete="off"
+                />
+                <button
+                  className="btn btn-primary"
+                  disabled={resendStatus === 'saving' || (!newResendKey.trim() && !newResendFrom.trim())}
+                  onClick={saveResendKeys}
+                >
+                  {resendStatus === 'saving' ? 'Saving…' : 'Save Resend Settings'}
+                </button>
+              </div>
+
+              {resendStatus === 'ok' && <div className="alert alert-success" style={{ fontSize:13 }}>✓ {resendMsg}</div>}
+              {resendStatus === 'err' && <div className="alert alert-warning" style={{ fontSize:13 }}>⚠ {resendMsg}</div>}
+
+              <div className="text-sm text-muted" style={{ marginTop:12, lineHeight:1.6 }}>
+                🔒 The API key is stored in Firestore and only read by the server. Leave a field blank to keep the existing value.
               </div>
             </div>
 

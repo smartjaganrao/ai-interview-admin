@@ -3,8 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 const SESSION_COOKIE = 'admin-session';
 const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/logout', '/api/health'];
 
+// Dev-only auth bypass: lets localhost skip the Google login wall. Guarded on
+// NODE_ENV so a production build can never enable it even if the flag leaks.
+const DEV_NO_AUTH =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_ADMIN_DEV_NO_AUTH === 'true';
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (DEV_NO_AUTH) {
+    return NextResponse.next();
+  }
 
   // Skip for Next.js internals and static assets
   if (

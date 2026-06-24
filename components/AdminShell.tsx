@@ -66,6 +66,11 @@ const IconAdmins = () => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
   </svg>
 );
+const IconPromotions = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+  </svg>
+);
 const IconSignOut = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -108,6 +113,7 @@ const NAV_SECTIONS: Array<{
       { label: 'Creators', href: '/creators', icon: <IconCreators /> },
       { label: 'Pricing', href: '/pricing', icon: <IconPricing /> },
       { label: 'Announcements', href: '/announcements', icon: <IconAnnouncements /> },
+      { label: 'Promotions', href: '/promotions', icon: <IconPromotions /> },
     ],
   },
   {

@@ -22,6 +22,9 @@ export async function GET() {
     rzpKeyIdMasked:   mask(data?.razorpayKeyId),
     rzpSecretSet:     !!data?.razorpayKeySecret,
     rzpSecretMasked:  mask(data?.razorpayKeySecret),
+    resendKeySet:     !!data?.resendApiKey,
+    resendKeyMasked:  mask(data?.resendApiKey),
+    resendFromEmail:  data?.resendFromEmail ?? '',
     updatedAt:        data?.updatedAt ?? null,
     updatedBy:        data?.updatedBy ?? null,
   });
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!db) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
 
   const body = await req.json();
-  const { groqApiKey, razorpayKeyId, razorpayKeySecret } = body;
+  const { groqApiKey, razorpayKeyId, razorpayKeySecret, resendApiKey, resendFromEmail } = body;
 
   const update: Record<string, unknown> = { updatedAt: Date.now() };
   const details: Record<string, string> = {};
@@ -60,6 +63,24 @@ export async function POST(req: NextRequest) {
     }
     update.razorpayKeySecret = razorpayKeySecret;
     details.razorpayKeySecret = `${razorpayKeySecret.slice(0,4)}…${razorpayKeySecret.slice(-4)}`;
+  }
+
+  if (resendApiKey !== undefined) {
+    if (!resendApiKey || !resendApiKey.startsWith('re_')) {
+      return NextResponse.json({ error: 'Invalid Resend API key — must start with re_' }, { status: 400 });
+    }
+    update.resendApiKey = resendApiKey;
+    details.resendApiKey = `${resendApiKey.slice(0,6)}…${resendApiKey.slice(-4)}`;
+  }
+
+  if (resendFromEmail !== undefined) {
+    const from = String(resendFromEmail).trim();
+    // Accept either "name@domain" or "Display Name <name@domain>".
+    if (!from || !/.+@.+\..+/.test(from)) {
+      return NextResponse.json({ error: 'Invalid From email address' }, { status: 400 });
+    }
+    update.resendFromEmail = from;
+    details.resendFromEmail = from;
   }
 
   if (Object.keys(details).length === 0) {

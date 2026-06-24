@@ -5,6 +5,20 @@ import { Session } from './session';
 
 const SESSION_COOKIE_NAME = 'admin-session';
 
+// Dev-only auth bypass — mirrors proxy.ts. Guarded on NODE_ENV so it can never
+// activate in a production build. When on, the panel treats every request as a
+// synthetic local admin.
+const DEV_NO_AUTH =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_ADMIN_DEV_NO_AUTH === 'true';
+
+const DEV_SESSION: Session = {
+  uid: 'dev-admin',
+  email: process.env.NEXT_PUBLIC_ADMIN_DEV_EMAIL || 'smartjaganrao@gmail.com',
+  role: 'super-admin',
+  isAdmin: true,
+};
+
 export async function createSession(session: Session) {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(session), {
@@ -17,6 +31,9 @@ export async function createSession(session: Session) {
 }
 
 export async function getSession(): Promise<Session | null> {
+  if (DEV_NO_AUTH) {
+    return DEV_SESSION;
+  }
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
 
