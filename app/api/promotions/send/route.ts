@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
   const session = await getSession();
 
-  const { subject, html, confirm, plans } = await request.json();
+  const { subject, html, confirm, plans, userIds } = await request.json();
   if (!subject?.trim() || !html?.trim()) {
     return NextResponse.json({ error: 'Subject and content are required' }, { status: 400 });
   }
@@ -43,12 +43,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing send confirmation' }, { status: 400 });
   }
 
+  // Explicit user-id targeting (used by re-engagement) takes precedence over plans.
+  const explicitIds: string[] = Array.isArray(userIds)
+    ? userIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+    : [];
+  const byUserIds = explicitIds.length > 0;
+
   // Normalize the plan filter. Empty/absent => all plans.
   const selectedPlans: string[] = Array.isArray(plans)
     ? plans.filter((p: unknown): p is string => typeof p === 'string' && KNOWN_PLANS.includes(p))
     : [];
-  const targetAll = selectedPlans.length === 0;
+  const targetAll = !byUserIds && selectedPlans.length === 0;
 
+  const idSet = new Set(explicitIds);
   const usersSnap = await db.collection('users').select('email', 'status', 'plan').get();
   const recipients = Array.from(
     new Set(
@@ -56,6 +63,7 @@ export async function POST(request: NextRequest) {
         .filter((d) => {
           const u = d.data();
           if (u.status === 'banned' || !u.email) return false;
+          if (byUserIds) return idSet.has(d.id);
           if (targetAll) return true;
           return selectedPlans.includes((u.plan as string) || 'free');
         })
@@ -64,7 +72,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (recipients.length === 0) {
-    return NextResponse.json({ error: 'No eligible recipients found for the selected plans' }, { status: 400 });
+    return NextResponse.json({ error: 'No eligible recipients found for the selected audience' }, { status: 400 });
   }
 
   const resend = new Resend(resendConfig.apiKey);
@@ -92,7 +100,7 @@ export async function POST(request: NextRequest) {
   }
 
   const now = Date.now();
-  const audience = targetAll ? ['all'] : selectedPlans;
+  const audience = byUserIds ? ['segment'] : targetAll ? ['all'] : selectedPlans;
   // Store the full message (subject + html body + recipient emails) so every
   // sent promotion is permanently auditable, not just its counts.
   const sendRef = await db.collection('promotion_sends').add({

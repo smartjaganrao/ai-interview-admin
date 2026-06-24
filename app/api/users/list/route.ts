@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
+import { getActivityMap } from '@/lib/usage-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,10 @@ export async function GET(request: NextRequest) {
     // Fetch ALL matching users so search applies BEFORE pagination (bug fix:
     // previously search was applied after offset/limit, hiding results).
     // Capped at 500 to avoid unbounded reads; increase if needed.
-    const snapshot = await queryRef.orderBy('createdAt', 'desc').limit(500).get();
+    const [snapshot, activity] = await Promise.all([
+      queryRef.orderBy('createdAt', 'desc').limit(500).get(),
+      getActivityMap(),
+    ]);
 
     let users = snapshot.docs.map((doc) => ({
       id:        doc.id,
@@ -41,6 +45,8 @@ export async function GET(request: NextRequest) {
       experienceLevel: (doc.data().experienceLevel || '') as string,
       city:            (doc.data().city            || '') as string,
       referralSource:  (doc.data().referralSource  || '') as string,
+      lastActive:      Math.max(activity.get(doc.id)?.lastActive ?? 0, (doc.data().lastSeen || 0) as number),
+      activeDays:      activity.get(doc.id)?.activeDays ?? 0,
     }));
 
     // Apply search filter server-side before pagination

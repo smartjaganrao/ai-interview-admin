@@ -11,12 +11,22 @@ interface User {
   plan: 'free' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
   joined: string; questions: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
+  lastActive?: number; activeDays?: number;
 }
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
+  lastActive?: number; activeDays?: number;
 }
 interface UserStats { total: number; active: number; paid: number; banned: number; }
+
+function lastActiveLabel(ts: number): string {
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 const PLAN_BADGE: Record<string, string> = { free:'badge-slate', pro:'badge-indigo', power:'badge-purple' };
 const STATUS_BADGE: Record<string, string> = { active:'badge-green', inactive:'badge-slate', banned:'badge-red' };
@@ -42,6 +52,7 @@ export default function UsersPage() {
           joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
           questions: 0,
           phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
+          lastActive: u.lastActive, activeDays: u.activeDays,
         })),
       };
     }
@@ -248,7 +259,7 @@ export default function UsersPage() {
                     <th style={{ width: 40 }}>
                       <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                     </th>
-                    <th>User</th><th>Plan</th><th>Status</th><th>Joined</th><th style={{ width: 90 }}>Actions</th>
+                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Joined</th><th style={{ width: 90 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -268,12 +279,19 @@ export default function UsersPage() {
                       </td>
                       <td><span className={`badge ${PLAN_BADGE[u.plan]}`}>{u.plan.toUpperCase()}</span></td>
                       <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
+                      <td>
+                        {u.lastActive ? (
+                          <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
+                        ) : (
+                          <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
+                        )}
+                      </td>
                       <td className="text-muted">{u.joined}</td>
                       <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(u); setPlanChoice(''); }}>View</button></td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                    <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
                   )}
                 </tbody>
               </table>
@@ -361,6 +379,8 @@ export default function UsersPage() {
               {[
                 { label: 'User ID', value: detail.uid },
                 { label: 'Member Since', value: detail.joined },
+                { label: 'Last Active (app)', value: detail.lastActive ? `${lastActiveLabel(detail.lastActive)} (${new Date(detail.lastActive).toLocaleDateString()})` : 'Never used the app' },
+                { label: 'Active Days', value: String(detail.activeDays ?? 0) },
                 { label: 'Mobile Number', value: detail.phone || '—' },
                 { label: 'Experience Level', value: detail.experienceLevel || '—' },
                 { label: 'City', value: detail.city || '—' },
