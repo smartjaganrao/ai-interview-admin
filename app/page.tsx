@@ -24,13 +24,11 @@ const EMPTY_KPIS: Kpis = {
 interface RevPoint { month: string; mrr: number }
 interface ApiLog { adminEmail: string; action: string; targetUserEmail: string; timestamp: number }
 
-// Current desktop release shown on the dashboard. Bump on each release.
-const DESKTOP_APP = {
-  version: 'v1.3.4',
-  releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/tag/v1.3.4',
-  windowsUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.4/JavihAI-v1.3.4-portable-win-x64.exe',
-  macUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases/download/v1.3.4/JavihAI-v1.3.4-mac-universal.dmg',
-};
+// Current desktop release shown on the dashboard — fetched live (via
+// /api/release, which proxies the landing site) so this never drifts from
+// what's actually published on GitHub. No more manual bump per release.
+interface ReleaseInfo { version: string; releaseUrl: string; macUrl: string | null; winUrl: string | null }
+const EMPTY_RELEASE: ReleaseInfo = { version: '—', releaseUrl: 'https://github.com/smartjaganrao/ai-interview-helper/releases', macUrl: null, winUrl: null };
 
 const tooltipStyle = { background: '#161B27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#C9D1D9' };
 const PLAN_COLORS = ['#4B5563', '#6366F1', '#8B5CF6'];
@@ -59,6 +57,7 @@ export default function AdminDashboard() {
     '/api/audit/logs?limit=6', [],
     (j) => (j as { logs?: ApiLog[] }).logs || []
   );
+  const releaseQ = useAdminData<ReleaseInfo>('/api/release', EMPTY_RELEASE);
 
   // Gate the whole page on the primary KPIs request.
   if (kpiQ.loading) {
@@ -230,22 +229,26 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Current desktop build — bump DESKTOP_APP on each release */}
+          {/* Current desktop build — fetched live, see /api/release */}
           <div className="card">
             <div className="card-header">
               <div>
                 <div className="card-title">Desktop App</div>
                 <div className="card-subtitle">Current released build</div>
               </div>
-              <span className="badge badge-purple">{DESKTOP_APP.version}</span>
+              <span className="badge badge-purple">{releaseQ.loading ? '…' : releaseQ.data.version}</span>
             </div>
             <div className="text-muted text-sm" style={{ marginBottom: 10 }}>
               Windows 10/11 &middot; macOS (Apple Silicon + Intel)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <a href={DESKTOP_APP.releaseUrl} target="_blank" rel="noopener" className="btn btn-secondary w-full">Release notes</a>
-              <a href={DESKTOP_APP.windowsUrl} className="btn btn-ghost w-full">Download Windows (.exe)</a>
-              <a href={DESKTOP_APP.macUrl} className="btn btn-ghost w-full">Download macOS (.dmg)</a>
+              <a href={releaseQ.data.releaseUrl} target="_blank" rel="noopener" className="btn btn-secondary w-full">Release notes</a>
+              {releaseQ.data.winUrl && (
+                <a href={releaseQ.data.winUrl} className="btn btn-ghost w-full">Download Windows (.exe)</a>
+              )}
+              {releaseQ.data.macUrl && (
+                <a href={releaseQ.data.macUrl} className="btn btn-ghost w-full">Download macOS (.dmg)</a>
+              )}
             </div>
           </div>
         </div>
