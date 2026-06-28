@@ -259,7 +259,7 @@ export default function UsersPage() {
                     <th style={{ width: 40 }}>
                       <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                     </th>
-                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Joined</th><th style={{ width: 90 }}>Actions</th>
+                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Joined</th><th style={{ width: 90 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,12 +286,17 @@ export default function UsersPage() {
                           <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
                         )}
                       </td>
+                      <td>
+                        <span className={`badge ${u.activeDays ? 'badge-indigo' : 'badge-slate'}`} title="Distinct days with desktop-app usage recorded">
+                          {u.activeDays ?? 0}
+                        </span>
+                      </td>
                       <td className="text-muted">{u.joined}</td>
                       <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(u); setPlanChoice(''); }}>View</button></td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                    <tr><td colSpan={8}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
                   )}
                 </tbody>
               </table>
