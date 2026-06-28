@@ -1404,4 +1404,226 @@ body {
   .topbar-hamburger {
     display: flex;
   }
+
+  .blog-editor-body {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ================================================================
+   BLOG POST EDITOR — full-screen, two-column layout
+   ================================================================ */
+
+.blog-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg, #0B0F19);
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-editor-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.blog-editor-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+}
+
+.blog-editor-topbar-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blog-editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.blog-editor-body {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+.blog-editor-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.blog-editor-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.blog-editor-counter {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.blog-editor-counter.over {
+  color: #f87171;
+}
+
+.blog-editor-title-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.3;
+  padding: 0;
+  margin-bottom: 4px;
+}
+.blog-editor-title-input::placeholder { color: var(--text-dim); }
+
+.blog-editor-slug-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.blog-editor-slug-preview code {
+  color: var(--primary-light);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.blog-editor-slug-edit-btn {
+  font-size: 12px;
+  color: var(--primary-light);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.blog-editor-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+.blog-editor-sidebar-section {
+  margin-bottom: 24px;
+}
+.blog-editor-sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.blog-editor-dropzone {
+  position: relative;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+.blog-editor-dropzone:hover,
+.blog-editor-dropzone.drag-active {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.06);
+}
+.blog-editor-dropzone-empty {
+  padding: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.blog-editor-dropzone img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.blog-editor-dropzone-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.blog-editor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.blog-editor-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary-light);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+.blog-editor-tag-chip button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+}
+.blog-editor-tag-chip button:hover { opacity: 1; }
+
+.blog-editor-status-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
@@ -25,15 +25,30 @@ interface BlogPost {
   publishedAt: number | null;
 }
 
+const SITE_URL = 'javihai.in';
+const EXCERPT_LIMIT = 160;
+const SEO_TITLE_LIMIT = 60;
+const SEO_DESC_LIMIT = 160;
+const WORDS_PER_MINUTE = 200;
+
 function slugify(s: string): string {
   return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function wordCount(html: string): number {
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text ? text.split(' ').length : 0;
 }
 
 const EMPTY_FORM = {
   title: '', slug: '', excerpt: '', contentHtml: '',
   coverImageUrl: '' as string | null, coverImageAlt: '',
-  seoTitle: '', seoDescription: '', tagsInput: '', authorName: '', published: false,
+  seoTitle: '', seoDescription: '', tags: [] as string[], authorName: '', published: false,
 };
+
+function Counter({ value, limit }: { value: number; limit: number }) {
+  return <span className={`blog-editor-counter ${value > limit ? 'over' : ''}`}>{value}/{limit}</span>;
+}
 
 export default function BlogAdminPage() {
   const { data: posts, loading, reason, refetch } = useAdminData<BlogPost[]>(
@@ -45,26 +60,46 @@ export default function BlogAdminPage() {
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [dragActive, setDragActive] = useState(false);
   const [acting, setActing] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
 
-  const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setShowForm(true); };
+  const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setEditingSlug(false); setTagInput(''); setShowForm(true); };
   const openEdit = (p: BlogPost) => {
     setEditing(p);
     setForm({
       title: p.title, slug: p.slug, excerpt: p.excerpt, contentHtml: p.contentHtml,
       coverImageUrl: p.coverImageUrl, coverImageAlt: p.coverImageAlt,
       seoTitle: p.seoTitle, seoDescription: p.seoDescription,
-      tagsInput: (p.tags || []).join(', '), authorName: p.authorName, published: p.published,
+      tags: p.tags || [], authorName: p.authorName, published: p.published,
     });
     setSlugTouched(true);
+    setEditingSlug(false);
+    setTagInput('');
     setShowForm(true);
   };
 
   const onTitleChange = (title: string) => {
     setForm((f) => ({ ...f, title, slug: slugTouched ? f.slug : slugify(title) }));
+  };
+
+  const addTag = (raw: string) => {
+    const tag = raw.trim();
+    if (!tag) return;
+    setForm((f) => (f.tags.includes(tag) ? f : { ...f, tags: [...f.tags, tag] }));
+    setTagInput('');
+  };
+  const removeTag = (tag: string) => setForm((f) => ({ ...f, tags: f.tags.filter((t) => t !== tag) }));
+  const onTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); }
+    else if (e.key === 'Backspace' && !tagInput && form.tags.length > 0) {
+      removeTag(form.tags[form.tags.length - 1]);
+    }
   };
 
   const uploadCover = async (file: File) => {
@@ -83,18 +118,25 @@ export default function BlogAdminPage() {
     }
   };
 
-  const save = async () => {
+  const onCoverDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadCover(file);
+  };
+
+  const save = async (publish?: boolean) => {
     if (!form.title.trim() || !form.slug.trim() || !form.excerpt.trim() || !form.contentHtml.trim()) {
       flash('err', 'Title, slug, excerpt, and content are required');
       return;
     }
     setActing(true);
+    const published = publish ?? form.published;
     const payload = {
       title: form.title, slug: form.slug, excerpt: form.excerpt, contentHtml: form.contentHtml,
       coverImageUrl: form.coverImageUrl, coverImageAlt: form.coverImageAlt,
       seoTitle: form.seoTitle, seoDescription: form.seoDescription,
-      tags: form.tagsInput.split(',').map((t) => t.trim()).filter(Boolean),
-      authorName: form.authorName, published: form.published,
+      tags: form.tags, authorName: form.authorName, published,
     };
     const r = editing
       ? await (async () => {
@@ -104,7 +146,7 @@ export default function BlogAdminPage() {
         })()
       : await postAdmin('/api/blog', payload);
     setActing(false);
-    if (r.ok) { flash('ok', editing ? 'Post updated' : 'Post created'); setShowForm(false); refetch(); }
+    if (r.ok) { flash('ok', published ? 'Post published' : 'Draft saved'); setShowForm(false); refetch(); }
     else flash('err', r.error || 'Failed to save');
   };
 
@@ -119,6 +161,10 @@ export default function BlogAdminPage() {
     const res = await fetch(`/api/blog/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ published: !p.published }) });
     if (res.ok) refetch();
   };
+
+  const canSave = !!form.title.trim() && !!form.slug.trim() && !!form.excerpt.trim() && !!form.contentHtml.trim();
+  const words = wordCount(form.contentHtml);
+  const readMins = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 
   return (
     <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page">
@@ -176,68 +222,181 @@ export default function BlogAdminPage() {
       )}
 
       {showForm && (
-        <div className="drawer-overlay" onClick={() => setShowForm(false)}>
-          <div className="drawer" style={{ width: 560 }} onClick={(e) => e.stopPropagation()}>
-            <div className="drawer-header">
-              <div className="drawer-title">{editing ? 'Edit Post' : 'New Post'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowForm(false)}>
+        <div className="blog-editor-overlay">
+          <div className="blog-editor-topbar">
+            <div className="blog-editor-topbar-title">
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowForm(false)} title="Close">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
+              <span>{editing ? 'Edit Post' : 'New Post'}</span>
+              {editing && <span className={`badge ${editing.published ? 'badge-green' : 'badge-slate'}`}>{form.published ? 'published' : 'draft'}</span>}
             </div>
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Title</label>
-            <input className="input mb-3" placeholder="How to Ace a System Design Interview" value={form.title} onChange={(e) => onTitleChange(e.target.value)} autoFocus />
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Slug (URL)</label>
-            <input className="input mb-3" placeholder="how-to-ace-a-system-design-interview" value={form.slug} onChange={(e) => { setSlugTouched(true); setForm((f) => ({ ...f, slug: e.target.value })); }} />
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Excerpt</label>
-            <textarea className="input mb-3" rows={2} style={{ resize: 'none' }} placeholder="Short summary shown on the blog list and used as the fallback meta description" value={form.excerpt} onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))} />
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Cover image</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              {form.coverImageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={form.coverImageUrl} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />
-              )}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); }}
-                disabled={uploadingCover}
-              />
-              {uploadingCover && <span className="text-sm text-muted">Uploading…</span>}
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button className="btn btn-secondary btn-sm" disabled={acting || !canSave} onClick={() => save(false)}>
+                {acting ? 'Saving…' : 'Save Draft'}
+              </button>
+              <button className="btn btn-primary btn-sm" disabled={acting || !canSave} onClick={() => save(true)}>
+                {acting ? 'Publishing…' : (editing?.published || form.published) ? 'Update' : 'Publish'}
+              </button>
             </div>
-            <input className="input mb-3" placeholder="Cover image alt text" value={form.coverImageAlt} onChange={(e) => setForm((f) => ({ ...f, coverImageAlt: e.target.value }))} />
+          </div>
 
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Content</label>
-            <div className="mb-3">
-              <BlogEditor html={form.contentHtml} onChange={(html) => setForm((f) => ({ ...f, contentHtml: html }))} />
+          <div className="blog-editor-scroll">
+            <div className="blog-editor-body">
+              {/* ── Main column ──────────────────────────────────────── */}
+              <div>
+                <input
+                  className="blog-editor-title-input"
+                  placeholder="Post title"
+                  value={form.title}
+                  onChange={(e) => onTitleChange(e.target.value)}
+                  autoFocus
+                />
+                <div className="blog-editor-slug-preview">
+                  {SITE_URL}/blog/
+                  {editingSlug ? (
+                    <input
+                      className="input"
+                      style={{ flex: '1 1 auto', minWidth: 160, padding: '4px 8px', fontSize: 13 }}
+                      value={form.slug}
+                      autoFocus
+                      onChange={(e) => { setSlugTouched(true); setForm((f) => ({ ...f, slug: slugify(e.target.value) })); }}
+                      onBlur={() => setEditingSlug(false)}
+                    />
+                  ) : (
+                    <>
+                      <code>{form.slug || 'untitled'}</code>
+                      <button type="button" className="blog-editor-slug-edit-btn" onClick={() => setEditingSlug(true)}>Edit</button>
+                    </>
+                  )}
+                </div>
+
+                <div className="blog-editor-field-row">
+                  <label className="blog-editor-field-label" style={{ marginBottom: 0 }}>Excerpt</label>
+                  <Counter value={form.excerpt.length} limit={EXCERPT_LIMIT} />
+                </div>
+                <textarea
+                  className="input mb-3"
+                  rows={2}
+                  style={{ resize: 'none' }}
+                  placeholder="Short summary shown on the blog list and used as the fallback meta description"
+                  value={form.excerpt}
+                  onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
+                />
+
+                <label className="blog-editor-field-label">Content</label>
+                <BlogEditor html={form.contentHtml} onChange={(html) => setForm((f) => ({ ...f, contentHtml: html }))} />
+                <div className="blog-editor-meta">{words} words · ~{readMins} min read</div>
+              </div>
+
+              {/* ── Sidebar ──────────────────────────────────────────── */}
+              <div>
+                <div className="blog-editor-sidebar-section">
+                  <div className="blog-editor-sidebar-title">Cover image</div>
+                  <div
+                    className={`blog-editor-dropzone ${dragActive ? 'drag-active' : ''}`}
+                    onClick={() => coverInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={onCoverDrop}
+                  >
+                    {uploadingCover ? (
+                      <div className="blog-editor-dropzone-empty">Uploading…</div>
+                    ) : form.coverImageUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={form.coverImageUrl} alt="" />
+                        <button
+                          type="button"
+                          className="blog-editor-dropzone-remove"
+                          onClick={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, coverImageUrl: null })); }}
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    ) : (
+                      <div className="blog-editor-dropzone-empty">🖼 Click or drag an image<br />JPEG, PNG, or WebP — up to 4MB</div>
+                    )}
+                  </div>
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    style={{ display: 'none' }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = ''; }}
+                  />
+                  <input
+                    className="input mt-2"
+                    placeholder="Alt text (for accessibility + SEO)"
+                    value={form.coverImageAlt}
+                    onChange={(e) => setForm((f) => ({ ...f, coverImageAlt: e.target.value }))}
+                  />
+                </div>
+
+                <div className="blog-editor-sidebar-section">
+                  <div className="blog-editor-sidebar-title">Tags</div>
+                  {form.tags.length > 0 && (
+                    <div className="blog-editor-tags">
+                      {form.tags.map((tag) => (
+                        <span key={tag} className="blog-editor-tag-chip">
+                          {tag}
+                          <button type="button" onClick={() => removeTag(tag)} title="Remove tag">✕</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    className="input"
+                    placeholder="Type a tag, press Enter"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={onTagKeyDown}
+                    onBlur={() => addTag(tagInput)}
+                  />
+                </div>
+
+                <div className="blog-editor-sidebar-section">
+                  <div className="blog-editor-sidebar-title">Author</div>
+                  <input
+                    className="input"
+                    placeholder="JavihAI Team"
+                    value={form.authorName}
+                    onChange={(e) => setForm((f) => ({ ...f, authorName: e.target.value }))}
+                  />
+                </div>
+
+                <div className="blog-editor-sidebar-section">
+                  <div className="blog-editor-sidebar-title">SEO overrides (optional)</div>
+                  <div className="blog-editor-status-card">
+                    <div className="blog-editor-field-row">
+                      <label className="blog-editor-field-label" style={{ marginBottom: 0 }}>SEO title</label>
+                      <Counter value={(form.seoTitle || form.title).length} limit={SEO_TITLE_LIMIT} />
+                    </div>
+                    <input
+                      className="input mb-3"
+                      placeholder="Falls back to the title above"
+                      value={form.seoTitle}
+                      onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))}
+                    />
+                    <div className="blog-editor-field-row">
+                      <label className="blog-editor-field-label" style={{ marginBottom: 0 }}>SEO description</label>
+                      <Counter value={(form.seoDescription || form.excerpt).length} limit={SEO_DESC_LIMIT} />
+                    </div>
+                    <textarea
+                      className="input"
+                      rows={2}
+                      style={{ resize: 'none' }}
+                      placeholder="Falls back to the excerpt above"
+                      value={form.seoDescription}
+                      onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Tags (comma-separated)</label>
-            <input className="input mb-3" placeholder="system design, interview tips" value={form.tagsInput} onChange={(e) => setForm((f) => ({ ...f, tagsInput: e.target.value }))} />
-
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>Author</label>
-            <input className="input mb-3" placeholder="JavihAI Team" value={form.authorName} onChange={(e) => setForm((f) => ({ ...f, authorName: e.target.value }))} />
-
-            <div className="divider" style={{ margin: '12px 0' }} />
-            <div className="text-sm font-semibold mb-2">SEO overrides (optional)</div>
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>SEO title</label>
-            <input className="input mb-3" placeholder="Falls back to the title above" value={form.seoTitle} onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))} />
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>SEO description</label>
-            <textarea className="input mb-3" rows={2} style={{ resize: 'none' }} placeholder="Falls back to the excerpt above" value={form.seoDescription} onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))} />
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 13 }}>
-              <input type="checkbox" checked={form.published} onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))} />
-              Published — visible on the landing page
-            </label>
-
-            <button className="btn btn-primary w-full" disabled={acting || !form.title.trim() || !form.slug.trim() || !form.excerpt.trim() || !form.contentHtml.trim()} onClick={save}>
-              {acting ? 'Saving…' : editing ? 'Save Changes' : 'Create Post'}
-            </button>
           </div>
         </div>
       )}
