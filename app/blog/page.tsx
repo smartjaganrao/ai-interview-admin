@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
@@ -67,7 +67,21 @@ export default function BlogAdminPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
+
+  // Focusing the title input on open used to use the `autoFocus` attribute,
+  // which makes Safari (and sometimes Chrome) scroll-into-view more
+  // aggressively than needed — the editor would open already scrolled a
+  // section or two down, with the sidebar's first field clipped above the
+  // fold. Focusing manually with preventScroll, plus an explicit scroll-to-
+  // top, guarantees the editor always opens at the very top.
+  useEffect(() => {
+    if (!showForm) return;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    titleInputRef.current?.focus({ preventScroll: true });
+  }, [showForm]);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setEditingSlug(false); setTagInput(''); setShowForm(true); };
   const openEdit = (p: BlogPost) => {
@@ -243,16 +257,16 @@ export default function BlogAdminPage() {
             </div>
           </div>
 
-          <div className="blog-editor-scroll">
+          <div className="blog-editor-scroll" ref={scrollRef}>
             <div className="blog-editor-body">
               {/* ── Main column ──────────────────────────────────────── */}
               <div>
                 <input
+                  ref={titleInputRef}
                   className="blog-editor-title-input"
                   placeholder="Post title"
                   value={form.title}
                   onChange={(e) => onTitleChange(e.target.value)}
-                  autoFocus
                 />
                 <div className="blog-editor-slug-preview">
                   {SITE_URL}/blog/
