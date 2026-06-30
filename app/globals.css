@@ -1469,8 +1469,8 @@ body {
 
 .blog-editor-body > div:last-child {
   position: sticky;
-  top: 32px;
-  max-height: calc(100vh - 120px);
+  top: 0;
+  max-height: calc(100vh - 60px);
   overflow-y: auto;
 }
 
