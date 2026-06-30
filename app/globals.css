@@ -1467,6 +1467,13 @@ body {
   align-items: start;
 }
 
+.blog-editor-body > div:last-child {
+  position: sticky;
+  top: 32px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
 .blog-editor-field-label {
   display: block;
   font-size: 12px;
