@@ -189,7 +189,8 @@ export default function AdoptionPage() {
             {showTemplateGen && (
               <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface-2)', borderRadius: 8 }}>
                 <EmailTemplateGenerator
-                  onTemplateGenerated={(html) => {
+                  onTemplateGenerated={(subject, html) => {
+                    setSubject(subject);
                     setHtml(html);
                     setShowTemplateGen(false);
                   }}

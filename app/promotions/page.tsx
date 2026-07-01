@@ -132,7 +132,8 @@ export default function PromotionsPage() {
             {showTemplateGen && (
               <div style={{ marginBottom: 16, padding: 14, background: 'var(--surface-2)', borderRadius: 8 }}>
                 <EmailTemplateGenerator
-                  onTemplateGenerated={(html) => {
+                  onTemplateGenerated={(subject, html) => {
+                    setSubject(subject);
                     setHtml(html);
                     setShowTemplateGen(false);
                   }}

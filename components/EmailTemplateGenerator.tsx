@@ -37,13 +37,14 @@ const TEMPLATES: Template[] = [
 ];
 
 interface EmailTemplateGeneratorProps {
-  onTemplateGenerated?: (html: string, type: string) => void;
+  onTemplateGenerated?: (subject: string, html: string, type: string) => void;
 }
 
 export default function EmailTemplateGenerator({ onTemplateGenerated }: EmailTemplateGeneratorProps) {
   const [selectedType, setSelectedType] = useState<Template['type'] | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generatedSubject, setGeneratedSubject] = useState('');
   const [generatedHtml, setGeneratedHtml] = useState('');
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,9 +73,10 @@ export default function EmailTemplateGenerator({ onTemplateGenerated }: EmailTem
         throw new Error(data.error || 'Failed to generate template');
       }
 
-      const data = (await response.json()) as { html: string };
+      const data = (await response.json()) as { subject: string; html: string };
+      setGeneratedSubject(data.subject);
       setGeneratedHtml(data.html);
-      onTemplateGenerated?.(data.html, selectedType);
+      onTemplateGenerated?.(data.subject, data.html, selectedType);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
@@ -155,6 +157,8 @@ export default function EmailTemplateGenerator({ onTemplateGenerated }: EmailTem
       {/* Preview */}
       {preview && generatedHtml && (
         <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 16, background: 'var(--surface-2)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>Subject</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{generatedSubject}</div>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 12 }}>Preview</div>
           <div
             style={{
