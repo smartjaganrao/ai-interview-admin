@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import PromotionEditor from '@/components/PromotionEditor';
+import EmailTemplateGenerator from '@/components/EmailTemplateGenerator';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
@@ -58,6 +59,7 @@ export default function AdoptionPage() {
   const [subject, setSubject] = useState('');
   const [html, setHtml] = useState('');
   const [sending, setSending] = useState(false);
+  const [showTemplateGen, setShowTemplateGen] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 4500); };
 
@@ -174,7 +176,7 @@ export default function AdoptionPage() {
       {/* Re-engagement compose drawer */}
       {reengageSeg && (
         <div className="drawer-overlay" onClick={() => setReengageSeg(null)}>
-          <div className="drawer" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+          <div className="drawer" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640, maxHeight: '90vh', overflow: 'auto' }}>
             <div className="drawer-header">
               <div className="drawer-title">Re-engage {reengageSeg} users ({reengageUsers.length})</div>
               <button className="btn btn-ghost btn-icon" onClick={() => setReengageSeg(null)}>
@@ -183,11 +185,26 @@ export default function AdoptionPage() {
                 </svg>
               </button>
             </div>
+
+            {showTemplateGen && (
+              <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface-2)', borderRadius: 8 }}>
+                <EmailTemplateGenerator
+                  onTemplateGenerated={(html) => {
+                    setHtml(html);
+                    setShowTemplateGen(false);
+                  }}
+                />
+              </div>
+            )}
+
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Subject</label>
             <input className="input mb-3" placeholder="We miss you — here's what's new" value={subject} onChange={(e) => setSubject(e.target.value)} autoFocus />
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Message</label>
             <PromotionEditor html={html} onChange={setHtml} />
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button className="btn btn-secondary" onClick={() => setShowTemplateGen(!showTemplateGen)} disabled={sending}>
+                {showTemplateGen ? '✕' : '✨'} Template
+              </button>
               <button className="btn btn-secondary" onClick={() => setReengageSeg(null)} disabled={sending}>Cancel</button>
               <button className="btn btn-primary" onClick={sendReengage} disabled={sending}>
                 {sending ? 'Sending…' : `Send to ${reengageUsers.length} users`}

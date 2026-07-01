@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import PromotionEditor from '@/components/PromotionEditor';
+import EmailTemplateGenerator from '@/components/EmailTemplateGenerator';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
@@ -47,6 +48,7 @@ export default function PromotionsPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [viewing, setViewing] = useState<SendRecord | null>(null);
+  const [showTemplateGen, setShowTemplateGen] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 4500); };
 
@@ -122,7 +124,21 @@ export default function PromotionsPage() {
                 <div className="card-title">Compose</div>
                 <div className="card-subtitle">{targetCount} subscriber{targetCount === 1 ? '' : 's'} will receive this</div>
               </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplateGen(!showTemplateGen)}>
+                {showTemplateGen ? '✕ Close' : '✨ Generate Template'}
+              </button>
             </div>
+
+            {showTemplateGen && (
+              <div style={{ marginBottom: 16, padding: 14, background: 'var(--surface-2)', borderRadius: 8 }}>
+                <EmailTemplateGenerator
+                  onTemplateGenerated={(html) => {
+                    setHtml(html);
+                    setShowTemplateGen(false);
+                  }}
+                />
+              </div>
+            )}
 
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Audience</label>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
