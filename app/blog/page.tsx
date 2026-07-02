@@ -73,29 +73,28 @@ export default function BlogAdminPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
 
   // Focusing the title input on open used to use the `autoFocus` attribute,
-  // which makes Safari (and sometimes Chrome) scroll-into-view more
-  // aggressively than needed — the editor would open already scrolled a
-  // section or two down, with the title field clipped above the fold.
-  // Safari also doesn't reliably honor `focus({ preventScroll: true })` on
-  // elements inside a nested scroll container (a long-standing WebKit
-  // quirk) — it scrolls anyway, right after we reset scrollTop. Re-asserting
-  // scrollTop on the next two frames overrides that late scroll.
+  // which makes browsers scroll-into-view more aggressively than needed —
+  // the editor would open already scrolled a section or two down, with the
+  // title field clipped above the fold. `focus({ preventScroll: true })`
+  // isn't reliably honored by every engine when the focused element sits
+  // inside a nested scroll container (worst on Safari, but timing-dependent
+  // elsewhere too), and the browser's corrective scroll can land at any
+  // point after focus — not on a fixed frame count. Instead of guessing how
+  // many frames to wait, we watch the scroll container for a moment and
+  // snap any unwanted scroll back to 0.
   useEffect(() => {
     if (!showForm) return;
-    const resetScroll = () => { if (scrollRef.current) scrollRef.current.scrollTop = 0; };
-    resetScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
     titleInputRef.current?.focus({ preventScroll: true });
-    const raf1 = requestAnimationFrame(() => {
-      resetScroll();
-      const raf2 = requestAnimationFrame(resetScroll);
-      rafRef.current = raf2;
-    });
-    rafRef.current = raf1;
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    const snapToTop = () => { if (el.scrollTop !== 0) el.scrollTop = 0; };
+    el.addEventListener('scroll', snapToTop);
+    const timer = setTimeout(() => el.removeEventListener('scroll', snapToTop), 500);
+    return () => { el.removeEventListener('scroll', snapToTop); clearTimeout(timer); };
   }, [showForm]);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setEditingSlug(false); setTagInput(''); setShowForm(true); };
