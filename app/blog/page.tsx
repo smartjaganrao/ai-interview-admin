@@ -73,18 +73,29 @@ export default function BlogAdminPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
 
   // Focusing the title input on open used to use the `autoFocus` attribute,
   // which makes Safari (and sometimes Chrome) scroll-into-view more
   // aggressively than needed — the editor would open already scrolled a
-  // section or two down, with the sidebar's first field clipped above the
-  // fold. Focusing manually with preventScroll, plus an explicit scroll-to-
-  // top, guarantees the editor always opens at the very top.
+  // section or two down, with the title field clipped above the fold.
+  // Safari also doesn't reliably honor `focus({ preventScroll: true })` on
+  // elements inside a nested scroll container (a long-standing WebKit
+  // quirk) — it scrolls anyway, right after we reset scrollTop. Re-asserting
+  // scrollTop on the next two frames overrides that late scroll.
   useEffect(() => {
     if (!showForm) return;
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    const resetScroll = () => { if (scrollRef.current) scrollRef.current.scrollTop = 0; };
+    resetScroll();
     titleInputRef.current?.focus({ preventScroll: true });
+    const raf1 = requestAnimationFrame(() => {
+      resetScroll();
+      const raf2 = requestAnimationFrame(resetScroll);
+      rafRef.current = raf2;
+    });
+    rafRef.current = raf1;
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [showForm]);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setEditingSlug(false); setTagInput(''); setShowForm(true); };
