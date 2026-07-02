@@ -66,6 +66,10 @@ export default function BlogAdminPage() {
   const [acting, setActing] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [genIdea, setGenIdea] = useState('');
+  const [genTone, setGenTone] = useState('conversational but sharp');
+  const [genLength, setGenLength] = useState<'short' | 'medium' | 'long'>('medium');
+  const [generating, setGenerating] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -171,6 +175,41 @@ export default function BlogAdminPage() {
     else flash('err', 'Failed to delete');
   };
 
+  const generateWithAI = async () => {
+    if (!genIdea.trim()) { flash('err', 'Enter a blog idea first'); return; }
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/blog/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ idea: genIdea, tone: genTone, length: genLength }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.post) {
+        const p = data.post;
+        setForm((f) => ({
+          ...f,
+          title: p.title,
+          slug: p.slug,
+          excerpt: p.excerpt,
+          contentHtml: p.contentHtml,
+          seoTitle: p.seoTitle,
+          seoDescription: p.seoDescription,
+          tags: p.tags || [],
+        }));
+        setSlugTouched(true);
+        flash('ok', 'Draft generated — review before publishing');
+      } else {
+        flash('err', data.error || 'Generation failed');
+      }
+    } catch {
+      flash('err', 'Generation failed — could not reach the generator');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const togglePublished = async (p: BlogPost) => {
     const res = await fetch(`/api/blog/${p.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ published: !p.published }) });
     if (res.ok) refetch();
@@ -261,6 +300,48 @@ export default function BlogAdminPage() {
             <div className="blog-editor-body">
               {/* ── Main column ──────────────────────────────────────── */}
               <div>
+                <div className="blog-editor-sidebar-section" style={{ marginBottom: 20 }}>
+                  <div className="blog-editor-sidebar-title">✨ Generate with AI</div>
+                  <textarea
+                    className="input mb-2"
+                    rows={2}
+                    style={{ resize: 'none' }}
+                    placeholder="Describe the post idea, e.g. &quot;why system design interviews trip up freshers even when they know DSA&quot;"
+                    value={genIdea}
+                    onChange={(e) => setGenIdea(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <input
+                      className="input"
+                      style={{ flex: '1 1 160px' }}
+                      placeholder="Tone (optional)"
+                      value={genTone}
+                      onChange={(e) => setGenTone(e.target.value)}
+                    />
+                    <select
+                      className="input"
+                      style={{ flex: '0 0 140px' }}
+                      value={genLength}
+                      onChange={(e) => setGenLength(e.target.value as 'short' | 'medium' | 'long')}
+                    >
+                      <option value="short">Short (~700w)</option>
+                      <option value="medium">Medium (~1200w)</option>
+                      <option value="long">Long (~2000w)</option>
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={generating || !genIdea.trim()}
+                    onClick={generateWithAI}
+                  >
+                    {generating ? 'Writing…' : 'Generate draft'}
+                  </button>
+                  <div className="text-sm text-muted" style={{ marginTop: 6 }}>
+                    Fills in title, excerpt, content, SEO fields, and tags below. Always review before publishing.
+                  </div>
+                </div>
+
                 <input
                   ref={titleInputRef}
                   className="blog-editor-title-input"
