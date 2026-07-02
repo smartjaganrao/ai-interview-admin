@@ -300,48 +300,6 @@ export default function BlogAdminPage() {
             <div className="blog-editor-body">
               {/* ── Main column ──────────────────────────────────────── */}
               <div>
-                <div className="blog-editor-sidebar-section" style={{ marginBottom: 20 }}>
-                  <div className="blog-editor-sidebar-title">✨ Generate with AI</div>
-                  <textarea
-                    className="input mb-2"
-                    rows={2}
-                    style={{ resize: 'none' }}
-                    placeholder="Describe the post idea, e.g. &quot;why system design interviews trip up freshers even when they know DSA&quot;"
-                    value={genIdea}
-                    onChange={(e) => setGenIdea(e.target.value)}
-                  />
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <input
-                      className="input"
-                      style={{ flex: '1 1 160px' }}
-                      placeholder="Tone (optional)"
-                      value={genTone}
-                      onChange={(e) => setGenTone(e.target.value)}
-                    />
-                    <select
-                      className="input"
-                      style={{ flex: '0 0 140px' }}
-                      value={genLength}
-                      onChange={(e) => setGenLength(e.target.value as 'short' | 'medium' | 'long')}
-                    >
-                      <option value="short">Short (~700w)</option>
-                      <option value="medium">Medium (~1200w)</option>
-                      <option value="long">Long (~2000w)</option>
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    disabled={generating || !genIdea.trim()}
-                    onClick={generateWithAI}
-                  >
-                    {generating ? 'Writing…' : 'Generate draft'}
-                  </button>
-                  <div className="text-sm text-muted" style={{ marginTop: 6 }}>
-                    Fills in title, excerpt, content, SEO fields, and tags below. Always review before publishing.
-                  </div>
-                </div>
-
                 <input
                   ref={titleInputRef}
                   className="blog-editor-title-input"
@@ -380,6 +338,49 @@ export default function BlogAdminPage() {
                   value={form.excerpt}
                   onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
                 />
+
+                <div className="card mb-3">
+                  <div className="blog-editor-sidebar-title" style={{ marginBottom: 12 }}>✨ Generate with AI</div>
+                  <textarea
+                    className="input mb-2"
+                    rows={2}
+                    style={{ resize: 'none' }}
+                    placeholder="Describe the post idea, e.g. &quot;why system design interviews trip up freshers even when they know DSA&quot;"
+                    value={genIdea}
+                    onChange={(e) => setGenIdea(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      className="input"
+                      style={{ flex: '1 1 160px' }}
+                      placeholder="Tone (optional)"
+                      value={genTone}
+                      onChange={(e) => setGenTone(e.target.value)}
+                    />
+                    <select
+                      className="input"
+                      style={{ flex: '0 0 140px' }}
+                      value={genLength}
+                      onChange={(e) => setGenLength(e.target.value as 'short' | 'medium' | 'long')}
+                    >
+                      <option value="short">Short (~700w)</option>
+                      <option value="medium">Medium (~1200w)</option>
+                      <option value="long">Long (~2000w)</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      style={{ flex: '0 0 auto' }}
+                      disabled={generating || !genIdea.trim()}
+                      onClick={generateWithAI}
+                    >
+                      {generating ? 'Writing…' : 'Generate draft'}
+                    </button>
+                  </div>
+                  <div className="text-sm text-muted" style={{ marginTop: 10 }}>
+                    Fills in the title and excerpt above, the content below, and the tags/SEO fields in the sidebar. Always review before publishing.
+                  </div>
+                </div>
 
                 <label className="blog-editor-field-label">Content</label>
                 <BlogEditor html={form.contentHtml} onChange={(html) => setForm((f) => ({ ...f, contentHtml: html }))} />
