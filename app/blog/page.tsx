@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
@@ -284,7 +285,14 @@ export default function BlogAdminPage() {
         </>
       )}
 
-      {showForm && (
+      {showForm && typeof document !== 'undefined' && createPortal(
+        // Rendered via portal straight to <body> — this overlay uses
+        // position: fixed to cover the whole viewport, but Safari
+        // miscomputes fixed positioning for elements nested inside a
+        // scrollable ancestor (here, .admin-content's overflow-y: auto),
+        // anchoring it to that container instead of the real viewport.
+        // Portaling escapes the scrollable ancestor entirely so it's
+        // pinned correctly in every browser, not just a Safari patch.
         <div className="blog-editor-overlay">
           <div className="blog-editor-topbar">
             <div className="blog-editor-topbar-title">
@@ -504,7 +512,8 @@ export default function BlogAdminPage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </AdminShell>
   );
