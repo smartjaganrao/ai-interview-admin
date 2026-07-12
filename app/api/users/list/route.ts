@@ -29,8 +29,18 @@ export async function GET(request: NextRequest) {
     // Fetch ALL matching users so search applies BEFORE pagination (bug fix:
     // previously search was applied after offset/limit, hiding results).
     // Capped at 500 to avoid unbounded reads; increase if needed.
+    //
+    // Deliberately NOT using .orderBy('createdAt', 'desc') here — Firestore
+    // silently excludes any document missing the ordered field from the
+    // result set entirely (it doesn't sort it last, it just isn't returned).
+    // Any user doc written without createdAt (partial signup, a webhook
+    // race, an admin-created doc) would vanish from this list while still
+    // being counted by the .count() aggregates below — exactly the "total
+    // says 24, list shows 20, newest users missing" bug. Sorting in memory
+    // with a guaranteed fallback (Firestore's own doc-creation time) means
+    // every user is always included.
     const [snapshot, activity] = await Promise.all([
-      queryRef.orderBy('createdAt', 'desc').limit(500).get(),
+      queryRef.limit(500).get(),
       getActivityMap(),
     ]);
 
@@ -40,7 +50,7 @@ export async function GET(request: NextRequest) {
       name:      (doc.data().name      || '') as string,
       plan:      (doc.data().plan      || 'free') as string,
       status:    (doc.data().status    || 'active') as string,
-      createdAt: (doc.data().createdAt || 0) as number,
+      createdAt: (doc.data().createdAt as number) || doc.createTime.toMillis(),
       phone:           (doc.data().phone           || '') as string,
       experienceLevel: (doc.data().experienceLevel || '') as string,
       city:            (doc.data().city            || '') as string,
@@ -48,6 +58,8 @@ export async function GET(request: NextRequest) {
       lastActive:      Math.max(activity.get(doc.id)?.lastActive ?? 0, (doc.data().lastSeen || 0) as number),
       activeDays:      activity.get(doc.id)?.activeDays ?? 0,
     }));
+
+    users.sort((a, b) => b.createdAt - a.createdAt);
 
     // Apply search filter server-side before pagination
     if (search) {
