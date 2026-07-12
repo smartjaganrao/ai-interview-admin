@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
-import { getActivityMap } from '@/lib/usage-activity';
+import { getActivityMap, segmentFor } from '@/lib/usage-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,11 +69,23 @@ export async function GET(request: NextRequest) {
       db.collection('users').where('status', '==', 'banned').count().get(),
       db.collection('users').where('plan', 'in', ['pro', 'power']).count().get(),
     ]);
+    // "Active" means actually used the desktop app recently (last 30 days),
+    // not merely "not banned" — the previous total-minus-banned formula
+    // made this stat always equal Total, even when every visible row said
+    // "Never used". `activity` already holds every user with at least one
+    // usage day (from the collectionGroup('days') read above), so this is
+    // a real signal computed with no extra reads.
+    const now = Date.now();
+    let activeCount = 0;
+    for (const a of activity.values()) {
+      const segment = segmentFor(a.lastActive, now);
+      if (segment === 'active7' || segment === 'active30') activeCount++;
+    }
     const stats = {
       total: totalAgg.data().count,
       banned: bannedAgg.data().count,
       paid: paidAgg.data().count,
-      active: totalAgg.data().count - bannedAgg.data().count,
+      active: activeCount,
     };
 
     return NextResponse.json({
