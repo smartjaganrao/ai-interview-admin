@@ -78,6 +78,7 @@ export default function UsersPage() {
   // ── Mutations ───────────────────────────────────────────────────────────
   const [planChoice, setPlanChoice] = useState('');
   const [acting, setActing] = useState(false);
+  const [inlineChanging, setInlineChanging] = useState<string | null>(null);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => {
     setToast({ kind, text });
@@ -90,6 +91,14 @@ export default function UsersPage() {
     const r = await postAdmin('/api/users/upgrade', { userId: detail.uid, newPlan: planChoice });
     setActing(false);
     if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); setPlanChoice(''); refetch(); }
+    else flash('err', r.error || 'Failed to change plan');
+  };
+
+  const changePlanInline = async (uid: string, newPlan: string) => {
+    setInlineChanging(uid);
+    const r = await postAdmin('/api/users/upgrade', { userId: uid, newPlan });
+    setInlineChanging(null);
+    if (r.ok) { flash('ok', `Plan → ${newPlan}`); refetch(); }
     else flash('err', r.error || 'Failed to change plan');
   };
 
@@ -281,7 +290,19 @@ export default function UsersPage() {
                           </div>
                         </div>
                       </td>
-                      <td><span className={`badge ${PLAN_BADGE[u.plan]}`}>{u.plan.toUpperCase()}</span></td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <select
+                          className="input"
+                          style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
+                          value={u.plan}
+                          disabled={inlineChanging === u.uid}
+                          onChange={(e) => changePlanInline(u.uid, e.target.value)}
+                        >
+                          <option value="free">FREE</option>
+                          <option value="pro">PRO</option>
+                          <option value="power">POWER</option>
+                        </select>
+                      </td>
                       <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
                       <td>
                         {u.lastActive ? (
