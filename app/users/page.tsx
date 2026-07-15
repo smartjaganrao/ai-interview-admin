@@ -256,16 +256,20 @@ export default function UsersPage() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th style={{ width: 32, color: 'var(--text-muted)', fontSize: 11 }}>#</th>
                     <th style={{ width: 40 }}>
                       <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                     </th>
-                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Joined</th><th style={{ width: 90 }}>Actions</th>
+                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Joined</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((u) => (
-                    <tr key={u.uid}>
-                      <td><input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/></td>
+                  {filtered.map((u, idx) => (
+                    <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); }}>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
+                      </td>
                       <td>
                         <div className="flex items-center gap-3">
                           <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
@@ -292,7 +296,6 @@ export default function UsersPage() {
                         </span>
                       </td>
                       <td className="text-muted">{u.joined}</td>
-                      <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(u); setPlanChoice(''); }}>View</button></td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
