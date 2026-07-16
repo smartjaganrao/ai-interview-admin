@@ -1,0 +1,692 @@
+{
+  "communities": {
+    "0": [
+      "app_login_page",
+      "app_login_page_loginform",
+      "app_login_page_loginpage",
+      "app_settings_page",
+      "app_settings_page_settingspage",
+      "components_adminshell",
+      "components_adminshell_adminshell",
+      "components_adminshell_bottom_nav",
+      "components_adminshell_iconadmins",
+      "components_adminshell_iconanalytics",
+      "components_adminshell_iconannouncements",
+      "components_adminshell_iconappusage",
+      "components_adminshell_iconaudit",
+      "components_adminshell_iconbell",
+      "components_adminshell_iconblog",
+      "components_adminshell_iconcreators",
+      "components_adminshell_icondashboard",
+      "components_adminshell_iconmenu",
+      "components_adminshell_iconpricing",
+      "components_adminshell_iconpromotions",
+      "components_adminshell_iconsettings",
+      "components_adminshell_iconsignout",
+      "components_adminshell_iconsupport",
+      "components_adminshell_iconusers",
+      "components_adminshell_nav_sections",
+      "components_adminshell_notif_icon",
+      "components_adminshell_notificationbell",
+      "components_adminshell_notificationitem",
+      "components_adminshell_relativetime",
+      "components_adminshell_sidebar",
+      "components_topnav",
+      "components_topnav_topnav",
+      "components_topnav_topnavprops",
+      "hooks_useadminauth",
+      "hooks_useadminauth_useadminauth",
+      "lib_firebase_client",
+      "lib_firebase_client_auth",
+      "lib_firebase_client_db",
+      "lib_firebase_client_firebaseconfig",
+      "lib_firebase_client_googleprovider",
+      "lib_firebase_client_loginwithgoogle",
+      "lib_firebase_client_logout",
+      "lib_firebase_client_onauthstatechange"
+    ],
+    "1": [
+      "app_api_analytics_cohorts_route",
+      "app_api_analytics_cohorts_route_get",
+      "app_api_announcements_id_route",
+      "app_api_announcements_id_route_delete",
+      "app_api_announcements_id_route_patch",
+      "app_api_blog_id_route",
+      "app_api_blog_id_route_delete",
+      "app_api_blog_id_route_patch",
+      "app_api_creators_payout_route",
+      "app_api_creators_payout_route_post",
+      "app_api_creators_suspend_route",
+      "app_api_creators_suspend_route_post",
+      "app_api_health_route",
+      "app_api_health_route_get",
+      "app_api_moderation_messages_messageid_delete_route",
+      "app_api_moderation_messages_messageid_delete_route_post",
+      "app_api_moderation_messages_route",
+      "app_api_moderation_messages_route_get",
+      "app_api_notifications_mark_read_route",
+      "app_api_notifications_mark_read_route_post",
+      "app_api_support_tickets_ticketid_delete_route",
+      "app_api_support_tickets_ticketid_delete_route_post",
+      "app_api_support_tickets_ticketid_update_route",
+      "app_api_support_tickets_ticketid_update_route_post",
+      "app_api_users_ban_route",
+      "app_api_users_ban_route_post",
+      "app_api_users_refund_route",
+      "app_api_users_refund_route_post",
+      "app_api_users_reset_quota_route",
+      "app_api_users_reset_quota_route_post",
+      "app_api_users_upgrade_route",
+      "app_api_users_upgrade_route_post",
+      "lib_firebase_admin",
+      "lib_session_server_getsession"
+    ],
+    "2": [
+      "app_api_analytics_api_usage_route",
+      "app_api_analytics_api_usage_route_get",
+      "app_api_analytics_kpis_route",
+      "app_api_analytics_kpis_route_get",
+      "app_api_analytics_revenue_route",
+      "app_api_analytics_revenue_route_get",
+      "app_api_announcements_route",
+      "app_api_announcements_route_get",
+      "app_api_announcements_route_post",
+      "app_api_audit_logs_route",
+      "app_api_audit_logs_route_delete",
+      "app_api_audit_logs_route_get",
+      "app_api_blog_generate_route",
+      "app_api_blog_generate_route_post",
+      "app_api_creators_list_route",
+      "app_api_creators_list_route_get",
+      "app_api_email_generate_template_route",
+      "app_api_email_generate_template_route_post",
+      "app_api_pricing_route",
+      "app_api_pricing_route_defaults",
+      "app_api_pricing_route_get",
+      "app_api_pricing_route_post",
+      "app_api_release_route",
+      "app_api_release_route_get",
+      "app_api_settings_api_keys_route",
+      "app_api_settings_api_keys_route_get",
+      "app_api_settings_api_keys_route_mask",
+      "app_api_settings_api_keys_route_post",
+      "app_api_support_tickets_route",
+      "app_api_support_tickets_route_get",
+      "lib_session_server_isadminrequest"
+    ],
+    "3": [
+      "axios",
+      "firebase",
+      "firebase_admin",
+      "jose",
+      "js_cookie",
+      "next",
+      "package_dependencies",
+      "package_dependencies_axios",
+      "package_dependencies_firebase",
+      "package_dependencies_firebase_admin",
+      "package_dependencies_jose",
+      "package_dependencies_js_cookie",
+      "package_dependencies_next",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_recharts",
+      "package_dependencies_resend",
+      "package_dependencies_tiptap_extension_image",
+      "package_dependencies_tiptap_extension_link",
+      "package_dependencies_tiptap_extension_text_align",
+      "package_dependencies_tiptap_extension_underline",
+      "package_dependencies_tiptap_react",
+      "package_dependencies_tiptap_starter_kit",
+      "react",
+      "react_dom",
+      "recharts",
+      "resend",
+      "tiptap_extension_link",
+      "tiptap_extension_underline",
+      "tiptap_react",
+      "tiptap_starter_kit"
+    ],
+    "4": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_esnext",
+      "ref_mts",
+      "ref_next_dev_types_ts",
+      "ref_next_env_d_ts",
+      "ref_next_types_ts",
+      "ref_node_modules",
+      "ref_ts",
+      "ref_tsx",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_esmoduleinterop",
+      "tsconfig_compileroptions_incremental",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_plugins",
+      "tsconfig_compileroptions_resolvejsonmodule",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_strict",
+      "tsconfig_compileroptions_target",
+      "tsconfig_exclude",
+      "tsconfig_include"
+    ],
+    "5": [
+      "eslint",
+      "eslint_config_next",
+      "package",
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_postcss",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_typescript",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_start",
+      "package_version",
+      "tailwindcss",
+      "tailwindcss_postcss",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "typescript"
+    ],
+    "6": [
+      "app_admins_page",
+      "app_admins_page_admin",
+      "app_admins_page_adminspage",
+      "app_admins_page_role_badge",
+      "app_admins_page_roles",
+      "app_announcements_page",
+      "app_announcements_page_announcement",
+      "app_announcements_page_announcementspage",
+      "app_creators_page",
+      "app_creators_page_avatar_colors",
+      "app_creators_page_creator",
+      "app_creators_page_creatorspage",
+      "app_creators_page_status_badge",
+      "app_pricing_page",
+      "app_pricing_page_adminpricingpage",
+      "app_pricing_page_mstodateinput",
+      "app_pricing_page_offer",
+      "app_pricing_page_pricing",
+      "components_datastates_loader",
+      "lib_adminactions",
+      "lib_adminactions_postadmin",
+      "lib_useadmindata_useadmindata"
+    ],
+    "7": [
+      "app_api_auth_login_route",
+      "app_api_auth_login_route_jwks",
+      "app_api_auth_login_route_post",
+      "app_api_auth_logout_route",
+      "app_api_auth_logout_route_post",
+      "app_api_blog_upload_image_route",
+      "app_api_blog_upload_image_route_allowed_types",
+      "app_api_blog_upload_image_route_post",
+      "lib_session",
+      "lib_session_server",
+      "lib_session_server_clearsession",
+      "lib_session_server_createsession",
+      "lib_session_server_dev_session",
+      "lib_session_session"
+    ],
+    "8": [
+      "app_adoption_page",
+      "app_adoption_page_adoptiondata",
+      "app_adoption_page_adoptionpage",
+      "app_adoption_page_adoptionuser",
+      "app_adoption_page_relativeactive",
+      "app_adoption_page_segment",
+      "app_adoption_page_segments",
+      "components_emailtemplategenerator",
+      "components_emailtemplategenerator_emailtemplategenerator",
+      "components_emailtemplategenerator_emailtemplategeneratorprops",
+      "components_emailtemplategenerator_template",
+      "components_emailtemplategenerator_templates"
+    ],
+    "9": [
+      "app_audit_page",
+      "app_audit_page_action_badge",
+      "app_audit_page_apilog",
+      "app_audit_page_auditpage",
+      "app_audit_page_fmt",
+      "app_audit_page_log"
+    ],
+    "10": [
+      "app_page",
+      "app_page_action_dot",
+      "app_page_admindashboard",
+      "app_page_apilog",
+      "app_page_empty_kpis",
+      "app_page_empty_release",
+      "app_page_kpis",
+      "app_page_plan_colors",
+      "app_page_releaseinfo",
+      "app_page_reltime",
+      "app_page_revpoint",
+      "app_page_tooltipstyle"
+    ],
+    "11": [
+      "app_api_analytics_adoption_route",
+      "app_api_analytics_adoption_route_adoptionuser",
+      "app_api_analytics_adoption_route_get",
+      "app_api_users_list_route",
+      "app_api_users_list_route_get",
+      "lib_usage_activity",
+      "lib_usage_activity_activitymap",
+      "lib_usage_activity_getactivitymap",
+      "lib_usage_activity_segment",
+      "lib_usage_activity_segmentfor",
+      "lib_usage_activity_useractivity"
+    ],
+    "12": [
+      "app_api_promotions_send_route",
+      "app_api_promotions_send_route_known_plans",
+      "app_api_promotions_send_route_post",
+      "app_api_settings_clear_db_route",
+      "app_api_settings_clear_db_route_collections",
+      "app_api_settings_clear_db_route_deletecollection",
+      "app_api_settings_clear_db_route_deletecollectiondeep",
+      "app_api_settings_clear_db_route_deletecollectionexcluding",
+      "app_api_settings_clear_db_route_post",
+      "lib_promotionemail",
+      "lib_promotionemail_wrappromotionemail"
+    ],
+    "13": [
+      "app_blog_page",
+      "app_blog_page_blogadminpage",
+      "app_blog_page_blogpost",
+      "app_blog_page_counter",
+      "app_blog_page_empty_form",
+      "app_blog_page_slugify",
+      "app_blog_page_wordcount",
+      "components_blogeditor",
+      "components_blogeditor_blogeditor",
+      "components_blogeditor_props",
+      "components_blogeditor_toolbarbutton"
+    ],
+    "14": [
+      "app_analytics_page",
+      "app_analytics_page_analyticspage",
+      "app_analytics_page_empty_kpis",
+      "app_analytics_page_kpis",
+      "app_analytics_page_plan_colors",
+      "app_analytics_page_revpoint",
+      "app_analytics_page_t",
+      "app_analytics_page_usagepoint",
+      "components_datastates",
+      "components_datastates_emptystate",
+      "components_datastates_errorstate",
+      "lib_useadmindata",
+      "lib_useadmindata_admindatastate",
+      "lib_useadmindata_errormessage",
+      "lib_useadmindata_reason"
+    ],
+    "15": [
+      "app_api_admins_route",
+      "app_api_admins_route_delete",
+      "app_api_admins_route_get",
+      "app_api_admins_route_logaction",
+      "app_api_admins_route_patch",
+      "app_api_admins_route_post",
+      "app_api_admins_route_requiresuperadmin",
+      "app_api_admins_route_role",
+      "app_api_admins_route_valid_roles"
+    ],
+    "16": [
+      "app_promotions_page",
+      "app_promotions_page_plan_options",
+      "app_promotions_page_promotionsdata",
+      "app_promotions_page_promotionspage",
+      "app_promotions_page_sendrecord",
+      "components_promotioneditor",
+      "components_promotioneditor_promotioneditor",
+      "components_promotioneditor_props",
+      "components_promotioneditor_toolbarbutton"
+    ],
+    "17": [
+      "app_users_page",
+      "app_users_page_apiuser",
+      "app_users_page_avatar_colors",
+      "app_users_page_lastactivelabel",
+      "app_users_page_plan_badge",
+      "app_users_page_status_badge",
+      "app_users_page_user",
+      "app_users_page_userspage",
+      "app_users_page_userstats"
+    ],
+    "18": [
+      "app_api_settings_backup_route",
+      "app_api_settings_backup_route_collections",
+      "app_api_settings_backup_route_docrecord",
+      "app_api_settings_backup_route_get",
+      "app_api_settings_backup_route_post",
+      "app_api_settings_backup_route_requiresuperadmin",
+      "app_api_settings_backup_route_serialize",
+      "app_api_settings_backup_route_usagerecord"
+    ],
+    "19": [
+      "scripts_push_admin_secret",
+      "scripts_push_admin_secret_add",
+      "scripts_push_admin_secret_dep",
+      "scripts_push_admin_secret_dirname",
+      "scripts_push_admin_secret_envpath",
+      "scripts_push_admin_secret_m",
+      "scripts_push_admin_secret_run",
+      "scripts_push_admin_secret_value"
+    ],
+    "20": [
+      "app_api_blog_route",
+      "app_api_blog_route_blogpostinput",
+      "app_api_blog_route_get",
+      "app_api_blog_route_post",
+      "lib_resend_server",
+      "lib_resend_server_getresendconfig",
+      "lib_resend_server_resendconfig"
+    ],
+    "21": [
+      "app_support_page",
+      "app_support_page_apiticket",
+      "app_support_page_message",
+      "app_support_page_priority_badge",
+      "app_support_page_status_badge",
+      "app_support_page_supportpage",
+      "app_support_page_ticket"
+    ],
+    "22": [
+      "app_api_users_delete_route",
+      "app_api_users_delete_route_collections_by_doc_id",
+      "app_api_users_delete_route_collections_by_userid_field",
+      "app_api_users_delete_route_deleteuserdata",
+      "app_api_users_delete_route_post"
+    ],
+    "23": [
+      "scripts_grant_admin",
+      "scripts_grant_admin_dirname",
+      "scripts_grant_admin_envpath",
+      "scripts_grant_admin_match",
+      "scripts_grant_admin_value"
+    ],
+    "24": [
+      "app_analytics_components_apiusagechart",
+      "app_analytics_components_apiusagechart_apiusagechart",
+      "app_analytics_components_apiusagechart_apiusagechartprops",
+      "app_analytics_components_apiusagechart_apiusagedata"
+    ],
+    "25": [
+      "app_analytics_components_cohorttable",
+      "app_analytics_components_cohorttable_cohortdata",
+      "app_analytics_components_cohorttable_cohorttable",
+      "app_analytics_components_cohorttable_cohorttableprops"
+    ],
+    "26": [
+      "app_analytics_components_dauchart",
+      "app_analytics_components_dauchart_dauchart",
+      "app_analytics_components_dauchart_dauchartprops",
+      "app_analytics_components_dauchart_daudata"
+    ],
+    "27": [
+      "app_analytics_components_revenuechart",
+      "app_analytics_components_revenuechart_revenuechart",
+      "app_analytics_components_revenuechart_revenuechartprops",
+      "app_analytics_components_revenuechart_revenuedata"
+    ],
+    "28": [
+      "app_analytics_components_userdistribution",
+      "app_analytics_components_userdistribution_userdistribution",
+      "app_analytics_components_userdistribution_userdistributionprops",
+      "app_analytics_components_userdistribution_usersbyplan"
+    ],
+    "29": [
+      "proxy",
+      "proxy_config",
+      "proxy_proxy",
+      "proxy_public_paths"
+    ],
+    "30": [
+      "app_analytics_components_kpicards",
+      "app_analytics_components_kpicards_kpicards",
+      "app_analytics_components_kpicards_kpicardsprops"
+    ],
+    "31": [
+      "app_api_notifications_route",
+      "app_api_notifications_route_get",
+      "app_api_notifications_route_item"
+    ],
+    "32": [
+      "app_api_promotions_route",
+      "app_api_promotions_route_get",
+      "app_api_promotions_route_post"
+    ],
+    "33": [
+      "app_api_support_tickets_ticketid_reply_route",
+      "app_api_support_tickets_ticketid_reply_route_emailcustomer",
+      "app_api_support_tickets_ticketid_reply_route_post"
+    ],
+    "34": [
+      "app_layout",
+      "app_layout_metadata",
+      "app_layout_rootlayout"
+    ],
+    "35": [
+      "components_sidebar",
+      "components_sidebar_getnavitems",
+      "components_sidebar_sidebar"
+    ],
+    "36": [
+      "eslint_config",
+      "eslint_config_eslintconfig"
+    ],
+    "37": [
+      "next_config",
+      "next_config_nextconfig"
+    ],
+    "38": [
+      "postcss_config",
+      "postcss_config_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.058693244739756366,
+    "1": 0.11051693404634581,
+    "2": 0.1010752688172043,
+    "3": 0.06881720430107527,
+    "4": 0.06896551724137931,
+    "5": 0.07692307692307693,
+    "6": 0.17316017316017315,
+    "7": 0.1978021978021978,
+    "8": 0.19696969696969696,
+    "9": 0.4,
+    "10": 0.18181818181818182,
+    "11": 0.36363636363636365,
+    "12": 0.2727272727272727,
+    "13": 0.21818181818181817,
+    "14": 0.19047619047619047,
+    "15": 0.4722222222222222,
+    "16": 0.2222222222222222,
+    "17": 0.25,
+    "18": 0.39285714285714285,
+    "19": 0.25,
+    "20": 0.23809523809523808,
+    "21": 0.2857142857142857,
+    "22": 0.5,
+    "23": 0.4,
+    "24": 0.5,
+    "25": 0.5,
+    "26": 0.5,
+    "27": 0.5,
+    "28": 0.5,
+    "29": 0.6666666666666666,
+    "30": 0.6666666666666666,
+    "31": 0.6666666666666666,
+    "32": 0.6666666666666666,
+    "33": 1.0,
+    "34": 0.6666666666666666,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0
+  },
+  "gods": [
+    {
+      "id": "lib_session_server_isadminrequest",
+      "label": "isAdminRequest()",
+      "degree": 74
+    },
+    {
+      "id": "lib_session_server_getsession",
+      "label": "getSession()",
+      "degree": 54
+    },
+    {
+      "id": "lib_useadmindata_useadmindata",
+      "label": "useAdminData()",
+      "degree": 25
+    },
+    {
+      "id": "lib_adminactions_postadmin",
+      "label": "postAdmin()",
+      "degree": 19
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "components_datastates_errorstate",
+      "label": "ErrorState()",
+      "degree": 14
+    },
+    {
+      "id": "components_datastates_loader",
+      "label": "Loader()",
+      "degree": 13
+    },
+    {
+      "id": "tsconfig_include",
+      "label": "include",
+      "degree": 7
+    },
+    {
+      "id": "app_api_admins_route_requiresuperadmin",
+      "label": "requireSuperAdmin()",
+      "degree": 6
+    },
+    {
+      "id": "app_adoption_page_adoptionpage",
+      "label": "AdoptionPage()",
+      "degree": 5
+    }
+  ],
+  "surprises": [
+    {
+      "source": "AnalyticsPage()",
+      "target": "useAdminData()",
+      "source_files": [
+        "app/analytics/page.tsx",
+        "lib/useAdminData.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `AnalyticsPage()` unexpectedly reaches hub `useAdminData()`"
+    },
+    {
+      "source": "GET()",
+      "target": "isAdminRequest()",
+      "source_files": [
+        "app/api/blog/route.ts",
+        "lib/session-server.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `GET()` unexpectedly reaches hub `isAdminRequest()`"
+    },
+    {
+      "source": "POST()",
+      "target": "isAdminRequest()",
+      "source_files": [
+        "app/api/blog/upload-image/route.ts",
+        "lib/session-server.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `POST()` unexpectedly reaches hub `isAdminRequest()`"
+    },
+    {
+      "source": "GET()",
+      "target": "isAdminRequest()",
+      "source_files": [
+        "app/api/promotions/route.ts",
+        "lib/session-server.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `GET()` unexpectedly reaches hub `isAdminRequest()`"
+    },
+    {
+      "source": "AdoptionPage()",
+      "target": "postAdmin()",
+      "source_files": [
+        "app/adoption/page.tsx",
+        "lib/adminActions.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `isAdminRequest()` connect `isAdminRequest` to `route.ts`, `getSession`, `route.ts`, `session-server.ts`, `route.ts`, `route.ts`, `route.ts`, `route.ts`, `route.ts`?",
+      "why": "High betweenness centrality (0.037) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `getSession()` connect `getSession` to `route.ts`, `route.ts`, `isAdminRequest`, `session-server.ts`, `route.ts`, `route.ts`, `route.ts`, `route.ts`, `route.ts`, `route.ts`?",
+      "why": "High betweenness centrality (0.025) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `useAdminData()` connect `useAdminData` to `page.tsx`, `page.tsx`, `page.tsx`, `page.tsx`, `DataStates.tsx`, `page.tsx`, `page.tsx`, `page.tsx`?",
+      "why": "High betweenness centrality (0.014) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `Admin`, `ROLE_BADGE`, `ROLES` to the rest of the system?",
+      "why": "153 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `AdminShell.tsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.058693244739756366 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `getSession` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.11051693404634581 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `isAdminRequest` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1010752688172043 - nodes in this community are weakly interconnected."
+    }
+  ]
+}
