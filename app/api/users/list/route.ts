@@ -57,6 +57,10 @@ export async function GET(request: NextRequest) {
       referralSource:  (doc.data().referralSource  || '') as string,
       lastActive:      Math.max(activity.get(doc.id)?.lastActive ?? 0, (doc.data().lastSeen || 0) as number),
       activeDays:      activity.get(doc.id)?.activeDays ?? 0,
+      tokensUsed:      activity.get(doc.id)?.tokensUsed ?? 0,
+      voiceMinutes:    activity.get(doc.id)?.voiceMinutes ?? 0,
+      screenshotsUsed: activity.get(doc.id)?.screenshotsUsed ?? 0,
+      mockSessions:    activity.get(doc.id)?.mockSessions ?? 0,
     }));
 
     users.sort((a, b) => b.createdAt - a.createdAt);

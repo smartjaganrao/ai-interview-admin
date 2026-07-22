@@ -12,11 +12,13 @@ interface User {
   joined: string; questions: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
+  tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
 }
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
+  tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
 }
 interface UserStats { total: number; active: number; paid: number; banned: number; }
 
@@ -53,6 +55,7 @@ export default function UsersPage() {
           questions: 0,
           phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
           lastActive: u.lastActive, activeDays: u.activeDays,
+          tokensUsed: u.tokensUsed, voiceMinutes: u.voiceMinutes, screenshotsUsed: u.screenshotsUsed, mockSessions: u.mockSessions,
         })),
       };
     }
@@ -269,7 +272,7 @@ export default function UsersPage() {
                     <th style={{ width: 40 }}>
                       <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                     </th>
-                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Joined</th>
+                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -316,11 +319,16 @@ export default function UsersPage() {
                           {u.activeDays ?? 0}
                         </span>
                       </td>
+                      <td>
+                        <span className="text-xs text-muted">
+                          {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
+                        </span>
+                      </td>
                       <td className="text-muted">{u.joined}</td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={8}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                    <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
                   )}
                 </tbody>
               </table>

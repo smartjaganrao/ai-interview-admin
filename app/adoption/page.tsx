@@ -18,6 +18,10 @@ interface AdoptionUser {
   createdAt: number;
   lastActive: number;
   activeDays: number;
+  tokensUsed: number;
+  voiceMinutes: number;
+  screenshotsUsed: number;
+  mockSessions: number;
   segment: Segment;
 }
 
@@ -159,9 +163,13 @@ export default function AdoptionPage() {
                         </div>
                         <div className="text-sm text-muted">{u.email} · {u.plan}</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                        <span className="text-sm text-muted">{u.activeDays > 0 ? `${u.activeDays} active day${u.activeDays === 1 ? '' : 's'}` : '—'}</span>
-                        <span className="text-sm" style={{ width: 80, textAlign: 'right' }}>{relativeActive(u.lastActive)}</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <span className="text-sm text-muted">{u.activeDays > 0 ? `${u.activeDays}d` : '—'}</span>
+                        <span className="badge badge-slate">{Math.round((u.tokensUsed || 0) / 500)} answers</span>
+                        {(u.voiceMinutes || 0) > 0 && <span className="badge badge-slate">🎤 {Math.round(u.voiceMinutes)}m</span>}
+                        {(u.screenshotsUsed || 0) > 0 && <span className="badge badge-slate">📸 {u.screenshotsUsed}</span>}
+                        {(u.mockSessions || 0) > 0 && <span className="badge badge-slate">🎯 {u.mockSessions}</span>}
+                        <span className="text-sm text-muted" style={{ width: 80, textAlign: 'right' }}>{relativeActive(u.lastActive)}</span>
                         <span className={`badge ${seg.badge}`}>{seg.label}</span>
                       </div>
                     </div>

@@ -13,6 +13,10 @@ interface AdoptionUser {
   createdAt: number;
   lastActive: number;
   activeDays: number;
+  tokensUsed: number;
+  voiceMinutes: number;
+  screenshotsUsed: number;
+  mockSessions: number;
   segment: Segment;
 }
 
@@ -61,6 +65,10 @@ export async function GET() {
       createdAt: (u.createdAt as number) || 0,
       lastActive,
       activeDays: act?.activeDays ?? 0,
+      tokensUsed: act?.tokensUsed ?? 0,
+      voiceMinutes: act?.voiceMinutes ?? 0,
+      screenshotsUsed: act?.screenshotsUsed ?? 0,
+      mockSessions: act?.mockSessions ?? 0,
       segment,
     });
   }
