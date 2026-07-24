@@ -5,7 +5,12 @@ import { isAdminRequest, getSession } from '@/lib/session-server';
 export const dynamic = 'force-dynamic';
 
 const DEFAULTS = {
-  plans: { pro: { monthly: 0, yearly: 0 }, power: { monthly: 0, yearly: 0 } },
+  plans: {
+    starter: { oneTime: 0 },
+    standard: { oneTime: 0 },
+    pro: { monthly: 0, yearly: 0 },
+    power: { monthly: 0, yearly: 0 },
+  },
   offer: { active: false, label: '', percentOff: 0, appliesTo: 'all' as const, expiresAt: null as number | null },
 };
 
@@ -20,6 +25,8 @@ export async function GET() {
     const d = snap.data() ?? {};
     return NextResponse.json({
       plans: {
+        starter: { oneTime: d.plans?.starter?.oneTime ?? DEFAULTS.plans.starter.oneTime },
+        standard: { oneTime: d.plans?.standard?.oneTime ?? DEFAULTS.plans.standard.oneTime },
         pro: { monthly: d.plans?.pro?.monthly ?? DEFAULTS.plans.pro.monthly, yearly: d.plans?.pro?.yearly ?? DEFAULTS.plans.pro.yearly },
         power: { monthly: d.plans?.power?.monthly ?? DEFAULTS.plans.power.monthly, yearly: d.plans?.power?.yearly ?? DEFAULTS.plans.power.yearly },
       },
@@ -27,7 +34,7 @@ export async function GET() {
         active: !!d.offer?.active,
         label: d.offer?.label ?? '',
         percentOff: d.offer?.percentOff ?? 0,
-        appliesTo: ['all', 'pro', 'power'].includes(d.offer?.appliesTo) ? d.offer.appliesTo : 'all',
+        appliesTo: ['all', 'starter', 'standard', 'pro', 'power'].includes(d.offer?.appliesTo) ? d.offer.appliesTo : 'all',
         expiresAt: d.offer?.expiresAt ?? null,
       },
     });
@@ -53,6 +60,12 @@ export async function POST(request: NextRequest) {
     };
 
     const plans = {
+      starter: {
+        oneTime: num(body?.plans?.starter?.oneTime, DEFAULTS.plans.starter.oneTime),
+      },
+      standard: {
+        oneTime: num(body?.plans?.standard?.oneTime, DEFAULTS.plans.standard.oneTime),
+      },
       pro: {
         monthly: num(body?.plans?.pro?.monthly, DEFAULTS.plans.pro.monthly),
         yearly: num(body?.plans?.pro?.yearly, DEFAULTS.plans.pro.yearly),
@@ -63,7 +76,7 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    const appliesTo = ['all', 'pro', 'power'].includes(body?.offer?.appliesTo) ? body.offer.appliesTo : 'all';
+    const appliesTo = ['all', 'starter', 'standard', 'pro', 'power'].includes(body?.offer?.appliesTo) ? body.offer.appliesTo : 'all';
     const offer = {
       active: !!body?.offer?.active,
       label: String(body?.offer?.label ?? '').slice(0, 80),

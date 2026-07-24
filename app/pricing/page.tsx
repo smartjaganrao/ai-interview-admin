@@ -6,9 +6,14 @@ import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
 import { Loader, ErrorState } from '@/components/DataStates';
 
-interface Offer { active: boolean; label: string; percentOff: number; appliesTo: 'all' | 'pro' | 'power'; expiresAt: number | null }
+interface Offer { active: boolean; label: string; percentOff: number; appliesTo: 'all' | 'starter' | 'standard' | 'pro' | 'power'; expiresAt: number | null }
 interface Pricing {
-  plans: { pro: { monthly: number; yearly: number }; power: { monthly: number; yearly: number } };
+  plans: {
+    starter: { oneTime: number };
+    standard: { oneTime: number };
+    pro: { monthly: number; yearly: number };
+    power: { monthly: number; yearly: number };
+  };
   offer: Offer;
 }
 
@@ -28,9 +33,9 @@ export default function AdminPricingPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const setPlan = (plan: 'pro' | 'power', cycle: 'monthly' | 'yearly', value: string) => {
+  const setPlan = (plan: 'starter' | 'standard' | 'pro' | 'power', cycle: string, value: string) => {
     if (!form) return;
-    setForm({ ...form, plans: { ...form.plans, [plan]: { ...form.plans[plan], [cycle]: Number(value) || 0 } } });
+    setForm({ ...form, plans: { ...form.plans, [plan]: { ...form.plans[plan], [cycle]: Number(value) || 0 } as any } });
   };
   const setOffer = (patch: Partial<Offer>) => {
     if (!form) return;
@@ -70,17 +75,22 @@ export default function AdminPricingPage() {
           <div className="card-flat" style={{ padding: 20, marginBottom: 20 }}>
             <h3 className="font-semibold mb-1">Plan prices (₹)</h3>
             <p className="text-muted text-sm mb-4">Applies to new checkouts immediately. The server reads these at order time, so it stays tamper-proof.</p>
-            {(['pro', 'power'] as const).map((plan) => (
-              <div key={plan} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-                <div className="font-medium" style={{ textTransform: 'capitalize' }}>{plan}</div>
-                <label className="text-sm text-muted">Monthly
-                  <input className="input mt-1" type="number" min={0} value={form.plans[plan].monthly}
-                    onChange={(e) => setPlan(plan, 'monthly', e.target.value)} />
-                </label>
-                <label className="text-sm text-muted">Yearly
-                  <input className="input mt-1" type="number" min={0} value={form.plans[plan].yearly}
-                    onChange={(e) => setPlan(plan, 'yearly', e.target.value)} />
-                </label>
+            {([
+              { key: 'starter', label: 'Starter', fields: ['oneTime'] as const },
+              { key: 'standard', label: 'Standard', fields: ['oneTime'] as const },
+              { key: 'pro', label: 'Pro', fields: ['monthly', 'yearly'] as const },
+              { key: 'power', label: 'Power', fields: ['monthly', 'yearly'] as const },
+            ] as const).map(({ key, label, fields }) => (
+              <div key={key} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 1fr', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                <div className="font-medium" style={{ textTransform: 'capitalize' }}>{label}</div>
+                {fields.map((field) => (
+                  <label key={field} className="text-sm text-muted" style={{ textTransform: 'capitalize' }}>
+                    {field === 'oneTime' ? 'One-time' : field}
+                    <input className="input mt-1" type="number" min={0} value={(form.plans as any)[key][field]}
+                      onChange={(e) => setPlan(key as any, field, e.target.value)} />
+                  </label>
+                ))}
+                {fields.length === 1 ? <div /> : null}
               </div>
             ))}
           </div>
@@ -109,6 +119,8 @@ export default function AdminPricingPage() {
                 <label className="text-sm text-muted">Applies to
                   <select className="input mt-1" value={form.offer.appliesTo} onChange={(e) => setOffer({ appliesTo: e.target.value as Offer['appliesTo'] })}>
                     <option value="all">All plans</option>
+                    <option value="starter">Starter only</option>
+                    <option value="standard">Standard only</option>
                     <option value="pro">Pro only</option>
                     <option value="power">Power only</option>
                   </select>
@@ -124,6 +136,8 @@ export default function AdminPricingPage() {
               <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
                 <div className="text-sm" style={{ color: '#10B981', marginBottom: 6 }}>Preview with offer applied:</div>
                 <div className="text-sm">
+                  Starter: <s className="text-muted">₹{form.plans.starter.oneTime}</s> <strong>₹{preview(form.plans.starter.oneTime)}</strong> &nbsp;·&nbsp;
+                  Standard: <s className="text-muted">₹{form.plans.standard.oneTime}</s> <strong>₹{preview(form.plans.standard.oneTime)}</strong> &nbsp;·&nbsp;
                   Pro: <s className="text-muted">₹{form.plans.pro.monthly}</s> <strong>₹{preview(form.plans.pro.monthly)}</strong>/mo &nbsp;·&nbsp;
                   Power: <s className="text-muted">₹{form.plans.power.monthly}</s> <strong>₹{preview(form.plans.power.monthly)}</strong>/mo
                 </div>
