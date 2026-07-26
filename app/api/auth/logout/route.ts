@@ -1,17 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { clearSession } from '@/lib/session-server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     await clearSession();
     return NextResponse.json(
       { success: true },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Logout error:', error);
+    const message = error instanceof Error ? error.message : 'Logout failed';
     return NextResponse.json(
-      { error: error.message || 'Logout failed' },
+      { error: message },
       { status: 500 }
     );
   }

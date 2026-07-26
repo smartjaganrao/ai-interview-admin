@@ -51,7 +51,6 @@ export default function PromotionEditor({ html, onChange }: Props) {
     if (editor && html !== editor.getHTML()) {
       editor.commands.setContent(html || '', { emitUpdate: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, html]);
 
   if (!editor) return null;

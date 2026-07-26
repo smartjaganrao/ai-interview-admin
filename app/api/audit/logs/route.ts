@@ -14,7 +14,7 @@ export async function DELETE(request: NextRequest) {
     if (deleteAll) {
       const snap = await db.collection('admin_logs').limit(500).get();
       const batch = db.batch();
-      snap.docs.forEach((d: any) => batch.delete(d.ref));
+      snap.docs.forEach((d) => batch.delete(d.ref));
       await batch.commit();
       return NextResponse.json({ ok: true, deleted: snap.size });
     }
@@ -22,8 +22,9 @@ export async function DELETE(request: NextRequest) {
     if (!logId) return NextResponse.json({ error: 'logId required' }, { status: 400 });
     await db.collection('admin_logs').doc(logId).delete();
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Delete failed' }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Delete failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
       .limit(500)
       .get();
 
-    let logs = snapshot.docs.map((doc: any) => ({
+    let logs = snapshot.docs.map((doc) => ({
       id: doc.id,
       adminEmail: doc.data().adminEmail || 'Unknown',
       action: doc.data().action || 'unknown',
@@ -71,10 +72,10 @@ export async function GET(request: NextRequest) {
     }));
 
     if (actionFilter && actionFilter !== 'all') {
-      logs = logs.filter((l: any) => l.action === actionFilter);
+      logs = logs.filter((l) => l.action === actionFilter);
     }
     if (adminFilter) {
-      logs = logs.filter((l: any) =>
+      logs = logs.filter((l) =>
         l.adminEmail.toLowerCase().includes(adminFilter.toLowerCase())
       );
     }
@@ -89,10 +90,11 @@ export async function GET(request: NextRequest) {
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching audit logs:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch audit logs';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch audit logs' },
+      { error: message },
       { status: 500 }
     );
   }

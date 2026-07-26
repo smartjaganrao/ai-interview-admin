@@ -46,7 +46,7 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
               borderRadius: '8px',
             }}
             labelStyle={{ color: '#F3F4F6' }}
-            formatter={(value: any) =>
+            formatter={(value) =>
               value ? `₹${Number(value).toLocaleString()}` : '₹0'
             }
           />

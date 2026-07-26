@@ -28,12 +28,12 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * pageSize;
 
     // Build query for flagged messages
-    let queryRef: any = db.collectionGroup('interview_messages');
+    let queryRef = db.collectionGroup('interview_messages');
 
     if (statusFilter && statusFilter !== 'all') {
-      queryRef = queryRef.where('flagged', '==', true);
+      queryRef = queryRef.where('flagged', '==', true) as ReturnType<typeof db.collectionGroup>;
       if (statusFilter !== 'flagged') {
-        queryRef = queryRef.where('flagStatus', '==', statusFilter);
+        queryRef = queryRef.where('flagStatus', '==', statusFilter) as ReturnType<typeof db.collectionGroup>;
       }
     }
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .limit(pageSize)
       .get();
 
-    const messages = snapshot.docs.map((doc: any) => ({
+    const messages = snapshot.docs.map((doc) => ({
       id: doc.id,
       sessionId: doc.data().sessionId || '',
       userId: doc.data().userId || '',
@@ -67,10 +67,11 @@ export async function GET(request: NextRequest) {
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching moderation queue:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch moderation queue';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch moderation queue' },
+      { error: message },
       { status: 500 }
     );
   }

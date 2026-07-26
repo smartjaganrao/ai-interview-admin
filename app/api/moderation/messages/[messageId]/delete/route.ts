@@ -71,10 +71,11 @@ export async function POST(
       success: true,
       message: 'Message deleted successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting message:', error);
+    const message = error instanceof Error ? error.message : 'Failed to delete message';
     return NextResponse.json(
-      { error: error.message || 'Failed to delete message' },
+      { error: message },
       { status: 500 }
     );
   }

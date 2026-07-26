@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
     if (!session?.isAdmin) {
@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
 
     // Get all users grouped by signup month
     const usersSnapshot = await db.collection('users').get();
-    const usersByMonth: any = {};
-    const userCohorts: any = {};
+    const usersByMonth: Record<string, { userId: string; plan: string }[]> = {};
+    const userCohorts: Record<string, { signups: number; active: number; retention: number }> = {};
 
     // Group users by signup month
-    usersSnapshot.docs.forEach((doc: any) => {
+    usersSnapshot.docs.forEach((doc) => {
       const createdAt = doc.data().createdAt || Date.now();
       const userId = doc.id;
       const plan = doc.data().plan || 'free';
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // For each cohort month, calculate retention (% still active)
     for (const [month, users] of Object.entries(usersByMonth)) {
-      const cohortUsers = users as any[];
+      const cohortUsers = users as { userId: string; plan: string }[];
       let stillActive = 0;
 
       for (const user of cohortUsers) {
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Convert to array and sort by date
     const cohortData = Object.entries(userCohorts)
-      .map(([month, data]: any) => ({
+      .map(([month, data]) => ({
         month,
         ...data,
       }))
@@ -84,10 +84,11 @@ export async function GET(request: NextRequest) {
       );
 
     return NextResponse.json({ cohortData });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching cohorts:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch cohorts';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch cohorts' },
+      { error: message },
       { status: 500 }
     );
   }

@@ -20,9 +20,8 @@ interface DAUChartProps {
   isLoading: boolean;
 }
 
-export default function DAUChart({ data, isLoading }: DAUChartProps) {
-  // Generate mock data for last 30 days if not available
-  const mockData = Array.from({ length: 30 }, (_, i) => {
+function buildMockData(): DAUData[] {
+  return Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (29 - i));
     return {
@@ -30,8 +29,12 @@ export default function DAUChart({ data, isLoading }: DAUChartProps) {
       users: Math.floor(Math.random() * 100) + 50,
     };
   });
+}
 
-  const chartData = data && data.length > 0 ? data : mockData;
+const MOCK_DATA = buildMockData();
+
+export default function DAUChart({ data, isLoading }: DAUChartProps) {
+  const chartData = data && data.length > 0 ? data : MOCK_DATA;
 
   if (isLoading) {
     return (

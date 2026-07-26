@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { logout } from '@/lib/firebase-client';
@@ -245,17 +246,16 @@ function NotificationBell() {
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [adminEmail, setAdminEmail] = useState('');
-
-  useEffect(() => {
+  const [adminEmail] = useState(() => {
     try {
       const cookie = document.cookie.split('; ').find((r) => r.startsWith('admin-session='));
       if (cookie) {
         const session = JSON.parse(decodeURIComponent(cookie.split('=')[1]));
-        setAdminEmail(session?.email || '');
+        return session?.email || '';
       }
     } catch { /* ignore */ }
-  }, []);
+    return '';
+  });
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -264,10 +264,12 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <>
       {/* Logo */}
       <Link href="/" onClick={onNavigate} className="sidebar-logo">
-        <img
+        <Image
           src="/logo.svg"
           alt="JavihAI"
-          style={{ height: 32, width: 32, objectFit: 'contain', borderRadius: 6 }}
+          width={32}
+          height={32}
+          style={{ objectFit: 'contain', borderRadius: 6 }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
         <div className="sidebar-logo-text">

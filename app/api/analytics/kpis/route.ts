@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .get();
 
     const activeUserIds = new Set(
-      activeWeekSnapshot.docs.map((doc: any) => doc.data().userId)
+      activeWeekSnapshot.docs.map((doc) => doc.data().userId)
     );
     const activeThisWeek = activeUserIds.size;
 
@@ -46,12 +46,12 @@ export async function GET(request: NextRequest) {
         powerPrice = Number(pd.plans?.power?.monthly ?? powerPrice);
       }
     } catch { /* use defaults */ }
-    const fallbackPrice: any = { pro: proPrice, power: powerPrice };
+    const fallbackPrice: Record<string, number> = { pro: proPrice, power: powerPrice };
 
     const subsSnapshot = await db.collection('subscriptions').get();
     let mrrByPlan = { free: 0, pro: 0, power: 0 };
 
-    subsSnapshot.docs.forEach((doc: any) => {
+    subsSnapshot.docs.forEach((doc) => {
       const d = doc.data();
       const plan = d.plan || 'free';
       const status = d.status || 'inactive';
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         .collection('admin_logs')
         .where('action', '==', 'user_upgrade')
         .get();
-      downgrades = logsSnapshot.docs.filter((doc: any) => {
+      downgrades = logsSnapshot.docs.filter((doc) => {
         const d = doc.data();
         return (d.timestamp || 0) >= thisMonthStart.getTime() && d.details?.newPlan === 'free';
       }).length;
@@ -132,10 +132,11 @@ export async function GET(request: NextRequest) {
       usersByPlan,
       churnRate: Number(churnRate.toFixed(2)),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching KPIs:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch KPIs';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch KPIs' },
+      { error: message },
       { status: 500 }
     );
   }

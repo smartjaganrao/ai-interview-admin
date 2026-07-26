@@ -26,6 +26,17 @@ export default function AdminPricingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
+  const getPlanPrice = (plan: 'starter' | 'standard' | 'pro' | 'power', field: 'oneTime' | 'monthly' | 'yearly'): number => {
+    if (!form) return 0;
+    const planData = form.plans[plan];
+    if (field === 'oneTime') {
+      return (planData as { oneTime: number }).oneTime;
+    }
+    return (planData as { monthly: number; yearly: number })[field];
+  };
+
+  // Sync form when pricing data changes from the server
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (data) setForm(data); }, [data]);
 
   const flash = (kind: 'ok' | 'err', text: string) => {
@@ -33,9 +44,13 @@ export default function AdminPricingPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const setPlan = (plan: 'starter' | 'standard' | 'pro' | 'power', cycle: string, value: string) => {
+  const setPlan = (plan: 'starter' | 'standard' | 'pro' | 'power', cycle: 'oneTime' | 'monthly' | 'yearly', value: string) => {
     if (!form) return;
-    setForm({ ...form, plans: { ...form.plans, [plan]: { ...form.plans[plan], [cycle]: Number(value) || 0 } as any } });
+    const numVal = Number(value) || 0;
+    const updatedPlan = plan === 'starter' || plan === 'standard'
+      ? { oneTime: numVal }
+      : { ...form.plans[plan], [cycle]: numVal } as { monthly: number; yearly: number };
+    setForm({ ...form, plans: { ...form.plans, [plan]: updatedPlan } });
   };
   const setOffer = (patch: Partial<Offer>) => {
     if (!form) return;
@@ -86,8 +101,8 @@ export default function AdminPricingPage() {
                 {fields.map((field) => (
                   <label key={field} className="text-sm text-muted" style={{ textTransform: 'capitalize' }}>
                     {field === 'oneTime' ? 'One-time' : field}
-                    <input className="input mt-1" type="number" min={0} value={(form.plans as any)[key][field]}
-                      onChange={(e) => setPlan(key as any, field, e.target.value)} />
+                    <input className="input mt-1" type="number" min={0} value={getPlanPrice(key, field)}
+                      onChange={(e) => setPlan(key, field, e.target.value)} />
                   </label>
                 ))}
                 {fields.length === 1 ? <div /> : null}

@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'JavihAI Support <onboarding@resend.dev>';
 
-async function emailCustomer(to: string, ticketTitle: string, replyMessage: string, ticketId: string) {
+async function emailCustomer(to: string, ticketTitle: string, replyMessage: string) {
   if (!process.env.RESEND_API_KEY) return;
   const resend = new Resend(process.env.RESEND_API_KEY);
   const html = `<!DOCTYPE html><html><body style="font-family:Inter,sans-serif;background:#0f172a;color:#e2e8f0;padding:0;margin:0;">
@@ -86,14 +86,15 @@ export async function POST(
 
     // Email the customer — non-blocking
     if (ticketData.userEmail) {
-      emailCustomer(ticketData.userEmail, ticketData.title || 'Your ticket', message, ticketId);
+      emailCustomer(ticketData.userEmail, ticketData.title || 'Your ticket', message);
     }
 
     return NextResponse.json({ success: true, message: 'Reply added successfully' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error adding reply:', error);
+    const message = error instanceof Error ? error.message : 'Failed to add reply';
     return NextResponse.json(
-      { error: error.message || 'Failed to add reply' },
+      { error: message },
       { status: 500 }
     );
   }

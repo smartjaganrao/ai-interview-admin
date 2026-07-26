@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get API usage by week (last 12 weeks)
-    const usageByWeek: any = {};
+    const usageByWeek: Record<string, { tokens: number; voiceMinutes: number; screenshots: number }> = {};
     const now = new Date();
 
     for (let i = 11; i >= 0; i--) {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       let voiceMinutes = 0;
       let screenshots = 0;
 
-      usageSnapshot.docs.forEach((doc: any) => {
+      usageSnapshot.docs.forEach((doc) => {
         const data = doc.data();
         tokens += data.tokensUsed || 0;
         voiceMinutes += data.voiceMinutes || 0;
@@ -60,13 +60,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert to array format for charts
-    const usageData = Object.entries(usageByWeek).map(([week, usage]: any) => ({
+    const usageData = Object.entries(usageByWeek).map(([week, usage]) => ({
       week,
       ...usage,
     }));
 
     return NextResponse.json({ usageData });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching API usage:', error);
     // Return empty data if collectionGroup not available
     return NextResponse.json({

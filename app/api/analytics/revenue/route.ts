@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!(await isAdminRequest())) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
         powerPrice = Number(pd.data()?.plans?.power?.monthly ?? 0);
       }
     } catch { /* leave at 0 */ }
-    const planPrices: any = { pro: proPrice, power: powerPrice };
+    const planPrices: Record<string, number> = { pro: proPrice, power: powerPrice };
 
     // Get last 12 months of revenue data
-    const revenueByMonth: any = {};
+    const revenueByMonth: Record<string, number> = {};
     const now = new Date();
 
     for (let i = 11; i >= 0; i--) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       const subsSnapshot = await db.collection('subscriptions').get();
 
       let mrr = 0;
-      subsSnapshot.docs.forEach((doc: any) => {
+      subsSnapshot.docs.forEach((doc) => {
         const plan = doc.data().plan || 'free';
         const status = doc.data().status || 'inactive';
         const startedAt = doc.data().startedAt || Date.now();
@@ -76,10 +76,11 @@ export async function GET(request: NextRequest) {
       revenueData,
       totalMRR: revenueData[revenueData.length - 1]?.mrr || 0,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching revenue:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch revenue';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch revenue' },
+      { error: message },
       { status: 500 }
     );
   }

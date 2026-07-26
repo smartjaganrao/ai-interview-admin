@@ -23,7 +23,6 @@ const COLLECTIONS = [
 async function deleteCollection(colPath: string, batchSize = 400) {
   if (!db) return 0;
   let deleted = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const snap = await db.collection(colPath).limit(batchSize).get();
     if (snap.empty) break;
@@ -51,7 +50,6 @@ async function deleteCollectionDeep(colPath: string): Promise<number> {
 async function deleteCollectionExcluding(colPath: string, excludeId: string, batchSize = 400) {
   if (!db) return 0;
   let deleted = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const snap = await db.collection(colPath).limit(batchSize).get();
     const docs = snap.docs.filter(d => d.id !== excludeId);

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       .limit(500)
       .get();
 
-    let tickets = snapshot.docs.map((doc: any) => ({
+    let tickets = snapshot.docs.map((doc) => ({
       id: doc.id,
       userId: doc.data().userId || '',
       userEmail: doc.data().userEmail || '',
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }));
 
     if (statusFilter && statusFilter !== 'all') {
-      tickets = tickets.filter((t: any) => t.status === statusFilter);
+      tickets = tickets.filter((t) => t.status === statusFilter);
     }
 
     const totalCount = tickets.length;
@@ -63,10 +63,11 @@ export async function GET(request: NextRequest) {
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching support tickets:', error);
+    const message = error instanceof Error ? error.message : 'Failed to fetch support tickets';
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch support tickets' },
+      { error: message },
       { status: 500 }
     );
   }

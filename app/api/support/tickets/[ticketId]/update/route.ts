@@ -32,7 +32,7 @@ export async function POST(
     }
 
     // Update ticket
-    const updateData: any = { updatedAt: Date.now() };
+    const updateData: Record<string, unknown> = { updatedAt: Date.now() };
     if (status) updateData.status = status;
     if (assignedTo) updateData.assignedTo = assignedTo;
     if (priority) updateData.priority = priority;
@@ -57,10 +57,11 @@ export async function POST(
       success: true,
       message: 'Ticket updated successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating ticket:', error);
+    const message = error instanceof Error ? error.message : 'Failed to update ticket';
     return NextResponse.json(
-      { error: error.message || 'Failed to update ticket' },
+      { error: message },
       { status: 500 }
     );
   }

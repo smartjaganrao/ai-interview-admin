@@ -41,32 +41,31 @@ export function useAdminData<T>(
 
   useEffect(() => {
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, reason: 'loading' }));
 
-    // no-store: without this, the browser (and some CDNs) can serve a stale
-    // response after an admin add/delete — list pages would show pre-mutation
-    // data until a hard refresh.
-    fetch(url, { credentials: 'include', cache: 'no-store' })
-      .then(async (res) => {
+    async function load() {
+      setState((s) => ({ ...s, loading: true, reason: 'loading' }));
+
+      try {
+        const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         if (cancelled) return;
         if (res.ok) {
           const json = await res.json();
           const data = select ? select(json) : (json as T);
           setState({ data, isLive: true, loading: false, reason: 'live' });
         } else {
-          // 503 = Firebase Admin SDK not configured on deployment
-          // 5xx = real server error; 4xx = auth/permission issue
           const reason: Reason =
             res.status === 503 ? 'not-configured'
             : res.status >= 500 ? 'error'
             : 'unauthorized';
           setState({ data: initial, isLive: false, loading: false, reason });
         }
-      })
-      .catch(() => {
+      } catch {
         if (cancelled) return;
         setState({ data: initial, isLive: false, loading: false, reason: 'error' });
-      });
+      }
+    }
+
+    load();
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

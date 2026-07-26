@@ -18,10 +18,11 @@ export async function GET() {
       { status: 'ok', message: 'Firebase connected' },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Health check error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { status: 'error', message: error.message },
+      { status: 'error', message },
       { status: 500 }
     );
   }

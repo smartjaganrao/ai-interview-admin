@@ -13,8 +13,8 @@ export function useAdminAuth() {
     try {
       const result = await loginWithGoogle();
       return result;
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
       throw err;
     } finally {
       setIsLoading(false);
@@ -25,8 +25,8 @@ export function useAdminAuth() {
     setIsLoading(true);
     try {
       await logout();
-    } catch (err: any) {
-      setError(err.message || 'Logout failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logout failed');
     } finally {
       setIsLoading(false);
     }
