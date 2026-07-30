@@ -11,15 +11,15 @@ import {
 
 interface Kpis {
   totalUsers: number; totalMRR: number; activeThisWeek: number; churnRate: number;
-  usersByPlan: { free: number; pro: number; power: number };
+  usersByPlan: { free: number; quick_pass: number; pro: number; power: number };
 }
-const EMPTY_KPIS: Kpis = { totalUsers: 0, totalMRR: 0, activeThisWeek: 0, churnRate: 0, usersByPlan: { free: 0, pro: 0, power: 0 } };
+const EMPTY_KPIS: Kpis = { totalUsers: 0, totalMRR: 0, activeThisWeek: 0, churnRate: 0, usersByPlan: { free: 0, quick_pass: 0, pro: 0, power: 0 } };
 
 interface RevPoint { month: string; mrr: number }
 interface UsagePoint { week: string; tokens: number; voiceMinutes: number; screenshots: number }
 
 const T = { background: '#161B27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', color: '#C9D1D9' };
-const PLAN_COLORS = ['#4B5563', '#6366F1', '#8B5CF6'];
+const PLAN_COLORS = ['#4B5563', '#10B981', '#6366F1', '#8B5CF6'];
 
 export default function AnalyticsPage() {
   const kpiQ = useAdminData<Kpis>('/api/analytics/kpis', EMPTY_KPIS);
@@ -38,6 +38,7 @@ export default function AnalyticsPage() {
   const k = kpiQ.data;
   const planData = [
     { name: 'Free', value: k.usersByPlan.free },
+    { name: 'Quick Pass', value: k.usersByPlan.quick_pass },
     { name: 'Pro', value: k.usersByPlan.pro },
     { name: 'Power', value: k.usersByPlan.power },
   ];

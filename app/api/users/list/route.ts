@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     const [totalAgg, bannedAgg, paidAgg] = await Promise.all([
       db.collection('users').count().get(),
       db.collection('users').where('status', '==', 'banned').count().get(),
-      db.collection('users').where('plan', 'in', ['pro', 'power']).count().get(),
+      db.collection('users').where('plan', 'in', ['quick_pass', 'pro', 'power']).count().get(),
     ]);
     // "Active" means actually used the desktop app recently (last 30 days),
     // not merely "not banned" — the previous total-minus-banned formula

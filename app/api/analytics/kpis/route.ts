@@ -37,19 +37,21 @@ export async function GET() {
     // Get MRR — current admin-configured prices, used ONLY as a fallback for
     // legacy/simulated subscription docs that predate amount tracking.
     let proPrice = 0;
+    let quickPassPrice = 0;
     let powerPrice = 0;
     try {
       const pricingDoc = await db.collection('settings').doc('pricing').get();
       if (pricingDoc.exists) {
         const pd = pricingDoc.data() ?? {};
         proPrice = Number(pd.plans?.pro?.monthly ?? proPrice);
+        quickPassPrice = Number(pd.plans?.quick_pass?.oneTime ?? quickPassPrice);
         powerPrice = Number(pd.plans?.power?.monthly ?? powerPrice);
       }
     } catch { /* use defaults */ }
-    const fallbackPrice: Record<string, number> = { pro: proPrice, power: powerPrice };
+    const fallbackPrice: Record<string, number> = { quick_pass: quickPassPrice, pro: proPrice, power: powerPrice };
 
     const subsSnapshot = await db.collection('subscriptions').get();
-    let mrrByPlan = { free: 0, pro: 0, power: 0 };
+    let mrrByPlan = { free: 0, quick_pass: 0, pro: 0, power: 0 };
 
     subsSnapshot.docs.forEach((doc) => {
       const d = doc.data();
@@ -71,6 +73,7 @@ export async function GET() {
 
     mrrByPlan = {
       free: Math.round(mrrByPlan.free),
+      quick_pass: Math.round(mrrByPlan.quick_pass),
       pro: Math.round(mrrByPlan.pro),
       power: Math.round(mrrByPlan.power),
     };
@@ -80,6 +83,11 @@ export async function GET() {
     const freePlans = await db
       .collection('users')
       .where('plan', '==', 'free')
+      .count()
+      .get();
+    const quickPassPlans = await db
+      .collection('users')
+      .where('plan', '==', 'quick_pass')
       .count()
       .get();
     const proPlans = await db
@@ -95,6 +103,7 @@ export async function GET() {
 
     const usersByPlan = {
       free: freePlans.data().count,
+      quick_pass: quickPassPlans.data().count,
       pro: proPlans.data().count,
       power: powerPlans.data().count,
     };

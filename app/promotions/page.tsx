@@ -27,8 +27,9 @@ interface PromotionsData {
   planCounts: Record<string, number>;
 }
 
-const PLAN_OPTIONS: Array<{ id: 'free' | 'pro' | 'power'; label: string }> = [
+const PLAN_OPTIONS: Array<{ id: 'free' | 'quick_pass' | 'pro' | 'power'; label: string }> = [
   { id: 'free', label: 'Free' },
+  { id: 'quick_pass', label: 'Quick Pass' },
   { id: 'pro', label: 'Pro' },
   { id: 'power', label: 'Power' },
 ];

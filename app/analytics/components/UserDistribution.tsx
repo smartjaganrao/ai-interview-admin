@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recha
 
 interface UsersByPlan {
   free: number;
+  quick_pass: number;
   pro: number;
   power: number;
 }
@@ -19,11 +20,12 @@ export default function UserDistribution({
 }: UserDistributionProps) {
   const data = [
     { name: 'Free', value: usersByPlan.free },
+    { name: 'Quick Pass', value: usersByPlan.quick_pass },
     { name: 'Pro', value: usersByPlan.pro },
     { name: 'Power', value: usersByPlan.power },
   ];
 
-  const COLORS = ['#6B7280', '#3B82F6', '#A855F7'];
+  const COLORS = ['#6B7280', '#10B981', '#3B82F6', '#A855F7'];
 
   if (isLoading) {
     return (

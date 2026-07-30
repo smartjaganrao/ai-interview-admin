@@ -21,7 +21,7 @@ export async function GET() {
   const eligible = usersSnap.docs.filter(
     (d) => d.data().status !== 'banned' && !!d.data().email
   );
-  const planCounts: Record<string, number> = { free: 0, pro: 0, power: 0 };
+  const planCounts: Record<string, number> = { free: 0, quick_pass: 0, pro: 0, power: 0 };
   for (const d of eligible) {
     const plan = (d.data().plan as string) || 'free';
     if (plan in planCounts) planCounts[plan] += 1;

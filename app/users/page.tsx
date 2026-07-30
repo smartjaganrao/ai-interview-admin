@@ -8,14 +8,14 @@ import { Loader, ErrorState } from '@/components/DataStates';
 
 interface User {
   uid: string; email: string; name: string;
-  plan: 'free' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
+  plan: 'free' | 'quick_pass' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
   joined: string; questions: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
 }
 interface ApiUser {
-  id: string; email: string; name: string; plan: 'free'|'pro'|'power'; status?: string; createdAt: number;
+  id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
@@ -30,7 +30,7 @@ function lastActiveLabel(ts: number): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-const PLAN_BADGE: Record<string, string> = { free:'badge-slate', pro:'badge-indigo', power:'badge-purple' };
+const PLAN_BADGE: Record<string, string> = { free:'badge-slate', quick_pass:'badge-emerald', pro:'badge-indigo', power:'badge-purple' };
 const STATUS_BADGE: Record<string, string> = { active:'badge-green', inactive:'badge-slate', banned:'badge-red' };
 const AVATAR_COLORS = ['#6366F1','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D4'];
 
@@ -238,7 +238,7 @@ export default function UsersPage() {
               <input className="input" placeholder="Search users…" value={search} onChange={(e) => setSearch(e.target.value)}/>
             </div>
             <select className="input" style={{ width: 130 }} value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
-              <option value="all">All Plans</option><option value="free">Free</option><option value="pro">Pro</option><option value="power">Power</option>
+              <option value="all">All Plans</option><option value="free">Free</option><option value="quick_pass">Quick Pass</option><option value="pro">Pro</option><option value="power">Power</option>
             </select>
             <select className="input" style={{ width: 130 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="banned">Banned</option>
@@ -302,6 +302,7 @@ export default function UsersPage() {
                           onChange={(e) => changePlanInline(u.uid, e.target.value)}
                         >
                           <option value="free">FREE</option>
+                          <option value="quick_pass">QUICK PASS</option>
                           <option value="pro">PRO</option>
                           <option value="power">POWER</option>
                         </select>
@@ -434,6 +435,7 @@ export default function UsersPage() {
               <select className="input mb-2" value={planChoice} onChange={(e) => setPlanChoice(e.target.value)}>
                 <option value="">Change Plan…</option>
                 <option value="free">Free</option>
+                <option value="quick_pass">Quick Pass</option>
                 <option value="pro">Pro</option>
                 <option value="power">Power</option>
               </select>

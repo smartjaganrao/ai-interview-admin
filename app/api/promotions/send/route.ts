@@ -6,7 +6,7 @@ import { wrapPromotionEmail } from '@/lib/promotionEmail';
 export const dynamic = 'force-dynamic';
 
 const BACKEND_API = 'https://javihai.in/api/email/send';
-const KNOWN_PLANS = ['free', 'pro', 'power'];
+const KNOWN_PLANS = ['free', 'quick_pass', 'pro', 'power'];
 
 /**
  * POST { subject, html, confirm: true, plans?: string[] }

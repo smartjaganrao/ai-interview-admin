@@ -18,15 +18,16 @@ export async function GET() {
     }
 
     // Prices from admin-managed settings/pricing
-    let proPrice = 0, powerPrice = 0;
+    let proPrice = 0, quickPassPrice = 0, powerPrice = 0;
     try {
       const pd = await db.collection('settings').doc('pricing').get();
       if (pd.exists) {
         proPrice = Number(pd.data()?.plans?.pro?.monthly ?? 0);
+        quickPassPrice = Number(pd.data()?.plans?.quick_pass?.oneTime ?? 0);
         powerPrice = Number(pd.data()?.plans?.power?.monthly ?? 0);
       }
     } catch { /* leave at 0 */ }
-    const planPrices: Record<string, number> = { pro: proPrice, power: powerPrice };
+    const planPrices: Record<string, number> = { quick_pass: quickPassPrice, pro: proPrice, power: powerPrice };
 
     // Get last 12 months of revenue data
     const revenueByMonth: Record<string, number> = {};

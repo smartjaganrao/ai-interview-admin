@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !newPlan) {
       return NextResponse.json({ error: 'Missing userId or newPlan' }, { status: 400 });
     }
-    const validPlans = ['free', 'pro', 'power'];
+    const validPlans = ['free', 'quick_pass', 'pro', 'power'];
     if (!validPlans.includes(newPlan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
