@@ -230,10 +230,14 @@ export function getPlanUsageLabel(plan: AnyPlanId): string {
   const config = getPlanById(plan);
   if (!config) return '';
   if (config.id === 'free') return 'Limited trial';
-  if (config.isUnlimited) return 'Unlimited Access';
-  if (config.durationType === 'hours') return `${config.durationValue} Hour${config.durationValue !== 1 ? 's' : ''} Access`;
-  if (config.durationType === 'days') return `${config.durationValue} Day${config.durationValue !== 1 ? 's' : ''} Access`;
-  if (config.durationType === 'month') return `${config.durationValue} Month${config.durationValue !== 1 ? 's' : ''} Access`;
+  if (config.isUnlimited) return 'Unlimited · Monthly';
+  if (config.durationType === 'hours') {
+    const windowHours = config.durationValue * 24;
+    const windowText = windowHours >= 24 ? `${windowHours / 24} day${windowHours / 24 !== 1 ? 's' : ''}` : `${windowHours}h`;
+    return `${config.durationValue} hour${config.durationValue !== 1 ? 's' : ''} total · ${windowText} window`;
+  }
+  if (config.durationType === 'days') return `${config.durationValue} day${config.durationValue !== 1 ? 's' : ''} access`;
+  if (config.durationType === 'month') return `${config.durationValue} month${config.durationValue !== 1 ? 's' : ''} access`;
   return '';
 }
 
@@ -288,7 +292,10 @@ export function getPlanValidityLabel(plan: AnyPlanId): string {
 
 export function getPlanBillingLabel(plan: AnyPlanId): string {
   const config = getPlanById(plan);
-  if (!config) return '';
-  if (config.id === 'free') return '—';
+  if (!config || config.id === 'free') return '—';
   return config.billingType === 'subscription' ? 'Monthly' : 'One-time';
+}
+
+export function isPaidPlan(plan: AnyPlanId): boolean {
+  return migratePlanId(plan) !== 'free';
 }
