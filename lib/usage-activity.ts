@@ -26,8 +26,9 @@ export async function getActivityMap(): Promise<ActivityMap> {
 
   const snap = await db.collectionGroup('days').get();
   for (const doc of snap.docs) {
-    const uid = doc.ref.parent.parent?.id;
-    if (!uid) continue;
+    const segments = doc.ref.path.split('/');
+    if (segments.length !== 4 || segments[2] !== 'days') continue;
+    const uid = segments[1];
     const d = doc.data();
     const lastUpdated = (d.lastUpdated as number) || 0;
 

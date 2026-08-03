@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 import { getActivityMap, segmentFor } from '@/lib/usage-activity';
 
@@ -61,7 +61,45 @@ export async function GET(request: NextRequest) {
       voiceMinutes:    activity.get(doc.id)?.voiceMinutes ?? 0,
       screenshotsUsed: activity.get(doc.id)?.screenshotsUsed ?? 0,
       mockSessions:    activity.get(doc.id)?.mockSessions ?? 0,
+      duplicateEmail:  false,
     }));
+
+    // Backfill missing email/name from Firebase Auth for any partial user documents
+    const missingIdentity = users.filter(u => !u.email || !u.name);
+    if (missingIdentity.length > 0 && auth) {
+      const authClient = auth;
+      const fbUsers = await Promise.allSettled(
+        missingIdentity.map(u => authClient.getUser(u.id).catch(() => null))
+      );
+      fbUsers.forEach((result, i) => {
+        if (result.status === 'fulfilled' && result.value) {
+          const fb = result.value;
+          if (!missingIdentity[i].email && fb.email) missingIdentity[i].email = fb.email;
+          if (!missingIdentity[i].name && fb.displayName) missingIdentity[i].name = fb.displayName;
+        }
+      });
+    }
+
+    // ── Duplicate email detection ─────────────────────────────────────────
+    // Build a map of email → [user indices] to find duplicates within this page.
+    const emailToIndices = new Map<string, number[]>();
+    users.forEach((u, i) => {
+      if (u.email) {
+        const key = u.email.toLowerCase();
+        const arr = emailToIndices.get(key) || [];
+        arr.push(i);
+        emailToIndices.set(key, arr);
+      }
+    });
+    const duplicateEmailIndices = new Set<number>();
+    for (const arr of emailToIndices.values()) {
+      if (arr.length > 1) {
+        arr.forEach(i => duplicateEmailIndices.add(i));
+      }
+    }
+    users.forEach((u, i) => {
+      u.duplicateEmail = duplicateEmailIndices.has(i);
+    });
 
     users.sort((a, b) => b.createdAt - a.createdAt);
 

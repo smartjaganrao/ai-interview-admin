@@ -13,12 +13,14 @@ interface User {
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
+  duplicateEmail?: boolean;
 }
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
+  duplicateEmail?: boolean;
 }
 interface UserStats { total: number; active: number; paid: number; banned: number; }
 
@@ -56,6 +58,7 @@ export default function UsersPage() {
           phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
           lastActive: u.lastActive, activeDays: u.activeDays,
           tokensUsed: u.tokensUsed, voiceMinutes: u.voiceMinutes, screenshotsUsed: u.screenshotsUsed, mockSessions: u.mockSessions,
+          duplicateEmail: u.duplicateEmail,
         })),
       };
     }
@@ -282,17 +285,24 @@ export default function UsersPage() {
                       <td onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
                       </td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
-                            {u.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="font-medium">{u.name}</div>
-                            <div className="text-sm text-muted">{u.email}</div>
-                          </div>
-                        </div>
-                      </td>
+                       <td>
+                         <div className="flex items-center gap-3">
+                           <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
+                             {u.name.charAt(0).toUpperCase()}
+                           </div>
+                           <div>
+                             <div className="flex items-center gap-2">
+                               <div className="font-medium">{u.name}</div>
+                               {u.duplicateEmail && (
+                                 <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full" title="Duplicate email address">
+                                   ⚠ Duplicate
+                                 </span>
+                               )}
+                             </div>
+                             <div className="text-sm text-muted">{u.email}</div>
+                           </div>
+                         </div>
+                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <select
                           className="input"
