@@ -17,6 +17,16 @@ export default function AdminsPage() {
     (json) => (json as { admins?: Admin[] }).admins || []
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && admins.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Admins" subtitle="Manage who has access to this panel"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Admins" subtitle="Manage who has access to this panel"><Loader label="Loading admins…" /></AdminShell>;
+  }
+
   const [showAdd, setShowAdd] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<Admin['role']>('admin');
@@ -59,51 +69,49 @@ export default function AdminsPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading admins…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <div className="filter-bar">
-            <span className="text-sm text-muted">{admins.length} admin{admins.length === 1 ? '' : 's'}</span>
-            <div className="filter-bar-right">
-              <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}>+ Add Admin</button>
-            </div>
-          </div>
-
-          <div className="card-flat">
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Email</th><th>Role</th><th>Added</th><th style={{ width: 220 }}>Actions</th></tr>
-                </thead>
-                <tbody>
-                  {admins.map((a) => (
-                    <tr key={a.uid}>
-                      <td className="font-medium">{a.email}</td>
-                      <td><span className={`badge ${ROLE_BADGE[a.role]}`}>{a.role}</span></td>
-                      <td className="text-muted">{a.createdAt ? new Date(a.createdAt).toISOString().slice(0,10) : '—'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <select className="input" style={{ width: 130, height: 32, fontSize: 12 }} value={a.role} disabled={acting}
-                            onChange={(e) => changeRole(a.uid, e.target.value as Admin['role'])}>
-                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                          </select>
-                          <button className="btn btn-danger btn-sm" disabled={acting} onClick={() => revoke(a)}>Revoke</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {admins.length === 0 && (
-                    <tr><td colSpan={4}><div className="empty-state"><div className="empty-state-text">No admins found</div></div></td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
       )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <div className="filter-bar">
+        <span className="text-sm text-muted">{admins.length} admin{admins.length === 1 ? '' : 's'}</span>
+        <div className="filter-bar-right">
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAdd(true)}>+ Add Admin</button>
+        </div>
+      </div>
+
+      <div className="card-flat">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr><th>Email</th><th>Role</th><th>Added</th><th style={{ width: 220 }}>Actions</th></tr>
+            </thead>
+            <tbody>
+              {admins.map((a) => (
+                <tr key={a.uid}>
+                  <td className="font-medium">{a.email}</td>
+                  <td><span className={`badge ${ROLE_BADGE[a.role]}`}>{a.role}</span></td>
+                  <td className="text-muted">{a.createdAt ? new Date(a.createdAt).toISOString().slice(0,10) : '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <select className="input" style={{ width: 130, height: 32, fontSize: 12 }} value={a.role} disabled={acting}
+                        onChange={(e) => changeRole(a.uid, e.target.value as Admin['role'])}>
+                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <button className="btn btn-danger btn-sm" disabled={acting} onClick={() => revoke(a)}>Revoke</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {admins.length === 0 && (
+                <tr><td colSpan={4}><div className="empty-state"><div className="empty-state-text">No admins found</div></div></td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {showAdd && (
         <div className="drawer-overlay" onClick={() => setShowAdd(false)}>

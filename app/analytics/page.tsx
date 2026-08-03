@@ -28,11 +28,14 @@ export default function AnalyticsPage() {
   const useQ = useAdminData<UsagePoint[]>('/api/analytics/api-usage', [],
     (j) => (j as { usageData?: UsagePoint[] }).usageData || []);
 
-  if (kpiQ.loading) {
-    return <AdminShell title="Analytics"><Loader label="Loading analytics…" /></AdminShell>;
-  }
-  if (kpiQ.reason !== 'live') {
-    return <AdminShell title="Analytics"><ErrorState reason={kpiQ.reason} onRetry={kpiQ.refetch} /></AdminShell>;
+  const shouldGate = kpiQ.loading || kpiQ.reason === 'unauthorized' || kpiQ.reason === 'not-configured';
+  const hasCached = kpiQ.reason === 'error' && kpiQ.data !== EMPTY_KPIS;
+
+  if (shouldGate) {
+    if (kpiQ.reason === 'unauthorized' || kpiQ.reason === 'not-configured') {
+      return <AdminShell title="Analytics" subtitle="Revenue &amp; feature usage metrics"><ErrorState reason={kpiQ.reason} onRetry={kpiQ.refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Analytics" subtitle="Revenue &amp; feature usage metrics"><Loader label="Loading analytics…" /></AdminShell>;
   }
 
   const k = kpiQ.data;
@@ -45,7 +48,12 @@ export default function AnalyticsPage() {
 
   return (
     <AdminShell title="Analytics" subtitle="Revenue &amp; feature usage metrics">
-      <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={kpiQ.refetch}>Retry</button>
+        </div>
+      )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
 
       {/* Metrics (real only) */}
       <div className="stats-grid">
@@ -70,15 +78,18 @@ export default function AnalyticsPage() {
           </div>
           <div style={{ padding: '8px 8px 16px', minHeight: 220 }}>
             {revQ.loading ? <Loader/> : revQ.data.length === 0 ? <EmptyState message="No revenue history yet" /> : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={revQ.data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
-                  <XAxis dataKey="month" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
-                  <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v/1000}k`}/>
-                  <Tooltip contentStyle={T} formatter={(v) => `₹${Number(v).toLocaleString()}`}/>
-                  <Bar dataKey="mrr" fill="#6366F1" radius={[4,4,0,0]}/>
-                </BarChart>
-              </ResponsiveContainer>
+              <>
+                {!revQ.isLive && <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>Showing cached chart data</div>}
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={revQ.data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
+                    <XAxis dataKey="month" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
+                    <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v/1000}k`}/>
+                    <Tooltip contentStyle={T} formatter={(v) => `₹${Number(v).toLocaleString()}`}/>
+                    <Bar dataKey="mrr" fill="#6366F1" radius={[4,4,0,0]}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              </>
             )}
           </div>
         </div>
@@ -87,15 +98,18 @@ export default function AnalyticsPage() {
           <div className="card-title">Plan Mix</div>
           <div className="card-subtitle">By subscription</div>
           {k.totalUsers === 0 ? <EmptyState message="No users yet" /> : (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={planData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                  {planData.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i]} stroke="none"/>)}
-                </Pie>
-                <Tooltip contentStyle={T}/>
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8B949E' }}/>
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              {!kpiQ.isLive && hasCached && <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>Showing cached plan distribution</div>}
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={planData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {planData.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i]} stroke="none"/>)}
+                  </Pie>
+                  <Tooltip contentStyle={T}/>
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8B949E' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </>
           )}
         </div>
       </div>
@@ -107,18 +121,21 @@ export default function AnalyticsPage() {
         </div>
         <div style={{ padding: '8px 8px 16px', minHeight: 240 }}>
           {useQ.loading ? <Loader/> : useQ.data.length === 0 ? <EmptyState message="No usage data recorded yet" /> : (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={useQ.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
-                <XAxis dataKey="week" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
-                <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
-                <Tooltip contentStyle={T}/>
-                <Legend wrapperStyle={{ fontSize: 11, color: '#8B949E' }}/>
-                <Line type="monotone" dataKey="tokens" name="AI Tokens" stroke="#6366F1" strokeWidth={2} dot={false}/>
-                <Line type="monotone" dataKey="voiceMinutes" name="Voice Min" stroke="#10B981" strokeWidth={2} dot={false}/>
-                <Line type="monotone" dataKey="screenshots" name="Screenshots" stroke="#F59E0B" strokeWidth={2} dot={false}/>
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              {!useQ.isLive && <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>Showing cached usage data</div>}
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={useQ.data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
+                  <XAxis dataKey="week" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
+                  <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
+                  <Tooltip contentStyle={T}/>
+                  <Legend wrapperStyle={{ fontSize: 11, color: '#8B949E' }}/>
+                  <Line type="monotone" dataKey="tokens" name="AI Tokens" stroke="#6366F1" strokeWidth={2} dot={false}/>
+                  <Line type="monotone" dataKey="voiceMinutes" name="Voice Min" stroke="#10B981" strokeWidth={2} dot={false}/>
+                  <Line type="monotone" dataKey="screenshots" name="Screenshots" stroke="#F59E0B" strokeWidth={2} dot={false}/>
+                </LineChart>
+              </ResponsiveContainer>
+            </>
           )}
         </div>
       </div>

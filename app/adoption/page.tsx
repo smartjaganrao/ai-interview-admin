@@ -57,6 +57,16 @@ export default function AdoptionPage() {
     (json) => json as AdoptionData
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && data.users.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="App Usage" subtitle="Who has activated and is actually using the desktop app"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="App Usage" subtitle="Who has activated and is actually using the desktop app"><Loader label="Loading adoption data…" /></AdminShell>;
+  }
+
   const [filter, setFilter] = useState<Segment | 'all'>('all');
   // Re-engage compose state
   const [reengageSeg, setReengageSeg] = useState<Segment | null>(null);
@@ -97,89 +107,87 @@ export default function AdoptionPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading adoption data…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          {/* Activation summary */}
-          <div className="card mb-3">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Activation</div>
-                <div className="card-subtitle">{data.activated} of {data.totalUsers} users have used the app</div>
-              </div>
-              <span className={`badge ${data.activationRate >= 50 ? 'badge-green' : data.activationRate >= 25 ? 'badge-yellow' : 'badge-red'}`}>
-                {data.activationRate}% activated
-              </span>
-            </div>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
+      )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      {/* Activation summary */}
+      <div className="card mb-3">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Activation</div>
+            <div className="card-subtitle">{data.activated} of {data.totalUsers} users have used the app</div>
           </div>
+          <span className={`badge ${data.activationRate >= 50 ? 'badge-green' : data.activationRate >= 25 ? 'badge-yellow' : 'badge-red'}`}>
+            {data.activationRate}% activated
+          </span>
+        </div>
+      </div>
 
-          {/* Segment cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
-            {SEGMENTS.map((s) => (
-              <div
-                key={s.id}
-                className="card"
-                style={{ cursor: 'pointer', outline: filter === s.id ? '2px solid var(--primary)' : 'none' }}
-                onClick={() => setFilter(filter === s.id ? 'all' : s.id)}
+      {/* Segment cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 16 }}>
+        {SEGMENTS.map((s) => (
+          <div
+            key={s.id}
+            className="card"
+            style={{ cursor: 'pointer', outline: filter === s.id ? '2px solid var(--primary)' : 'none' }}
+            onClick={() => setFilter(filter === s.id ? 'all' : s.id)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span className={`badge ${s.badge}`}>{s.label}</span>
+              <span style={{ fontSize: 22, fontWeight: 800 }}>{data.counts[s.id]}</span>
+            </div>
+            <div className="text-sm text-muted" style={{ lineHeight: 1.5 }}>{s.hint}</div>
+            {(s.id === 'dormant' || s.id === 'never') && data.counts[s.id] > 0 && (
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ marginTop: 10 }}
+                onClick={(e) => { e.stopPropagation(); openReengage(s.id); }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span className={`badge ${s.badge}`}>{s.label}</span>
-                  <span style={{ fontSize: 22, fontWeight: 800 }}>{data.counts[s.id]}</span>
-                </div>
-                <div className="text-sm text-muted" style={{ lineHeight: 1.5 }}>{s.hint}</div>
-                {(s.id === 'dormant' || s.id === 'never') && data.counts[s.id] > 0 && (
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    style={{ marginTop: 10 }}
-                    onClick={(e) => { e.stopPropagation(); openReengage(s.id); }}
-                  >
-                    ✉ Email these {data.counts[s.id]}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* User list */}
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Users {filter !== 'all' && `· ${SEGMENTS.find((s) => s.id === filter)?.label}`}</div>
-              {filter !== 'all' && <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>Clear filter</button>}
-            </div>
-            {shown.length === 0 ? (
-              <div className="empty-state"><div className="empty-state-text">No users in this segment</div></div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {shown.map((u) => {
-                  const seg = SEGMENTS.find((s) => s.id === u.segment)!;
-                  return (
-                    <div key={u.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="font-semibold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {u.name || u.email || u.id}
-                        </div>
-                        <div className="text-sm text-muted">{u.email} · {u.plan}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                        <span className="text-sm text-muted">{u.activeDays > 0 ? `${u.activeDays}d` : '—'}</span>
-                        <span className="badge badge-slate">{Math.round((u.tokensUsed || 0) / 500)} answers</span>
-                        {(u.voiceMinutes || 0) > 0 && <span className="badge badge-slate">🎤 {Math.round(u.voiceMinutes)}m</span>}
-                        {(u.screenshotsUsed || 0) > 0 && <span className="badge badge-slate">📸 {u.screenshotsUsed}</span>}
-                        {(u.mockSessions || 0) > 0 && <span className="badge badge-slate">🎯 {u.mockSessions}</span>}
-                        <span className="text-sm text-muted" style={{ width: 80, textAlign: 'right' }}>{relativeActive(u.lastActive)}</span>
-                        <span className={`badge ${seg.badge}`}>{seg.label}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                ✉ Email these {data.counts[s.id]}
+              </button>
             )}
           </div>
-        </>
-      )}
+        ))}
+      </div>
+
+      {/* User list */}
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title">Users {filter !== 'all' && `· ${SEGMENTS.find((s) => s.id === filter)?.label}`}</div>
+          {filter !== 'all' && <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>Clear filter</button>}
+        </div>
+        {shown.length === 0 ? (
+          <div className="empty-state"><div className="empty-state-text">No users in this segment</div></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {shown.map((u) => {
+              const seg = SEGMENTS.find((s) => s.id === u.segment)!;
+              return (
+                <div key={u.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="font-semibold" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {u.name || u.email || u.id}
+                    </div>
+                    <div className="text-sm text-muted">{u.email} · {u.plan}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <span className="text-sm text-muted">{u.activeDays > 0 ? `${u.activeDays}d` : '—'}</span>
+                    <span className="badge badge-slate">{Math.round((u.tokensUsed || 0) / 500)} answers</span>
+                    {(u.voiceMinutes || 0) > 0 && <span className="badge badge-slate">🎤 {Math.round(u.voiceMinutes)}m</span>}
+                    {(u.screenshotsUsed || 0) > 0 && <span className="badge badge-slate">📸 {u.screenshotsUsed}</span>}
+                    {(u.mockSessions || 0) > 0 && <span className="badge badge-slate">🎯 {u.mockSessions}</span>}
+                    <span className="text-sm text-muted" style={{ width: 80, textAlign: 'right' }}>{relativeActive(u.lastActive)}</span>
+                    <span className={`badge ${seg.badge}`}>{seg.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Re-engagement compose drawer */}
       {reengageSeg && (

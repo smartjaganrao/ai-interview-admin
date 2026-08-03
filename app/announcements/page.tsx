@@ -14,6 +14,16 @@ export default function AnnouncementsPage() {
     (json) => (json as { announcements?: Announcement[] }).announcements || []
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && announcements.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><Loader label="Loading announcements…" /></AdminShell>;
+  }
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
   const [title, setTitle] = useState('');
@@ -62,45 +72,43 @@ export default function AnnouncementsPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading announcements…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <div className="filter-bar">
-            <span className="text-sm text-muted">{announcements.length} announcement{announcements.length === 1 ? '' : 's'}</span>
-            <div className="filter-bar-right">
-              <button className="btn btn-primary btn-sm" onClick={openCreate}>+ New Announcement</button>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
+      )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <div className="filter-bar">
+        <span className="text-sm text-muted">{announcements.length} announcement{announcements.length === 1 ? '' : 's'}</span>
+        <div className="filter-bar-right">
+          <button className="btn btn-primary btn-sm" onClick={openCreate}>+ New Announcement</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {announcements.length === 0 ? (
+          <div className="card"><div className="empty-state"><div className="empty-state-text">No announcements yet</div></div></div>
+        ) : announcements.map((a) => (
+          <div key={a.id} className="card">
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span className="font-semibold">{a.title}</span>
+                  <span className={`badge ${a.active ? 'badge-green' : 'badge-slate'}`}>{a.active ? 'active' : 'hidden'}</span>
+                </div>
+                <div className="text-sm text-muted" style={{ marginBottom: 4 }}>{a.body}</div>
+                {a.link && <div className="text-sm" style={{ color: 'var(--primary-light)' }}>{a.link}</div>}
+                <div className="text-sm text-muted" style={{ marginTop: 4 }}>{new Date(a.createdAt).toLocaleString()}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => toggleActive(a)}>{a.active ? 'Hide' : 'Show'}</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => openEdit(a)}>Edit</button>
+                <button className="btn btn-danger btn-sm" onClick={() => remove(a)}>Delete</button>
+              </div>
             </div>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {announcements.length === 0 ? (
-              <div className="card"><div className="empty-state"><div className="empty-state-text">No announcements yet</div></div></div>
-            ) : announcements.map((a) => (
-              <div key={a.id} className="card">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span className="font-semibold">{a.title}</span>
-                      <span className={`badge ${a.active ? 'badge-green' : 'badge-slate'}`}>{a.active ? 'active' : 'hidden'}</span>
-                    </div>
-                    <div className="text-sm text-muted" style={{ marginBottom: 4 }}>{a.body}</div>
-                    {a.link && <div className="text-sm" style={{ color: 'var(--primary-light)' }}>{a.link}</div>}
-                    <div className="text-sm text-muted" style={{ marginTop: 4 }}>{new Date(a.createdAt).toLocaleString()}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => toggleActive(a)}>{a.active ? 'Hide' : 'Show'}</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(a)}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => remove(a)}>Delete</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+        ))}
+      </div>
 
       {showForm && (
         <div className="drawer-overlay" onClick={() => setShowForm(false)}>

@@ -36,6 +36,16 @@ export default function CreatorsPage() {
     (json) => ((json as { creators?: Creator[] }).creators) || [],
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && creators.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Creators" subtitle="Referral partners, commissions &amp; payouts"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Creators" subtitle="Referral partners, commissions &amp; payouts"><Loader label="Loading creators…" /></AdminShell>;
+  }
+
   const flash = (kind: 'ok' | 'err', text: string) => {
     setToast({ kind, text });
     setTimeout(() => setToast(null), 3500);
@@ -78,90 +88,87 @@ export default function CreatorsPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading creators…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
-
-          {/* Stats */}
-          <div className="stats-grid" style={{ marginBottom: 20 }}>
-            {[
-              { label: 'Total Creators', value: counts.total },
-              { label: 'Active', value: counts.active },
-              { label: 'Pending Payout', value: `₹${counts.pending}` },
-              { label: 'Paid Out (lifetime)', value: `₹${counts.paid}` },
-            ].map((s, i) => (
-              <div key={i} className="stat-card">
-                <div className="stat-value">{s.value}</div>
-                <div className="stat-label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Filters */}
-          <div className="filter-bar">
-            <div className="input-group" style={{ width: 300 }}>
-              <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input className="input" placeholder="Search code, name, email…" value={search} onChange={(e) => setSearch(e.target.value)}/>
-            </div>
-            <div className="filter-bar-right">
-              <button className="btn btn-secondary btn-sm" onClick={refetch}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                </svg>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="card-flat">
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Creator</th><th>UPI</th><th>Referred</th><th>Earned</th><th>Pending</th><th>Status</th><th style={{ width: 90 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div className="avatar" style={{ background: AVATAR_COLORS[(c.code?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
-                            {(c.name || c.code).charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="font-medium">{c.code} <span className="text-muted" style={{ fontWeight: 400 }}>· {(c.commissionBps / 100).toFixed(0)}%</span></div>
-                            <div className="text-sm text-muted">{c.name || c.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="text-muted" style={{ fontSize: 12, fontFamily: 'monospace' }}>{c.payoutUpi || <span style={{ color: 'var(--danger, #EF4444)' }}>not set</span>}</td>
-                      <td>{c.referredCount}</td>
-                      <td className="text-muted">₹{c.totalEarned}</td>
-                      <td><span style={{ fontWeight: 600, color: c.pending > 0 ? '#10B981' : 'inherit' }}>₹{c.pending}</span></td>
-                      <td><span className={`badge ${STATUS_BADGE[c.status] || 'badge-slate'}`}>{c.status}</span></td>
-                      <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(c); setPayoutRef(''); }}>View</button></td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{creators.length === 0 ? 'No creators yet' : 'No creators match your search'}</div></div></td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)' }}>
-              Showing {filtered.length} of {creators.length} creators
-            </div>
-          </div>
-        </>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
       )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+
+      {/* Stats */}
+      <div className="stats-grid" style={{ marginBottom: 20 }}>
+        {[
+          { label: 'Total Creators', value: counts.total },
+          { label: 'Active', value: counts.active },
+          { label: 'Pending Payout', value: `₹${counts.pending}` },
+          { label: 'Paid Out (lifetime)', value: `₹${counts.paid}` },
+        ].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="filter-bar">
+        <div className="input-group" style={{ width: 300 }}>
+          <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input className="input" placeholder="Search code, name, email…" value={search} onChange={(e) => setSearch(e.target.value)}/>
+        </div>
+        <div className="filter-bar-right">
+          <button className="btn btn-secondary btn-sm" onClick={refetch}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card-flat">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Creator</th><th>UPI</th><th>Referred</th><th>Earned</th><th>Pending</th><th>Status</th><th style={{ width: 90 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="avatar" style={{ background: AVATAR_COLORS[(c.code?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
+                        {(c.name || c.code).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-medium">{c.code} <span className="text-muted" style={{ fontWeight: 400 }}>· {(c.commissionBps / 100).toFixed(0)}%</span></div>
+                        <div className="text-sm text-muted">{c.name || c.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="text-muted" style={{ fontSize: 12, fontFamily: 'monospace' }}>{c.payoutUpi || <span style={{ color: 'var(--danger, #EF4444)' }}>not set</span>}</td>
+                  <td>{c.referredCount}</td>
+                  <td className="text-muted">₹{c.totalEarned}</td>
+                  <td><span style={{ fontWeight: 600, color: c.pending > 0 ? '#10B981' : 'inherit' }}>₹{c.pending}</span></td>
+                  <td><span className={`badge ${STATUS_BADGE[c.status] || 'badge-slate'}`}>{c.status}</span></td>
+                  <td><button className="btn btn-secondary btn-sm" onClick={() => { setDetail(c); setPayoutRef(''); }}>View</button></td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{creators.length === 0 ? 'No creators yet' : 'No creators match your search'}</div></div></td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)' }}>
+          Showing {filtered.length} of {creators.length} creators
+        </div>
+      </div>
 
       {/* Detail drawer */}
       {detail && (

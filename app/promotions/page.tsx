@@ -41,6 +41,16 @@ export default function PromotionsPage() {
     (json) => json as PromotionsData
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && (data.history.length > 0 || data.draft !== null);
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><Loader label="Loading promotions…" /></AdminShell>;
+  }
+
   const [subject, setSubject] = useState('');
   const [html, setHtml] = useState('');
   const [audience, setAudience] = useState<'all' | 'plans'>('all');
@@ -113,117 +123,115 @@ export default function PromotionsPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading promotions…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <div className="card mb-3">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Compose</div>
-                <div className="card-subtitle">{targetCount} subscriber{targetCount === 1 ? '' : 's'} will receive this</div>
-              </div>
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplateGen(!showTemplateGen)}>
-                {showTemplateGen ? '✕ Close' : '✨ Generate Template'}
-              </button>
-            </div>
-
-            {showTemplateGen && (
-              <div style={{ marginBottom: 16, padding: 14, background: 'var(--surface-2)', borderRadius: 8 }}>
-                <EmailTemplateGenerator
-                  onTemplateGenerated={(subject, html) => {
-                    setSubject(subject);
-                    setHtml(html);
-                    setShowTemplateGen(false);
-                  }}
-                />
-              </div>
-            )}
-
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Audience</label>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-              <button
-                className={`btn btn-sm ${audience === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setAudience('all')}
-              >
-                All subscribers ({data.recipientCount})
-              </button>
-              <button
-                className={`btn btn-sm ${audience === 'plans' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setAudience('plans')}
-              >
-                By plan
-              </button>
-            </div>
-            {audience === 'plans' && (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-                {PLAN_OPTIONS.map((p) => (
-                  <button
-                    key={p.id}
-                    className={`btn btn-sm ${selectedPlans.includes(p.id) ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => togglePlan(p.id)}
-                  >
-                    {selectedPlans.includes(p.id) ? '✓ ' : ''}{p.label} ({planCounts[p.id] || 0})
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Subject</label>
-            <input
-              className="input mb-3"
-              placeholder="🎉 New feature: ..."
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Email content</label>
-            <PromotionEditor html={html} onChange={setHtml} />
-
-            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-              <button className="btn btn-secondary" onClick={saveDraft} disabled={saving || sending}>
-                {saving ? 'Saving…' : 'Save draft'}
-              </button>
-              <button className="btn btn-primary" onClick={send} disabled={saving || sending}>
-                {sendLabel}
-              </button>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">Send history</div>
-            </div>
-            {data.history.length === 0 ? (
-              <div className="empty-state"><div className="empty-state-text">No promotions sent yet</div></div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {data.history.map((h) => (
-                  <div key={h.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="font-semibold">{h.subject}</div>
-                      <div className="text-sm text-muted">
-                        {new Date(h.sentAt).toLocaleString()} · by {h.sentBy}
-                        {h.audience && h.audience.length > 0 && (
-                          <> · {h.audience.includes('all') ? 'All subscribers' : `Plans: ${h.audience.join(', ')}`}</>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span className="badge badge-green">{h.sent} sent</span>
-                      {h.failed > 0 && <span className="badge badge-red">{h.failed} failed</span>}
-                      {h.html && (
-                        <button className="btn btn-secondary btn-sm" onClick={() => setViewing(h)}>View</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
       )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <div className="card mb-3">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Compose</div>
+            <div className="card-subtitle">{targetCount} subscriber{targetCount === 1 ? '' : 's'} will receive this</div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplateGen(!showTemplateGen)}>
+            {showTemplateGen ? '✕ Close' : '✨ Generate Template'}
+          </button>
+        </div>
+
+        {showTemplateGen && (
+          <div style={{ marginBottom: 16, padding: 14, background: 'var(--surface-2)', borderRadius: 8 }}>
+            <EmailTemplateGenerator
+              onTemplateGenerated={(subject, html) => {
+                setSubject(subject);
+                setHtml(html);
+                setShowTemplateGen(false);
+              }}
+            />
+          </div>
+        )}
+
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Audience</label>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <button
+            className={`btn btn-sm ${audience === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setAudience('all')}
+          >
+            All subscribers ({data.recipientCount})
+          </button>
+          <button
+            className={`btn btn-sm ${audience === 'plans' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setAudience('plans')}
+          >
+            By plan
+          </button>
+        </div>
+        {audience === 'plans' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+            {PLAN_OPTIONS.map((p) => (
+              <button
+                key={p.id}
+                className={`btn btn-sm ${selectedPlans.includes(p.id) ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => togglePlan(p.id)}
+              >
+                {selectedPlans.includes(p.id) ? '✓ ' : ''}{p.label} ({planCounts[p.id] || 0})
+              </button>
+            ))}
+          </div>
+        )}
+
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Subject</label>
+        <input
+          className="input mb-3"
+          placeholder="🎉 New feature: ..."
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        />
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>Email content</label>
+        <PromotionEditor html={html} onChange={setHtml} />
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          <button className="btn btn-secondary" onClick={saveDraft} disabled={saving || sending}>
+            {saving ? 'Saving…' : 'Save draft'}
+          </button>
+          <button className="btn btn-primary" onClick={send} disabled={saving || sending}>
+            {sendLabel}
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title">Send history</div>
+        </div>
+        {data.history.length === 0 ? (
+          <div className="empty-state"><div className="empty-state-text">No promotions sent yet</div></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {data.history.map((h) => (
+              <div key={h.id} className="card-flat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div className="font-semibold">{h.subject}</div>
+                  <div className="text-sm text-muted">
+                    {new Date(h.sentAt).toLocaleString()} · by {h.sentBy}
+                    {h.audience && h.audience.length > 0 && (
+                      <> · {h.audience.includes('all') ? 'All subscribers' : `Plans: ${h.audience.join(', ')}`}</>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span className="badge badge-green">{h.sent} sent</span>
+                  {h.failed > 0 && <span className="badge badge-red">{h.failed} failed</span>}
+                  {h.html && (
+                    <button className="btn btn-secondary btn-sm" onClick={() => setViewing(h)}>View</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {viewing && (
         <div className="drawer-overlay" onClick={() => setViewing(null)}>
@@ -232,7 +240,7 @@ export default function PromotionsPage() {
               <div className="drawer-title">{viewing.subject}</div>
               <button className="btn btn-ghost btn-icon" onClick={() => setViewing(null)}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>

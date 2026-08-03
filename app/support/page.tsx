@@ -41,6 +41,16 @@ export default function SupportPage() {
     }));
   });
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && tickets.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution"><Loader label="Loading tickets…" /></AdminShell>;
+  }
+
   const [changingStatus, setChangingStatus] = useState(false);
   const changeStatus = async (newStatus: string) => {
     if (!active || newStatus === active.status) return;
@@ -86,66 +96,63 @@ export default function SupportPage() {
 
   return (
     <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution">
-      {loading ? (
-        <Loader label="Loading tickets…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
-
-          <div className="stats-grid" style={{ marginBottom: 20 }}>
-            {[
-              {label:'Open', value:counts.open}, {label:'In Progress', value:counts.inProgress},
-              {label:'Resolved', value:counts.resolved}, {label:'Critical', value:counts.critical},
-            ].map((s,i) => (
-              <div key={i} className="stat-card"><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>
-            ))}
-          </div>
-
-          <div className="tabs">
-            {['all','open','in-progress','resolved'].map((s) => (
-              <button key={s} className={`tab${filter===s?' active':''}`} onClick={() => setFilter(s)}>
-                {s==='all'?'All Tickets':s.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase())}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {tickets.length === 0 ? (
-              <div className="card"><div className="empty-state"><div className="empty-state-text">No tickets in this view</div></div></div>
-            ) : tickets.map((t) => (
-              <div key={t.id} className="card" style={{ cursor:'pointer' }} onClick={() => setActive(t)}>
-                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
-                      <span className="font-semibold">{t.title}</span>
-                      <span className={`badge ${PRIORITY_BADGE[t.priority]}`}>{t.priority}</span>
-                      <span className="badge badge-slate">{t.category}</span>
-                    </div>
-                    <div className="text-sm text-muted">From: {t.user} · {t.created} · {t.messageCount} message{t.messageCount===1?'':'s'}</div>
-                  </div>
-                  <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <span className={`badge ${STATUS_BADGE[t.status]}`}>{t.status.replace('-',' ')}</span>
-                    <div className="text-sm" style={{ color:'var(--text-dim)', marginTop:4 }}>{t.assigned||'Unassigned'}</div>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      style={{ marginTop: 6 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!window.confirm(`Permanently delete ticket "${t.title}"? This cannot be undone.`)) return;
-                        postAdmin(`/api/support/tickets/${t.id}/delete`, {}).then((r) => { if (r.ok) refetch(); });
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
       )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+
+      <div className="stats-grid" style={{ marginBottom: 20 }}>
+        {[
+          {label:'Open', value:counts.open}, {label:'In Progress', value:counts.inProgress},
+          {label:'Resolved', value:counts.resolved}, {label:'Critical', value:counts.critical},
+        ].map((s,i) => (
+          <div key={i} className="stat-card"><div className="stat-value">{s.value}</div><div className="stat-label">{s.label}</div></div>
+        ))}
+      </div>
+
+      <div className="tabs">
+        {['all','open','in-progress','resolved'].map((s) => (
+          <button key={s} className={`tab${filter===s?' active':''}`} onClick={() => setFilter(s)}>
+            {s==='all'?'All Tickets':s.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase())}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        {tickets.length === 0 ? (
+          <div className="card"><div className="empty-state"><div className="empty-state-text">No tickets in this view</div></div></div>
+        ) : tickets.map((t) => (
+          <div key={t.id} className="card" style={{ cursor:'pointer' }} onClick={() => setActive(t)}>
+            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:16 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
+                  <span className="font-semibold">{t.title}</span>
+                  <span className={`badge ${PRIORITY_BADGE[t.priority]}`}>{t.priority}</span>
+                  <span className="badge badge-slate">{t.category}</span>
+                </div>
+                <div className="text-sm text-muted">From: {t.user} · {t.created} · {t.messageCount} message{t.messageCount===1?'':'s'}</div>
+              </div>
+              <div style={{ textAlign:'right', flexShrink:0 }}>
+                <span className={`badge ${STATUS_BADGE[t.status]}`}>{t.status.replace('-',' ')}</span>
+                <div className="text-sm" style={{ color:'var(--text-dim)', marginTop:4 }}>{t.assigned||'Unassigned'}</div>
+                <button
+                  className="btn btn-danger btn-sm"
+                  style={{ marginTop: 6 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!window.confirm(`Permanently delete ticket "${t.title}"? This cannot be undone.`)) return;
+                    postAdmin(`/api/support/tickets/${t.id}/delete`, {}).then((r) => { if (r.ok) refetch(); });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Detail drawer */}
       {active && (

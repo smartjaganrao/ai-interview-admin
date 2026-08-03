@@ -57,6 +57,16 @@ export default function BlogAdminPage() {
     (json) => (json as { posts?: BlogPost[] }).posts || []
   );
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && posts.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><Loader label="Loading posts…" /></AdminShell>;
+  }
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -76,16 +86,6 @@ export default function BlogAdminPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
 
-  // Focusing the title input on open used to use the `autoFocus` attribute,
-  // which makes browsers scroll-into-view more aggressively than needed —
-  // the editor would open already scrolled a section or two down, with the
-  // title field clipped above the fold. `focus({ preventScroll: true })`
-  // isn't reliably honored by every engine when the focused element sits
-  // inside a nested scroll container (worst on Safari, but timing-dependent
-  // elsewhere too), and the browser's corrective scroll can land at any
-  // point after focus — not on a fixed frame count. Instead of guessing how
-  // many frames to wait, we watch the scroll container for a moment and
-  // snap any unwanted scroll back to 0.
   useEffect(() => {
     if (!showForm) return;
     const el = scrollRef.current;
@@ -237,53 +237,51 @@ export default function BlogAdminPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading posts…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <div className="filter-bar">
-            <span className="text-sm text-muted">{posts.length} post{posts.length === 1 ? '' : 's'}</span>
-            <div className="filter-bar-right">
-              <button className="btn btn-primary btn-sm" onClick={openCreate}>+ New Post</button>
-            </div>
-          </div>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
+      )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <div className="filter-bar">
+        <span className="text-sm text-muted">{posts.length} post{posts.length === 1 ? '' : 's'}</span>
+        <div className="filter-bar-right">
+          <button className="btn btn-primary btn-sm" onClick={openCreate}>+ New Post</button>
+        </div>
+      </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {posts.length === 0 ? (
-              <div className="card"><div className="empty-state"><div className="empty-state-text">No posts yet</div></div></div>
-            ) : posts.map((p) => (
-              <div key={p.id} className="card">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 12, flex: 1 }}>
-                    {p.coverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.coverImageUrl} alt={p.coverImageAlt} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--border)', flexShrink: 0 }} />
-                    )}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span className="font-semibold">{p.title}</span>
-                        <span className={`badge ${p.published ? 'badge-green' : 'badge-slate'}`}>{p.published ? 'published' : 'draft'}</span>
-                      </div>
-                      <div className="text-sm text-muted" style={{ marginBottom: 4 }}>/blog/{p.slug}</div>
-                      <div className="text-sm text-muted">{p.excerpt}</div>
-                      <div className="text-sm text-muted" style={{ marginTop: 4 }}>Updated {new Date(p.updatedAt).toLocaleString()}</div>
-                    </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {posts.length === 0 ? (
+          <div className="card"><div className="empty-state"><div className="empty-state-text">No posts yet</div></div></div>
+        ) : posts.map((p) => (
+          <div key={p.id} className="card">
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12, flex: 1 }}>
+                {p.coverImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.coverImageUrl} alt={p.coverImageAlt} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--border)', flexShrink: 0 }} />
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span className="font-semibold">{p.title}</span>
+                    <span className={`badge ${p.published ? 'badge-green' : 'badge-slate'}`}>{p.published ? 'published' : 'draft'}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => togglePublished(p)}>{p.published ? 'Unpublish' : 'Publish'}</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => remove(p)}>Delete</button>
-                  </div>
+                  <div className="text-sm text-muted" style={{ marginBottom: 4 }}>/blog/{p.slug}</div>
+                  <div className="text-sm text-muted">{p.excerpt}</div>
+                  <div className="text-sm text-muted" style={{ marginTop: 4 }}>Updated {new Date(p.updatedAt).toLocaleString()}</div>
                 </div>
               </div>
-            ))}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => togglePublished(p)}>{p.published ? 'Unpublish' : 'Publish'}</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => openEdit(p)}>Edit</button>
+                <button className="btn btn-danger btn-sm" onClick={() => remove(p)}>Delete</button>
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        ))}
+      </div>
 
       {showForm && typeof document !== 'undefined' && createPortal(
         // Rendered via portal straight to <body> — this overlay uses

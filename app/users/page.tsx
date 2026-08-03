@@ -65,6 +65,16 @@ export default function UsersPage() {
   );
   const users = data.list;
 
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && data.list.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Users" subtitle="Manage accounts, plans &amp; access"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Users" subtitle="Manage accounts, plans &amp; access"><Loader label="Loading users…" /></AdminShell>;
+  }
+
   const filtered = users.filter((u) => {
     const s = search.toLowerCase();
     return (
@@ -138,7 +148,6 @@ export default function UsersPage() {
   const bulkSetPlan = async (plan: string) => {
     setActing(true);
     let failed = 0;
-    // Sequential to avoid overwhelming the API
     for (const uid of selected) {
       const r = await postAdmin('/api/users/upgrade', { userId: uid, newPlan: plan });
       if (!r.ok) failed++;
@@ -209,150 +218,147 @@ export default function UsersPage() {
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}
         </div>
       )}
-      {loading ? (
-        <Loader label="Loading users…" />
-      ) : reason !== 'live' ? (
-        <ErrorState reason={reason} onRetry={refetch} />
-      ) : (
-        <>
-          <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
-
-          {/* Stats */}
-          <div className="stats-grid" style={{ marginBottom: 20 }}>
-            {[
-              { label: 'Total Users', value: counts.total },
-              { label: 'Active', value: counts.active },
-              { label: 'Paid', value: counts.paid },
-              { label: 'Banned', value: counts.banned },
-            ].map((s, i) => (
-              <div key={i} className="stat-card">
-                <div className="stat-value">{s.value}</div>
-                <div className="stat-label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Filters */}
-          <div className="filter-bar">
-            <div className="input-group" style={{ width: 280 }}>
-              <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input className="input" placeholder="Search users…" value={search} onChange={(e) => setSearch(e.target.value)}/>
-            </div>
-            <select className="input" style={{ width: 130 }} value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
-              <option value="all">All Plans</option><option value="free">Free</option><option value="quick_pass">Quick Pass</option><option value="pro">Pro</option><option value="power">Power</option>
-            </select>
-            <select className="input" style={{ width: 130 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="banned">Banned</option>
-            </select>
-            {selected.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted">{selected.length} selected</span>
-                <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('pro')}>Make Pro</button>
-                <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('power')}>Make Power</button>
-                <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkBan}>Ban</button>
-                <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkDelete}>Delete</button>
-              </div>
-            )}
-            <div className="filter-bar-right">
-              <button className="btn btn-secondary btn-sm" onClick={refetch}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                </svg>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="card-flat">
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 32, color: 'var(--text-muted)', fontSize: 11 }}>#</th>
-                    <th style={{ width: 40 }}>
-                      <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
-                    </th>
-                    <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((u, idx) => (
-                    <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); }}>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
-                      </td>
-                       <td>
-                         <div className="flex items-center gap-3">
-                           <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
-                             {u.name.charAt(0).toUpperCase()}
-                           </div>
-                           <div>
-                             <div className="flex items-center gap-2">
-                               <div className="font-medium">{u.name}</div>
-                               {u.duplicateEmail && (
-                                 <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full" title="Duplicate email address">
-                                   ⚠ Duplicate
-                                 </span>
-                               )}
-                             </div>
-                             <div className="text-sm text-muted">{u.email}</div>
-                           </div>
-                         </div>
-                       </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <select
-                          className="input"
-                          style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
-                          value={u.plan}
-                          disabled={inlineChanging === u.uid}
-                          onChange={(e) => changePlanInline(u.uid, e.target.value)}
-                        >
-                          <option value="free">FREE</option>
-                          <option value="quick_pass">QUICK PASS</option>
-                          <option value="pro">PRO</option>
-                          <option value="power">POWER</option>
-                        </select>
-                      </td>
-                      <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
-                      <td>
-                        {u.lastActive ? (
-                          <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
-                        ) : (
-                          <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={`badge ${u.activeDays ? 'badge-indigo' : 'badge-slate'}`} title="Distinct days with desktop-app usage recorded">
-                          {u.activeDays ?? 0}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="text-xs text-muted">
-                          {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
-                        </span>
-                      </td>
-                      <td className="text-muted">{u.joined}</td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Showing {filtered.length} of {users.length} users</span>
-              <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
-                ⚠ Delete All Users
-              </button>
-            </div>
-          </div>
-        </>
+      {hasCached && (
+        <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
+          Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
+        </div>
       )}
+      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+
+      {/* Stats */}
+      <div className="stats-grid" style={{ marginBottom: 20 }}>
+        {[
+          { label: 'Total Users', value: counts.total },
+          { label: 'Active', value: counts.active },
+          { label: 'Paid', value: counts.paid },
+          { label: 'Banned', value: counts.banned },
+        ].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="filter-bar">
+        <div className="input-group" style={{ width: 280 }}>
+          <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input className="input" placeholder="Search users…" value={search} onChange={(e) => setSearch(e.target.value)}/>
+        </div>
+        <select className="input" style={{ width: 130 }} value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+          <option value="all">All Plans</option><option value="free">Free</option><option value="quick_pass">Quick Pass</option><option value="pro">Pro</option><option value="power">Power</option>
+        </select>
+        <select className="input" style={{ width: 130 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="banned">Banned</option>
+        </select>
+        {selected.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted">{selected.length} selected</span>
+            <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('pro')}>Make Pro</button>
+            <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('power')}>Make Power</button>
+            <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkBan}>Ban</button>
+            <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkDelete}>Delete</button>
+          </div>
+        )}
+        <div className="filter-bar-right">
+          <button className="btn btn-secondary btn-sm" onClick={refetch}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card-flat">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: 32, color: 'var(--text-muted)', fontSize: 11 }}>#</th>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
+                </th>
+                <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u, idx) => (
+                <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); }}>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
+                  </td>
+                   <td>
+                    <div className="flex items-center gap-3">
+                      <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
+                        {u.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{u.name}</div>
+                          {u.duplicateEmail && (
+                            <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full" title="Duplicate email address">
+                              ⚠ Duplicate
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <select
+                      className="input"
+                      style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
+                      value={u.plan}
+                      disabled={inlineChanging === u.uid}
+                      onChange={(e) => changePlanInline(u.uid, e.target.value)}
+                    >
+                      <option value="free">FREE</option>
+                      <option value="quick_pass">QUICK PASS</option>
+                      <option value="pro">PRO</option>
+                      <option value="power">POWER</option>
+                    </select>
+                  </td>
+                  <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
+                  <td>
+                    {u.lastActive ? (
+                      <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
+                    ) : (
+                      <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`badge ${u.activeDays ? 'badge-indigo' : 'badge-slate'}`} title="Distinct days with desktop-app usage recorded">
+                      {u.activeDays ?? 0}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="text-xs text-muted">
+                      {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
+                    </span>
+                  </td>
+                  <td className="text-muted">{u.joined}</td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Showing {filtered.length} of {users.length} users</span>
+          <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
+            ⚠ Delete All Users
+          </button>
+        </div>
+      </div>
 
       {/* Delete All Modal */}
       {showDeleteAllModal && (
