@@ -43,15 +43,18 @@ export default function NotificationBell() {
   const [pending, setPending] = useState<{ total: number; count: number }>({ total: 0, count: 0 });
 
   const load = () => {
-    fetch('/api/notifications', { credentials: 'include' })
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+    fetch('/api/notifications', { credentials: 'include', signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
+        clearTimeout(timeoutId);
         if (!d) return;
         setItems(d.items || []);
         setUnreadCount(d.unreadCount || 0);
         setPending({ total: d.pendingPayoutTotal || 0, count: d.pendingPayoutCount || 0 });
       })
-      .catch(() => {});
+      .catch(() => { clearTimeout(timeoutId); });
   };
 
   useEffect(() => {

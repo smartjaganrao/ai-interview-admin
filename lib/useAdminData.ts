@@ -12,18 +12,8 @@ interface AdminDataState<T> {
   refetch: () => void;
 }
 
-/**
- * Fetches an admin API route. NO mock/demo fallback — while the request is in
- * flight `loading` is true (show a loader); on success `data` is the real
- * payload; on failure `data` stays at the empty `initial` value and `reason`
- * explains why (so the UI can render an error state instead of fake numbers).
- *
- * - 200        -> real data, isLive = true, reason = 'live'
- * - 401/403    -> reason = 'unauthorized' (not signed in as admin)
- * - 503        -> reason = 'not-configured' (Admin SDK secret missing on server)
- * - 500/502    -> reason = 'error' (real server error)
- * - network    -> reason = 'error'
- */
+const FETCH_TIMEOUT_MS = 20_000;
+
 export function useAdminData<T>(
   url: string,
   initial: T,
@@ -41,12 +31,18 @@ export function useAdminData<T>(
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     async function load() {
       setState((s) => ({ ...s, loading: true, reason: 'loading' }));
 
       try {
-        const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
+        const res = await fetch(url, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
         if (cancelled) return;
         if (res.ok) {
           const json = await res.json();
@@ -62,12 +58,18 @@ export function useAdminData<T>(
       } catch {
         if (cancelled) return;
         setState({ data: initial, isLive: false, loading: false, reason: 'error' });
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
     load();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, nonce]);
 
