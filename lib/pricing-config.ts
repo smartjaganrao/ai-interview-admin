@@ -79,13 +79,13 @@ export const PLANS: PlanConfig[] = [
   {
     id: 'pro',
     name: 'Pro',
-    description: '5-hour deep practice pass',
+    description: '7-day unlimited pass',
     price: 499,
     billingType: 'one_time',
-    durationType: 'hours',
-    durationValue: 5,
-    usageLimit: 5,
-    isUnlimited: false,
+    durationType: 'days',
+    durationValue: 7,
+    usageLimit: null,
+    isUnlimited: true,
     features: [
       'AI Interview Assistant',
       'Voice Mode',
@@ -230,7 +230,12 @@ export function getPlanUsageLabel(plan: AnyPlanId): string {
   const config = getPlanById(plan);
   if (!config) return '';
   if (config.id === 'free') return 'Limited trial';
-  if (config.isUnlimited) return 'Unlimited · Monthly';
+  if (config.isUnlimited && config.billingType === 'subscription') return 'Unlimited · Monthly';
+  if (config.isUnlimited && config.billingType === 'one_time') {
+    if (config.durationType === 'days') return `${config.durationValue} days unlimited`;
+    if (config.durationType === 'hours') return `${config.durationValue} hours unlimited`;
+    return 'Unlimited';
+  }
   if (config.durationType === 'hours') {
     const windowHours = config.durationValue * 24;
     const windowText = windowHours >= 24 ? `${windowHours / 24} day${windowHours / 24 !== 1 ? 's' : ''}` : `${windowHours}h`;
