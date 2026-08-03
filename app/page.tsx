@@ -59,12 +59,15 @@ export default function AdminDashboard() {
   );
   const releaseQ = useAdminData<ReleaseInfo>('/api/release', EMPTY_RELEASE);
 
-  // Gate the whole page on the primary KPIs request.
-  if (kpiQ.loading) {
+  const hasLiveData = kpiQ.reason === 'live';
+  const hasCachedData = kpiQ.reason === 'error' && kpiQ.data !== EMPTY_KPIS;
+  const shouldGatePage = kpiQ.loading || kpiQ.reason === 'unauthorized' || kpiQ.reason === 'not-configured';
+
+  if (shouldGatePage) {
+    if (kpiQ.reason === 'unauthorized' || kpiQ.reason === 'not-configured') {
+      return <AdminShell title="Dashboard"><ErrorState reason={kpiQ.reason} onRetry={kpiQ.refetch} /></AdminShell>;
+    }
     return <AdminShell title="Dashboard"><Loader label="Loading dashboard…" /></AdminShell>;
-  }
-  if (kpiQ.reason !== 'live') {
-    return <AdminShell title="Dashboard"><ErrorState reason={kpiQ.reason} onRetry={kpiQ.refetch} /></AdminShell>;
   }
 
   const k = kpiQ.data;
@@ -76,7 +79,13 @@ export default function AdminDashboard() {
 
   return (
     <AdminShell title="Dashboard" subtitle="Overview of your product metrics">
-      <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>
+      {!hasLiveData && hasCachedData && (
+        <div className="alert" style={{ background: 'var(--warning-bg)', border: '1px solid rgba(245,158,11,0.2)', color: 'var(--warning)', marginBottom: 20 }}>
+          Showing cached data. Live data unavailable due to quota/connectivity issues. Retrying in background...
+          <button className="btn btn-ghost btn-sm" style={{ marginLeft: 10 }} onClick={kpiQ.refetch}>Retry</button>
+        </div>
+      )}
+      {hasLiveData && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
 
       {/* KPI Cards */}
       <div className="stats-grid">
@@ -137,21 +146,24 @@ export default function AdminDashboard() {
             ) : revQ.data.length === 0 ? (
               <EmptyState message="No revenue history yet" />
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={revQ.data}>
-                  <defs>
-                    <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366F1" stopOpacity={0.3}/>
-                      <stop offset="100%" stopColor="#6366F1" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false}/>
-                  <XAxis dataKey="month" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
-                  <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v/1000}k`}/>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`₹${Number(v).toLocaleString()}`, 'MRR']}/>
-                  <Area type="monotone" dataKey="mrr" stroke="#6366F1" strokeWidth={2} fill="url(#mrrGrad)"/>
-                </AreaChart>
-              </ResponsiveContainer>
+              <>
+                {!revQ.isLive && <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>Showing cached chart data</div>}
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={revQ.data}>
+                    <defs>
+                      <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366F1" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#6366F1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false}/>
+                    <XAxis dataKey="month" stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false}/>
+                    <YAxis stroke="#4B5563" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v/1000}k`}/>
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`₹${Number(v).toLocaleString()}`, 'MRR']}/>
+                    <Area type="monotone" dataKey="mrr" stroke="#6366F1" strokeWidth={2} fill="url(#mrrGrad)"/>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </>
             )}
           </div>
         </div>
@@ -205,16 +217,19 @@ export default function AdminDashboard() {
           ) : actQ.data.length === 0 ? (
             <EmptyState message="No activity recorded yet" />
           ) : (
-            actQ.data.map((a, i) => (
-              <div key={i} className="activity-item">
-                <div className="activity-dot" style={{ background: ACTION_DOT[a.action] || '#10B981' }}/>
-                <div className="activity-text">
-                  <div style={{ fontWeight: 500, marginBottom: 2 }}>{(a.action || 'event').replace(/_/g, ' ')}</div>
-                  <div className="text-muted text-sm">{a.targetUserEmail || a.adminEmail}</div>
+            <>
+              {!actQ.isLive && <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>Showing cached activity data</div>}
+              {actQ.data.map((a, i) => (
+                <div key={i} className="activity-item">
+                  <div className="activity-dot" style={{ background: ACTION_DOT[a.action] || '#10B981' }}/>
+                  <div className="activity-text">
+                    <div style={{ fontWeight: 500, marginBottom: 2 }}>{(a.action || 'event').replace(/_/g, ' ')}</div>
+                    <div className="text-muted text-sm">{a.targetUserEmail || a.adminEmail}</div>
+                  </div>
+                  <div className="activity-time">{relTime(a.timestamp)}</div>
                 </div>
-                <div className="activity-time">{relTime(a.timestamp)}</div>
-              </div>
-            ))
+              ))}
+            </>
           )}
         </div>
 
@@ -238,8 +253,11 @@ export default function AdminDashboard() {
               </div>
               <span className="badge badge-purple">{releaseQ.loading ? '…' : releaseQ.data.version}</span>
             </div>
+            {!releaseQ.isLive && releaseQ.data.version !== '—' && (
+              <div className="alert alert-warning" style={{ marginBottom: 10, fontSize: 12 }}>Showing cached release info</div>
+            )}
             <div className="text-muted text-sm" style={{ marginBottom: 10 }}>
-              Windows 10/11 &middot; macOS (Apple Silicon + Intel)
+              Windows 10/11 · macOS (Apple Silicon + Intel)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <a href={releaseQ.data.releaseUrl} target="_blank" rel="noopener" className="btn btn-secondary w-full">Release notes</a>

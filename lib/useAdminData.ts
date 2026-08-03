@@ -13,14 +13,46 @@ interface AdminDataState<T> {
 }
 
 const FETCH_TIMEOUT_MS = 20_000;
+const LS_PREFIX = 'admin-data:';
+
+function storageKey(url: string): string {
+  try {
+    return `${LS_PREFIX}${btoa(url)}`;
+  } catch {
+    return `${LS_PREFIX}${url}`;
+  }
+}
+
+function readCached<T>(url: string): { data: T; ts: number } | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    const raw = window.localStorage.getItem(storageKey(url));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data: T; ts: number };
+    if (!parsed || typeof parsed.ts !== 'number') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache<T>(url: string, data: T) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    window.localStorage.setItem(storageKey(url), JSON.stringify({ data, ts: Date.now() }));
+  } catch {
+    // quota / private mode — ignore
+  }
+}
 
 export function useAdminData<T>(
   url: string,
   initial: T,
   select?: (json: unknown) => T
 ): AdminDataState<T> {
+  const cachedAtStart = readCached<T>(url);
   const [state, setState] = useState<Omit<AdminDataState<T>, 'refetch'>>({
-    data: initial,
+    data: cachedAtStart?.data ?? initial,
     isLive: false,
     loading: true,
     reason: 'loading',
@@ -47,17 +79,30 @@ export function useAdminData<T>(
         if (res.ok) {
           const json = await res.json();
           const data = select ? select(json) : (json as T);
+          writeCache(url, data);
           setState({ data, isLive: true, loading: false, reason: 'live' });
         } else {
           const reason: Reason =
             res.status === 503 ? 'not-configured'
             : res.status >= 500 ? 'error'
             : 'unauthorized';
-          setState({ data: initial, isLive: false, loading: false, reason });
+          const cached = readCached<T>(url);
+          setState({
+            data: cached?.data ?? initial,
+            isLive: false,
+            loading: false,
+            reason,
+          });
         }
       } catch {
         if (cancelled) return;
-        setState({ data: initial, isLive: false, loading: false, reason: 'error' });
+        const cached = readCached<T>(url);
+        setState({
+          data: cached?.data ?? initial,
+          isLive: false,
+          loading: false,
+          reason: 'error',
+        });
       } finally {
         clearTimeout(timeoutId);
       }
@@ -83,8 +128,9 @@ export function errorMessage(reason: Reason): string {
     case 'not-configured':
       return 'The server is not configured to read data yet (Firebase Admin SDK key missing on the deployment).';
     case 'error':
-      return 'Could not reach the server. Check your connection and try again.';
+      return 'Could not reach the server. Showing cached data. Retry when quota is available.';
     default:
       return 'Something went wrong.';
   }
 }
+
