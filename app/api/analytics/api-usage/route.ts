@@ -67,11 +67,14 @@ export async function GET() {
 
     return NextResponse.json({ usageData });
   } catch (error) {
-    console.error('Error fetching API usage:', error);
-    // Return empty data if collectionGroup not available
+    const message = error instanceof Error ? error.message : 'Failed to fetch API usage';
+    const isIndexError = message.includes('FAILED_PRECONDITION') && message.includes('index');
+    if (!isIndexError) {
+      console.error('Error fetching API usage:', error);
+    }
     return NextResponse.json({
       usageData: [],
-      note: 'API usage tracking not yet populated',
+      ...(isIndexError ? { note: 'API usage tracking index not yet available' } : { note: 'API usage tracking not yet populated' }),
     });
   }
 }

@@ -219,16 +219,16 @@ export default function AdminPricingPage() {
 
           <div style={{ display: 'grid', gap: 12 }}>
             <label className="text-sm text-muted">Label (shown to users)
-              <input className="input mt-1" placeholder="Launch offer — 20% off" value={form?.offer.label}
+              <input className="input mt-1" placeholder="Launch offer — 20% off" value={form?.offer.label ?? ''}
                 onChange={(e) => setOffer({ label: e.target.value })} />
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <label className="text-sm text-muted">% off
-                <input className="input mt-1" type="number" min={0} max={90} value={form?.offer.percentOff}
+                <input className="input mt-1" type="number" min={0} max={90} value={form?.offer.percentOff ?? 0}
                   onChange={(e) => setOffer({ percentOff: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} />
               </label>
               <label className="text-sm text-muted">Applies to
-                <select className="input mt-1" value={form?.offer.appliesTo} onChange={(e) => setOffer({ appliesTo: e.target.value as Offer['appliesTo'] })}>
+                <select className="input mt-1" value={form?.offer.appliesTo ?? 'all'} onChange={(e) => setOffer({ appliesTo: e.target.value as Offer['appliesTo'] })}>
                   <option value="all">All plans</option>
                   {sortedPlans.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
