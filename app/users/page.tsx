@@ -151,6 +151,16 @@ export default function UsersPage() {
     else flash('err', r.error || 'Failed to record refund');
   };
 
+  const deleteAiAnswers = async () => {
+    if (!detail) return;
+    if (!window.confirm(`Delete all AI answers for ${detail.email}? This cannot be undone.`)) return;
+    setActing(true);
+    const r = await postAdmin(`/api/answers/user/${detail.uid}/delete`, {});
+    setActing(false);
+    if (r.ok) { flash('ok', r.message || 'AI answers deleted'); refetch(); }
+    else flash('err', r.error || 'Failed to delete AI answers');
+  };
+
   const bulkSetPlan = async (plan: string) => {
     setActing(true);
     let failed = 0;
@@ -463,6 +473,10 @@ export default function UsersPage() {
                 <button className="btn btn-secondary w-full" disabled={acting} onClick={refundUser}>Record Refund &amp; Downgrade</button>
                 <button className="btn btn-danger w-full" disabled={acting} onClick={toggleBan}>
                   {detail.status === 'banned' ? 'Unban User' : 'Ban User'}
+                </button>
+                <button className="btn w-full" disabled={acting} onClick={deleteAiAnswers}
+                  style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.4)' }}>
+                  Delete AI Answers
                 </button>
                 <button className="btn w-full" disabled={acting} onClick={deleteUser}
                   style={{ background:'rgba(248,113,113,0.15)', color:'#f87171', border:'1px solid rgba(248,113,113,0.4)' }}>
