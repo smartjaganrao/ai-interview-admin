@@ -74,6 +74,11 @@ export default function UsersPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState('');
+  const [deleteStatus, setDeleteStatus] = useState<'idle'|'deleting'|'done'|'err'>('idle');
+  const [deleteResult, setDeleteResult] = useState<{ deleted: number; failed: number } | null>(null);
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data.list.length > 0;
 
@@ -174,12 +179,6 @@ export default function UsersPage() {
       failed === 0 ? `Banned ${n} user(s)` : `${failed}/${n} failed`);
     refetch();
   };
-
-  // ── Delete ──────────────────────────────────────────────────────────────
-  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-  const [deleteAllConfirm, setDeleteAllConfirm] = useState('');
-  const [deleteStatus, setDeleteStatus] = useState<'idle'|'deleting'|'done'|'err'>('idle');
-  const [deleteResult, setDeleteResult] = useState<{ deleted: number; failed: number } | null>(null);
 
   const deleteUser = async () => {
     if (!detail) return;

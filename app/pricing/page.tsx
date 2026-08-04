@@ -34,6 +34,8 @@ export default function AdminPricingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
+  useEffect(() => { if (data) setForm(data); }, [data]);
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data !== null;
 
@@ -71,8 +73,6 @@ export default function AdminPricingPage() {
     if (!form) return PLANS.find(p => p.id === plan)?.isHighlighted ?? false;
     return (form.plans as any)[plan]?.highlighted ?? PLANS.find(p => p.id === plan)?.isHighlighted ?? false;
   };
-
-  useEffect(() => { if (data) setForm(data); }, [data]);
 
   const flash = (kind: 'ok' | 'err', text: string) => {
     setToast({ kind, text });
