@@ -17,6 +17,13 @@ export default function AdminsPage() {
     (json) => (json as { admins?: Admin[] }).admins || []
   );
 
+  const [showAdd, setShowAdd] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState<Admin['role']>('admin');
+  const [acting, setActing] = useState(false);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && admins.length > 0;
 
@@ -26,13 +33,6 @@ export default function AdminsPage() {
     }
     return <AdminShell title="Admins" subtitle="Manage who has access to this panel"><Loader label="Loading admins…" /></AdminShell>;
   }
-
-  const [showAdd, setShowAdd] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState<Admin['role']>('admin');
-  const [acting, setActing] = useState(false);
-  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-  const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
 
   const addAdmin = async () => {
     if (!newEmail.trim()) return;

@@ -41,6 +41,9 @@ export default function SupportPage() {
     }));
   });
 
+  const [changingStatus, setChangingStatus] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && tickets.length > 0;
 
@@ -50,27 +53,6 @@ export default function SupportPage() {
     }
     return <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution"><Loader label="Loading tickets…" /></AdminShell>;
   }
-
-  const [changingStatus, setChangingStatus] = useState(false);
-  const changeStatus = async (newStatus: string) => {
-    if (!active || newStatus === active.status) return;
-    setChangingStatus(true);
-    const r = await postAdmin(`/api/support/tickets/${active.id}/update`, { status: newStatus });
-    setChangingStatus(false);
-    if (r.ok) { setActive(null); refetch(); }
-    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
-  };
-
-  const [deleting, setDeleting] = useState(false);
-  const deleteTicket = async () => {
-    if (!active) return;
-    if (!window.confirm(`Permanently delete ticket "${active.title}"? This cannot be undone.`)) return;
-    setDeleting(true);
-    const r = await postAdmin(`/api/support/tickets/${active.id}/delete`, {});
-    setDeleting(false);
-    if (r.ok) { setActive(null); refetch(); }
-    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
-  };
 
   const sendReply = async () => {
     if (!active||!reply.trim()) return;
@@ -85,6 +67,25 @@ export default function SupportPage() {
     } catch { setSendStatus('error'); }
     setSending(false);
     setTimeout(() => setSendStatus(''), 2500);
+  };
+
+  const changeStatus = async (newStatus: string) => {
+    if (!active || newStatus === active.status) return;
+    setChangingStatus(true);
+    const r = await postAdmin(`/api/support/tickets/${active.id}/update`, { status: newStatus });
+    setChangingStatus(false);
+    if (r.ok) { setActive(null); refetch(); }
+    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
+  };
+
+  const deleteTicket = async () => {
+    if (!active) return;
+    if (!window.confirm(`Permanently delete ticket "${active.title}"? This cannot be undone.`)) return;
+    setDeleting(true);
+    const r = await postAdmin(`/api/support/tickets/${active.id}/delete`, {});
+    setDeleting(false);
+    if (r.ok) { setActive(null); refetch(); }
+    else { setSendStatus('error'); setTimeout(() => setSendStatus(''), 2500); }
   };
 
   const counts = {

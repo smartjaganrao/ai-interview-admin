@@ -63,7 +63,16 @@ export default function UsersPage() {
       };
     }
   );
-  const users = data.list;
+   const users = data.list;
+
+  const [planChoice, setPlanChoice] = useState('');
+  const [acting, setActing] = useState(false);
+  const [inlineChanging, setInlineChanging] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const flash = (kind: 'ok' | 'err', text: string) => {
+    setToast({ kind, text });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data.list.length > 0;
@@ -92,14 +101,6 @@ export default function UsersPage() {
   const counts = data.stats;
 
   // ── Mutations ───────────────────────────────────────────────────────────
-  const [planChoice, setPlanChoice] = useState('');
-  const [acting, setActing] = useState(false);
-  const [inlineChanging, setInlineChanging] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-  const flash = (kind: 'ok' | 'err', text: string) => {
-    setToast({ kind, text });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const applyPlan = async () => {
     if (!detail || !planChoice) return;

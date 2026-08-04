@@ -30,6 +30,10 @@ const msToDateInput = (ms: number | null) => (ms ? new Date(ms).toISOString().sl
 export default function AdminPricingPage() {
   const { data, loading, reason, refetch } = useAdminData<Pricing | null>('/api/pricing', null);
 
+  const [form, setForm] = useState<Pricing | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data !== null;
 
@@ -39,10 +43,6 @@ export default function AdminPricingPage() {
     }
     return <AdminShell title="Pricing & Plans" subtitle="Control plan prices, features, badges, and display order"><Loader label="Loading pricing…" /></AdminShell>;
   }
-
-  const [form, setForm] = useState<Pricing | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const getPlanPrice = (plan: PlanId, field: 'oneTime' | 'monthly' | 'yearly'): number => {
     if (!form) return 0;

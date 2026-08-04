@@ -41,16 +41,6 @@ export default function PromotionsPage() {
     (json) => json as PromotionsData
   );
 
-  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
-  const hasCached = reason === 'error' && (data.history.length > 0 || data.draft !== null);
-
-  if (shouldGate) {
-    if (reason === 'unauthorized' || reason === 'not-configured') {
-      return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
-    }
-    return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><Loader label="Loading promotions…" /></AdminShell>;
-  }
-
   const [subject, setSubject] = useState('');
   const [html, setHtml] = useState('');
   const [audience, setAudience] = useState<'all' | 'plans'>('all');
@@ -62,6 +52,16 @@ export default function PromotionsPage() {
   const [showTemplateGen, setShowTemplateGen] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 4500); };
+
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && (data.history.length > 0 || data.draft !== null);
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers"><Loader label="Loading promotions…" /></AdminShell>;
+  }
 
   // Hydrate local editor state from the fetched draft exactly once.
   if (!hydrated && reason === 'live') {

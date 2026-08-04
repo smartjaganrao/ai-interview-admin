@@ -57,16 +57,6 @@ export default function BlogAdminPage() {
     (json) => (json as { posts?: BlogPost[] }).posts || []
   );
 
-  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
-  const hasCached = reason === 'error' && posts.length > 0;
-
-  if (shouldGate) {
-    if (reason === 'unauthorized' || reason === 'not-configured') {
-      return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
-    }
-    return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><Loader label="Loading posts…" /></AdminShell>;
-  }
-
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -97,6 +87,16 @@ export default function BlogAdminPage() {
     const timer = setTimeout(() => el.removeEventListener('scroll', snapToTop), 500);
     return () => { el.removeEventListener('scroll', snapToTop); clearTimeout(timer); };
   }, [showForm]);
+
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && posts.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page"><Loader label="Loading posts…" /></AdminShell>;
+  }
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setSlugTouched(false); setEditingSlug(false); setTagInput(''); setShowForm(true); };
   const openEdit = (p: BlogPost) => {

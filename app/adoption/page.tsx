@@ -57,6 +57,15 @@ export default function AdoptionPage() {
     (json) => json as AdoptionData
   );
 
+  const [filter, setFilter] = useState<Segment | 'all'>('all');
+  const [reengageSeg, setReengageSeg] = useState<Segment | null>(null);
+  const [subject, setSubject] = useState('');
+  const [html, setHtml] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showTemplateGen, setShowTemplateGen] = useState(false);
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 4500); };
+
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data.users.length > 0;
 
@@ -66,16 +75,6 @@ export default function AdoptionPage() {
     }
     return <AdminShell title="App Usage" subtitle="Who has activated and is actually using the desktop app"><Loader label="Loading adoption data…" /></AdminShell>;
   }
-
-  const [filter, setFilter] = useState<Segment | 'all'>('all');
-  // Re-engage compose state
-  const [reengageSeg, setReengageSeg] = useState<Segment | null>(null);
-  const [subject, setSubject] = useState('');
-  const [html, setHtml] = useState('');
-  const [sending, setSending] = useState(false);
-  const [showTemplateGen, setShowTemplateGen] = useState(false);
-  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-  const flash = (kind: 'ok' | 'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 4500); };
 
   const shown = filter === 'all' ? data.users : data.users.filter((u) => u.segment === filter);
 

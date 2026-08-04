@@ -14,16 +14,6 @@ export default function AnnouncementsPage() {
     (json) => (json as { announcements?: Announcement[] }).announcements || []
   );
 
-  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
-  const hasCached = reason === 'error' && announcements.length > 0;
-
-  if (shouldGate) {
-    if (reason === 'unauthorized' || reason === 'not-configured') {
-      return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
-    }
-    return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><Loader label="Loading announcements…" /></AdminShell>;
-  }
-
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
   const [title, setTitle] = useState('');
@@ -33,6 +23,16 @@ export default function AnnouncementsPage() {
   const [acting, setActing] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok'|'err'; text: string } | null>(null);
   const flash = (kind: 'ok'|'err', text: string) => { setToast({ kind, text }); setTimeout(() => setToast(null), 3500); };
+
+  const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
+  const hasCached = reason === 'error' && announcements.length > 0;
+
+  if (shouldGate) {
+    if (reason === 'unauthorized' || reason === 'not-configured') {
+      return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><ErrorState reason={reason} onRetry={refetch} /></AdminShell>;
+    }
+    return <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page"><Loader label="Loading announcements…" /></AdminShell>;
+  }
 
   const openCreate = () => { setEditing(null); setTitle(''); setBody(''); setLink(''); setActive(true); setShowForm(true); };
   const openEdit = (a: Announcement) => { setEditing(a); setTitle(a.title); setBody(a.body); setLink(a.link || ''); setActive(a.active); setShowForm(true); };
