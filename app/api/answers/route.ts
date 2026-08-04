@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session-server';
+import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,26 +22,30 @@ export async function GET(request: NextRequest) {
     const userIdFilter = searchParams.get('userId') || '';
     const sessionIdFilter = searchParams.get('sessionId') || '';
 
-    const pageSize = Math.min(limit, 100);
-    const offset = (page - 1) * pageSize;
+    const cacheKey = `answers:${page}:${limit}:${userIdFilter}:${sessionIdFilter}`;
 
-    let queryRef = db.collection('interview_messages');
+    return getCached(cacheKey, 30 * 1000, async () => {
+      const firestore = db!;
+      const pageSize = Math.min(limit, 100);
+      const offset = (page - 1) * pageSize;
 
-    if (userIdFilter) {
-      queryRef = queryRef.where('userId', '==', userIdFilter) as ReturnType<typeof db.collection>;
-    }
-    if (sessionIdFilter) {
-      queryRef = queryRef.where('sessionId', '==', sessionIdFilter) as ReturnType<typeof db.collection>;
-    }
+      let queryRef = firestore.collection('interview_messages');
 
-    const countSnapshot = await queryRef.count().get();
-    const totalCount = countSnapshot.data().count;
+      if (userIdFilter) {
+        queryRef = queryRef.where('userId', '==', userIdFilter) as ReturnType<typeof firestore.collection>;
+      }
+      if (sessionIdFilter) {
+        queryRef = queryRef.where('sessionId', '==', sessionIdFilter) as ReturnType<typeof firestore.collection>;
+      }
 
-    const snapshot = await queryRef
-      .orderBy('createdAt', 'desc')
-      .offset(offset)
-      .limit(pageSize)
-      .get();
+      const countSnapshot = await queryRef.count().get();
+      const totalCount = countSnapshot.data().count;
+
+      const snapshot = await queryRef
+        .orderBy('createdAt', 'desc')
+        .offset(offset)
+        .limit(pageSize)
+        .get();
 
     const messages = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -62,6 +67,7 @@ export async function GET(request: NextRequest) {
       page,
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
+    });
     });
   } catch (error) {
     console.error('Error fetching AI answers:', error);

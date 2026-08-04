@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
+import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +18,13 @@ export async function GET() {
       );
     }
 
+    const firestore = db;
+    return getCached('analytics:revenue', 15 * 60 * 1000, async () => {
+
     // Prices from admin-managed settings/pricing
     let proPrice = 0, quickPassPrice = 0, powerPrice = 0;
     try {
-      const pd = await db.collection('settings').doc('pricing').get();
+      const pd = await firestore.collection('settings').doc('pricing').get();
       if (pd.exists) {
         proPrice = Number(pd.data()?.plans?.pro?.monthly ?? 0);
         quickPassPrice = Number(pd.data()?.plans?.quick_pass?.oneTime ?? 0);
@@ -48,7 +52,7 @@ export async function GET() {
       monthEnd.setHours(0, 0, 0, 0);
 
       // Get all active subscriptions during this month
-      const subsSnapshot = await db.collection('subscriptions').get();
+      const subsSnapshot = await firestore.collection('subscriptions').get();
 
       let mrr = 0;
       subsSnapshot.docs.forEach((doc) => {
@@ -76,6 +80,7 @@ export async function GET() {
     return NextResponse.json({
       revenueData,
       totalMRR: revenueData[revenueData.length - 1]?.mrr || 0,
+    });
     });
   } catch (error) {
     console.error('Error fetching revenue:', error);

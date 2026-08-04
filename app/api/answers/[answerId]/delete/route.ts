@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session-server';
+import { clearCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,8 @@ export async function POST(
     const data = docSnap.data() || {};
 
     await docRef.delete();
+
+    clearCache();
 
     await db.collection('admin_logs').add({
       adminUid: session.uid,

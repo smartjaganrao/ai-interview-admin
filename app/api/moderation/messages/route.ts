@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session-server';
+import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,22 +19,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const statusFilter = searchParams.get('status') || 'pending';
 
+    const cacheKey = `moderation:messages:${page}:${limit}:${statusFilter}`;
+
+    const firestore = db;
+    return getCached(cacheKey, 30 * 1000, async () => {
+
     const pageSize = Math.min(limit, 100);
     const offset = (page - 1) * pageSize;
 
     // Build query for flagged messages
-    let queryRef = db.collectionGroup('interview_messages');
+    let queryRef = firestore.collectionGroup('interview_messages');
 
     if (statusFilter && statusFilter !== 'all') {
-      queryRef = queryRef.where('flagged', '==', true) as ReturnType<typeof db.collectionGroup>;
+      queryRef = queryRef.where('flagged', '==', true) as ReturnType<typeof firestore.collectionGroup>;
       if (statusFilter !== 'flagged') {
-        queryRef = queryRef.where('flagStatus', '==', statusFilter) as ReturnType<typeof db.collectionGroup>;
+        queryRef = queryRef.where('flagStatus', '==', statusFilter) as ReturnType<typeof firestore.collectionGroup>;
       }
     }
 
@@ -66,6 +71,7 @@ export async function GET(request: NextRequest) {
       page,
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
+    });
     });
   } catch (error) {
     console.error('Error fetching moderation queue:', error);

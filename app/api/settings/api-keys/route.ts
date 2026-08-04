@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
+import { getCached, invalidateCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,21 +13,24 @@ export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   if (!db) return NextResponse.json({ error: 'DB not configured' }, { status: 503 });
 
-  const doc = await db.collection('settings').doc('api_keys').get();
-  const data = doc.exists ? doc.data() : {};
+  const firestore = db;
+  return getCached('settings:api-keys', 2 * 60 * 1000, async () => {
+    const doc = await firestore.collection('settings').doc('api_keys').get();
+    const data = doc.exists ? doc.data() : {};
 
-  return NextResponse.json({
-    groqKeySet:       !!data?.groqApiKey,
-    groqKeyMasked:    mask(data?.groqApiKey),
-    rzpKeyIdSet:      !!data?.razorpayKeyId,
-    rzpKeyIdMasked:   mask(data?.razorpayKeyId),
-    rzpSecretSet:     !!data?.razorpayKeySecret,
-    rzpSecretMasked:  mask(data?.razorpayKeySecret),
-    resendKeySet:     !!data?.resendApiKey,
-    resendKeyMasked:  mask(data?.resendApiKey),
-    resendFromEmail:  data?.resendFromEmail ?? '',
-    updatedAt:        data?.updatedAt ?? null,
-    updatedBy:        data?.updatedBy ?? null,
+    return NextResponse.json({
+      groqKeySet:       !!data?.groqApiKey,
+      groqKeyMasked:    mask(data?.groqApiKey),
+      rzpKeyIdSet:      !!data?.razorpayKeyId,
+      rzpKeyIdMasked:   mask(data?.razorpayKeyId),
+      rzpSecretSet:     !!data?.razorpayKeySecret,
+      rzpSecretMasked:  mask(data?.razorpayKeySecret),
+      resendKeySet:     !!data?.resendApiKey,
+      resendKeyMasked:  mask(data?.resendApiKey),
+      resendFromEmail:  data?.resendFromEmail ?? '',
+      updatedAt:        data?.updatedAt ?? null,
+      updatedBy:        data?.updatedBy ?? null,
+    });
   });
 }
 
@@ -98,6 +102,8 @@ export async function POST(req: NextRequest) {
   update.updatedBy = adminEmail;
 
   await db.collection('settings').doc('api_keys').set(update, { merge: true });
+
+  invalidateCache('settings:api-keys');
 
   await db.collection('admin_logs').add({
     adminUid: 'admin',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 import { getActivityMap, segmentFor } from '@/lib/usage-activity';
+import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +21,13 @@ export async function GET(request: NextRequest) {
     const search = (searchParams.get('search') || '').toLowerCase().trim();
     const plan   = searchParams.get('plan') || '';
 
-    let queryRef: FirebaseFirestore.Query = db.collection('users');
+    const cacheKey = `users:list:${page}:${limit}:${search}:${plan}`;
 
-    if (plan && plan !== 'all') {
+    return getCached(cacheKey, 5 * 60 * 1000, async () => {
+      const firestore = db!;
+      let queryRef: FirebaseFirestore.Query = firestore.collection('users');
+
+      if (plan && plan !== 'all') {
       queryRef = queryRef.where('plan', '==', plan);
     }
 
@@ -119,9 +124,9 @@ export async function GET(request: NextRequest) {
     // cards on this page always agree with Analytics, which uses the same
     // kind of unfiltered aggregate.
     const [totalAgg, bannedAgg, paidAgg] = await Promise.all([
-      db.collection('users').count().get(),
-      db.collection('users').where('status', '==', 'banned').count().get(),
-      db.collection('users').where('plan', 'in', ['quick_pass', 'pro', 'power']).count().get(),
+      firestore.collection('users').count().get(),
+      firestore.collection('users').where('status', '==', 'banned').count().get(),
+      firestore.collection('users').where('plan', 'in', ['quick_pass', 'pro', 'power']).count().get(),
     ]);
     // "Active" means actually used the desktop app recently (last 30 days),
     // not merely "not banned" — the previous total-minus-banned formula
@@ -149,6 +154,12 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       hasMore: offset + limit < total,
+    });
+    }).then((data) => {
+      return NextResponse.json(data);
+    }).catch((error) => {
+      console.error('[users/list] cache fetch error:', error);
+      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch users';

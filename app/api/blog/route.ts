@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { getCached, invalidateCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,9 +28,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   }
 
-  const snap = await db.collection('blog_posts').orderBy('updatedAt', 'desc').limit(200).get();
-  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  return NextResponse.json({ posts });
+  const firestore = db;
+  return getCached('blog:list', 2 * 60 * 1000, async () => {
+    const snap = await firestore.collection('blog_posts').orderBy('updatedAt', 'desc').limit(200).get();
+    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return NextResponse.json({ posts });
+  });
 }
 
 /** POST — create a new blog post. Rejects duplicate slugs. */
@@ -80,6 +84,8 @@ export async function POST(request: NextRequest) {
     adminUid: session?.uid || 'system', adminEmail: session?.email || 'system',
     action: 'blog_post_create', targetId: ref.id, details: { title: title.trim(), slug: cleanSlug }, timestamp: now,
   });
+
+  invalidateCache('blog:list');
 
   return NextResponse.json({ ok: true, id: ref.id });
 }

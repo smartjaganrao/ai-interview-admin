@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { getCached, invalidateCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   }
 
-  const snap = await db.collection('announcements').orderBy('createdAt', 'desc').limit(100).get();
-  const announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  return NextResponse.json({ announcements });
+  return getCached('announcements:list', 2 * 60 * 1000, async () => {
+    const snap = await db!.collection('announcements').orderBy('createdAt', 'desc').limit(100).get();
+    const announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return NextResponse.json({ announcements });
+  });
 }
 
 /** POST { title, body, link?, active } — create a new announcement. */
@@ -47,6 +50,8 @@ export async function POST(request: NextRequest) {
     adminUid: session?.uid || 'system', adminEmail: session?.email || 'system',
     action: 'announcement_create', targetId: ref.id, details: { title: title.trim() }, timestamp: now,
   });
+
+  invalidateCache('announcements:list');
 
   return NextResponse.json({ ok: true, id: ref.id });
 }

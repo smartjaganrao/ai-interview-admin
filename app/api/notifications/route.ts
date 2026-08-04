@@ -35,7 +35,7 @@ export async function GET() {
 
   const cacheKey = session?.uid ? `notifications:${session.uid}` : 'notifications:anon';
 
-  return getCached(cacheKey, 30 * 1000, async () => {
+  return getCached(cacheKey, 60 * 1000, async () => {
     const dbInstance = db!;
     const items: Item[] = [];
 

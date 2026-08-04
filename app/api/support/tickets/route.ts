@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
+import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,19 +18,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const statusFilter = searchParams.get('status') || 'open';
 
-    const pageSize = Math.min(limit, 100);
-    const offset = (page - 1) * pageSize;
+    const cacheKey = `support:tickets:${page}:${limit}:${statusFilter}`;
 
-    // Order by a single field only (auto-indexed) and filter status in memory —
-    // avoids needing a composite index (status + updatedAt).
-    const snapshot = await db
-      .collection('support_tickets')
+    const firestore = db;
+    return getCached(cacheKey, 30 * 1000, async () => {
+      const pageSize = Math.min(limit, 100);
+      const offset = (page - 1) * pageSize;
+
+      const snapshot = await firestore
+        .collection('support_tickets')
       .orderBy('updatedAt', 'desc')
       .limit(500)
       .get();
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
       page,
       limit: pageSize,
       hasMore: offset + pageSize < totalCount,
+    });
     });
   } catch (error) {
     console.error('Error fetching support tickets:', error);

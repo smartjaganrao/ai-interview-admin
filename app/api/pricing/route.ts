@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
 import { PLANS, PlanId } from '@/lib/pricing-config';
+import { getCached, invalidateCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,31 +23,33 @@ export async function GET() {
     if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     if (!db) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
 
-    const snap = await db.collection('settings').doc('pricing').get();
-    if (!snap.exists) return NextResponse.json(JSON.parse(JSON.stringify(DEFAULTS)));
-    const d = snap.data() ?? {};
-    const plans: Record<PlanId, any> = { free: {}, quick_pass: {}, pro: {}, power: {} };
-    PLANS.forEach(p => {
-      const stored = (d.plans as any)?.[p.id] || {};
-      plans[p.id] = {
-        oneTime: Number(stored.oneTime ?? p.price),
-        monthly: Number(stored.monthly ?? (p.billingType === 'subscription' ? p.price : 0)),
-        yearly: Number(stored.yearly ?? (p.billingType === 'subscription' ? p.price * 10 : 0)),
-        active: stored.active ?? p.isActive,
-        displayOrder: stored.displayOrder ?? p.displayOrder,
-        badge: stored.badge ?? p.badge ?? '',
-        highlighted: stored.highlighted ?? p.isHighlighted,
-      };
-    });
-    return NextResponse.json({
-      plans,
-      offer: {
-        active: !!d.offer?.active,
-        label: d.offer?.label ?? '',
-        percentOff: d.offer?.percentOff ?? 0,
-        appliesTo: ['all', ...PLANS.map(p => p.id)].includes(d.offer?.appliesTo) ? d.offer.appliesTo : 'all',
-        expiresAt: d.offer?.expiresAt ?? null,
-      },
+    return getCached('pricing:current', 2 * 60 * 1000, async () => {
+      const snap = await db!.collection('settings').doc('pricing').get();
+      if (!snap.exists) return NextResponse.json(JSON.parse(JSON.stringify(DEFAULTS)));
+      const d = snap.data() ?? {};
+      const plans: Record<PlanId, any> = { free: {}, quick_pass: {}, pro: {}, power: {} };
+      PLANS.forEach(p => {
+        const stored = (d.plans as any)?.[p.id] || {};
+        plans[p.id] = {
+          oneTime: Number(stored.oneTime ?? p.price),
+          monthly: Number(stored.monthly ?? (p.billingType === 'subscription' ? p.price : 0)),
+          yearly: Number(stored.yearly ?? (p.billingType === 'subscription' ? p.price * 10 : 0)),
+          active: stored.active ?? p.isActive,
+          displayOrder: stored.displayOrder ?? p.displayOrder,
+          badge: stored.badge ?? p.badge ?? '',
+          highlighted: stored.highlighted ?? p.isHighlighted,
+        };
+      });
+      return NextResponse.json({
+        plans,
+        offer: {
+          active: !!d.offer?.active,
+          label: d.offer?.label ?? '',
+          percentOff: d.offer?.percentOff ?? 0,
+          appliesTo: ['all', ...PLANS.map(p => p.id)].includes(d.offer?.appliesTo) ? d.offer.appliesTo : 'all',
+          expiresAt: d.offer?.expiresAt ?? null,
+        },
+      });
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to read pricing';
@@ -96,6 +99,8 @@ export async function POST(request: NextRequest) {
       { plans, offer, updatedAt: Date.now(), updatedBy: session?.email || 'system' },
       { merge: true }
     );
+
+    invalidateCache('pricing:current');
 
     await db.collection('admin_logs').add({
       adminUid: session?.uid || 'system',

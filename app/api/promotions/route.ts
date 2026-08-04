@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { getCached, invalidateCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,25 +14,28 @@ export async function GET() {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
   }
 
-  const draftDoc = await db.collection('promotions').doc('draft').get();
-  const historySnap = await db.collection('promotion_sends').orderBy('sentAt', 'desc').limit(20).get();
-  const history = historySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return getCached('promotions:current', 2 * 60 * 1000, async () => {
+    const firestore = db!;
+    const draftDoc = await firestore.collection('promotions').doc('draft').get();
+    const historySnap = await firestore.collection('promotion_sends').orderBy('sentAt', 'desc').limit(20).get();
+    const history = historySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-  const usersSnap = await db.collection('users').select('email', 'status', 'plan').get();
-  const eligible = usersSnap.docs.filter(
-    (d) => d.data().status !== 'banned' && !!d.data().email
-  );
-  const planCounts: Record<string, number> = { free: 0, quick_pass: 0, pro: 0, power: 0 };
-  for (const d of eligible) {
-    const plan = (d.data().plan as string) || 'free';
-    if (plan in planCounts) planCounts[plan] += 1;
-  }
+    const usersSnap = await firestore.collection('users').select('email', 'status', 'plan').get();
+    const eligible = usersSnap.docs.filter(
+      (d) => d.data().status !== 'banned' && !!d.data().email
+    );
+    const planCounts: Record<string, number> = { free: 0, quick_pass: 0, pro: 0, power: 0 };
+    for (const d of eligible) {
+      const plan = (d.data().plan as string) || 'free';
+      if (plan in planCounts) planCounts[plan] += 1;
+    }
 
-  return NextResponse.json({
-    draft: draftDoc.exists ? draftDoc.data() : null,
-    history,
-    recipientCount: eligible.length,
-    planCounts,
+    return NextResponse.json({
+      draft: draftDoc.exists ? draftDoc.data() : null,
+      history,
+      recipientCount: eligible.length,
+      planCounts,
+    });
   });
 }
 
@@ -56,6 +60,8 @@ export async function POST(request: NextRequest) {
     updatedAt: Date.now(),
     updatedBy: session?.email || 'system',
   });
+
+  invalidateCache('promotions:current');
 
   return NextResponse.json({ ok: true });
 }
