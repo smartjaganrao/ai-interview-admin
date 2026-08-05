@@ -149,14 +149,14 @@ export async function GET(request: NextRequest) {
       active: activeCount,
     };
 
-    return NextResponse.json({
+    return {
       users:   paginated,
       total,
       stats,
       page,
       limit,
       hasMore: offset + limit < total,
-    });
+    };
     }).then((data) => {
       return NextResponse.json(data);
     }).catch((error) => {
