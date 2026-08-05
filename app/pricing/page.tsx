@@ -124,7 +124,11 @@ export default function AdminPricingPage() {
     else flash('err', r.error || 'Failed to save');
   };
 
-  const sortedPlans = [...PLANS].sort((a, b) => a.displayOrder - b.displayOrder);
+  const sortedPlans = [...PLANS].sort((a, b) => {
+    const aOrder = form?.plans?.[a.id]?.displayOrder ?? a.displayOrder;
+    const bOrder = form?.plans?.[b.id]?.displayOrder ?? b.displayOrder;
+    return aOrder - bOrder;
+  });
 
   return (
     <AdminShell title="Pricing & Plans" subtitle="Control plan prices, features, badges, and display order">
