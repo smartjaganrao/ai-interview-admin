@@ -8,18 +8,19 @@ import { Loader, ErrorState } from '@/components/DataStates';
 import {
   PLANS,
   PlanId,
-  PLAN_RANK,
-  getPlanById,
-  migratePlanId,
 } from '@/lib/pricing-config';
 
 interface Offer { active: boolean; label: string; percentOff: number; appliesTo: 'all' | PlanId; expiresAt: number | null }
-interface AdminPlanData {
-  free: { oneTime: number; active?: boolean; displayOrder?: number; badge?: string; highlighted?: boolean };
-  quick_pass: { oneTime: number; active?: boolean; displayOrder?: number; badge?: string; highlighted?: boolean };
-  pro: { oneTime: number; active?: boolean; displayOrder?: number; badge?: string; highlighted?: boolean };
-  power: { monthly: number; yearly: number; active?: boolean; displayOrder?: number; badge?: string; highlighted?: boolean };
+interface PlanFields {
+  oneTime: number;
+  monthly: number;
+  yearly: number;
+  active: boolean;
+  displayOrder: number;
+  badge: string;
+  highlighted: boolean;
 }
+type AdminPlanData = Record<PlanId, PlanFields>;
 interface Pricing {
   plans: AdminPlanData;
   offer: Offer;
@@ -34,6 +35,10 @@ export default function AdminPricingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
+  // Sync remote pricing into local editable form. This is a legitimate
+  // effect-driven state sync: data comes from an async API, and we keep a
+  // local mutable copy so edits don't clobber the source until Save.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (data) setForm(data); }, [data]);
 
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
@@ -46,32 +51,29 @@ export default function AdminPricingPage() {
     return <AdminShell title="Pricing & Plans" subtitle="Control plan prices, features, badges, and display order"><Loader label="Loading pricing…" /></AdminShell>;
   }
 
-  const getPlanPrice = (plan: PlanId, field: 'oneTime' | 'monthly' | 'yearly'): number => {
-    if (!form) return 0;
-    const planData = (form.plans as any)[plan];
-    if (!planData) return 0;
-    if (field === 'oneTime') return planData.oneTime ?? 0;
-    return planData[field] ?? 0;
-  };
-
-  const getPlanActive = (plan: PlanId): boolean => {
-    if (!form) return true;
-    return (form.plans as any)[plan]?.active ?? true;
-  };
-
-  const getPlanDisplayOrder = (plan: PlanId): number => {
-    if (!form) return PLANS.find(p => p.id === plan)?.displayOrder ?? 0;
-    return (form.plans as any)[plan]?.displayOrder ?? PLANS.find(p => p.id === plan)?.displayOrder ?? 0;
-  };
-
-  const getPlanBadge = (plan: PlanId): string => {
-    if (!form) return PLANS.find(p => p.id === plan)?.badge ?? '';
-    return (form.plans as any)[plan]?.badge ?? PLANS.find(p => p.id === plan)?.badge ?? '';
-  };
-
-  const getPlanHighlighted = (plan: PlanId): boolean => {
-    if (!form) return PLANS.find(p => p.id === plan)?.isHighlighted ?? false;
-    return (form.plans as any)[plan]?.highlighted ?? PLANS.find(p => p.id === plan)?.isHighlighted ?? false;
+  const getPlanFields = (plan: PlanId): PlanFields => {
+    if (!form) {
+      const fallback = PLANS.find(p => p.id === plan);
+      return {
+        oneTime: fallback?.price ?? 0,
+        monthly: fallback?.price ?? 0,
+        yearly: fallback?.price ?? 0,
+        active: fallback?.isActive ?? true,
+        displayOrder: fallback?.displayOrder ?? 0,
+        badge: fallback?.badge ?? '',
+        highlighted: fallback?.isHighlighted ?? false,
+      };
+    }
+    const raw = form.plans[plan] || {};
+    return {
+      oneTime: raw.oneTime ?? 0,
+      monthly: raw.monthly ?? 0,
+      yearly: raw.yearly ?? 0,
+      active: raw.active ?? true,
+      displayOrder: raw.displayOrder ?? 0,
+      badge: raw.badge ?? '',
+      highlighted: raw.highlighted ?? false,
+    };
   };
 
   const flash = (kind: 'ok' | 'err', text: string) => {
@@ -82,15 +84,30 @@ export default function AdminPricingPage() {
   const setPlan = (plan: PlanId, cycle: 'oneTime' | 'monthly' | 'yearly', value: string) => {
     if (!form) return;
     const numVal = Number(value) || 0;
-    const currentPlanData = (form.plans as any)[plan] || {};
-    const updatedPlanData = { ...currentPlanData, [cycle]: numVal };
-    setForm({ ...form, plans: { ...form.plans, [plan]: updatedPlanData } } as any);
+    setForm({
+      ...form,
+      plans: {
+        ...form.plans,
+        [plan]: {
+          ...getPlanFields(plan),
+          [cycle]: numVal,
+        },
+      },
+    });
   };
 
-  const setPlanFlag = (plan: PlanId, flag: 'active' | 'displayOrder' | 'badge' | 'highlighted', value: any) => {
+  const setPlanFlag = (plan: PlanId, flag: 'active' | 'displayOrder' | 'badge' | 'highlighted', value: boolean | number | string) => {
     if (!form) return;
-    const currentPlanData = (form.plans as any)[plan] || {};
-    setForm({ ...form, plans: { ...form.plans, [plan]: { ...currentPlanData, [flag]: value } } } as any);
+    setForm({
+      ...form,
+      plans: {
+        ...form.plans,
+        [plan]: {
+          ...getPlanFields(plan),
+          [flag]: value,
+        },
+      },
+    });
   };
 
   const setOffer = (patch: Partial<Offer>) => {
@@ -106,11 +123,6 @@ export default function AdminPricingPage() {
     if (r.ok) { flash('ok', r.message || 'Pricing updated'); refetch(); }
     else flash('err', r.error || 'Failed to save');
   };
-
-  const preview = (base: number) =>
-    form?.offer.active && form.offer.percentOff > 0
-      ? Math.max(1, Math.round(base * (1 - form.offer.percentOff / 100)))
-      : base;
 
   const sortedPlans = [...PLANS].sort((a, b) => a.displayOrder - b.displayOrder);
 
@@ -134,9 +146,9 @@ export default function AdminPricingPage() {
           <p className="text-muted text-sm mb-4">Configure each plan: price, duration, features, badge, highlight, and display order.</p>
           {sortedPlans.map((planConfig) => {
             const planKey = planConfig.id;
-            const planData = (form?.plans as any)?.[planKey] || {};
+            const fields = getPlanFields(planKey);
             const isOneTime = planConfig.billingType === 'one_time';
-            const price = getPlanPrice(planKey, isOneTime ? 'oneTime' : 'monthly');
+            const price = isOneTime ? fields.oneTime : fields.monthly;
             return (
               <div key={planKey} className="mb-6 pb-6 border-b border-white/10 last:border-0">
                 <div className="flex items-center justify-between mb-4">
@@ -153,7 +165,7 @@ export default function AdminPricingPage() {
                     <span className="text-slate-400">Active</span>
                     <input
                       type="checkbox"
-                      checked={getPlanActive(planKey)}
+                      checked={fields.active}
                       onChange={(e) => setPlanFlag(planKey, 'active', e.target.checked)}
                     />
                   </label>
@@ -168,13 +180,13 @@ export default function AdminPricingPage() {
                   {!isOneTime && (
                     <label className="text-sm text-muted">
                       Yearly Price (₹)
-                      <input className="input mt-1" type="number" min={0} value={getPlanPrice(planKey, 'yearly')}
+                      <input className="input mt-1" type="number" min={0} value={fields.yearly}
                         onChange={(e) => setPlan(planKey, 'yearly', e.target.value)} />
                     </label>
                   )}
                   <label className="text-sm text-muted">
                     Display Order
-                    <input className="input mt-1" type="number" min={0} value={getPlanDisplayOrder(planKey)}
+                    <input className="input mt-1" type="number" min={0} value={fields.displayOrder}
                       onChange={(e) => setPlanFlag(planKey, 'displayOrder', Number(e.target.value) || 0)} />
                   </label>
                 </div>
@@ -182,14 +194,14 @@ export default function AdminPricingPage() {
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                   <label className="text-sm text-muted">
                     Badge (e.g. &quot;Best Value&quot;, &quot;Most Popular&quot;)
-                    <input className="input mt-1" value={getPlanBadge(planKey)}
+                    <input className="input mt-1" value={fields.badge}
                       onChange={(e) => setPlanFlag(planKey, 'badge', e.target.value)}
                       placeholder={planConfig.badge || 'Leave empty for no badge'} />
                   </label>
                   <label className="flex items-center gap-2 text-sm mt-6">
                     <input
                       type="checkbox"
-                      checked={getPlanHighlighted(planKey)}
+                      checked={fields.highlighted}
                       onChange={(e) => setPlanFlag(planKey, 'highlighted', e.target.checked)}
                     />
                     <span className="text-slate-300">Highlight this plan (scales up)</span>
@@ -241,23 +253,9 @@ export default function AdminPricingPage() {
               </label>
             </div>
           </div>
-
-          {form?.offer.active && form.offer.percentOff > 0 && (
-            <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-              <div className="text-sm" style={{ color: '#10B981', marginBottom: 6 }}>Preview with offer applied:</div>
-              <div className="text-sm">
-                {sortedPlans.filter(p => p.id !== 'free').map(p => {
-                  const base = getPlanPrice(p.id, p.billingType === 'one_time' ? 'oneTime' : 'monthly');
-                  const prev = `<s className="text-muted">₹${base}</s>`;
-                  const eff = preview(base);
-                  return <span key={p.id}>{p.name}: {prev} <strong>₹{eff}</strong> &nbsp;·&nbsp;</span>;
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
-        <button className="btn btn-primary" disabled={saving} onClick={save}>
+        <button className="btn btn-primary" disabled={saving} onClick={save} style={{ marginTop: 8 }}>
           {saving ? 'Saving…' : 'Save pricing & plans'}
         </button>
       </div>

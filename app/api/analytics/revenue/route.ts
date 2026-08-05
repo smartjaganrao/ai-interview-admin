@@ -60,6 +60,8 @@ export async function GET() {
         const status = doc.data().status || 'inactive';
         const startedAt = doc.data().startedAt || Date.now();
 
+        if (doc.data().adminGranted && doc.data().countTowardRevenue !== true) return;
+
         // Only count subscriptions that were active during this month
         if (status === 'active' && startedAt < monthEnd.getTime()) {
           if (plan in planPrices) {

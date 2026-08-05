@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const session = await getSession();
-    const { userId, newPlan } = await request.json();
+    const { userId, newPlan, countTowardRevenue = false } = await request.json();
 
     if (!userId || !newPlan) {
       return NextResponse.json({ error: 'Missing userId or newPlan' }, { status: 400 });
@@ -28,14 +28,28 @@ export async function POST(request: NextRequest) {
     const oldPlan = userDoc.data()?.plan || 'free';
     const renewalDate = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
-    // Update both the subscription record AND the user's plan field so every
-    // surface (users list, dashboard KPIs, desktop app) reflects it immediately.
+    const adminGranted = true;
+    const now = Date.now();
+
     await db.collection('subscriptions').doc(userId).set(
-      { plan: newPlan, renewalDate, status: 'active', updatedAt: Date.now() },
+      {
+        plan: newPlan,
+        planType: 'subscription',
+        status: 'active',
+        renewalDate,
+        updatedAt: now,
+        adminGranted,
+        countTowardRevenue,
+      },
       { merge: true }
     );
     await db.collection('users').doc(userId).set(
-      { plan: newPlan, updatedAt: Date.now() },
+      {
+        plan: newPlan,
+        updatedAt: now,
+        adminGranted,
+        countTowardRevenue,
+      },
       { merge: true }
     );
 
@@ -45,8 +59,8 @@ export async function POST(request: NextRequest) {
       action: 'user_upgrade',
       targetUserId: userId,
       targetUserEmail: userDoc.data()?.email || '',
-      details: { oldPlan, newPlan },
-      timestamp: Date.now(),
+      details: { oldPlan, newPlan, countTowardRevenue },
+      timestamp: now,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
 

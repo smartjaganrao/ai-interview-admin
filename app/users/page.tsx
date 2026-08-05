@@ -14,6 +14,8 @@ interface User {
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
+  adminGranted?: boolean;
+  countTowardRevenue?: boolean;
 }
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
@@ -21,6 +23,8 @@ interface ApiUser {
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
+  adminGranted?: boolean;
+  countTowardRevenue?: boolean;
 }
 interface UserStats { total: number; active: number; paid: number; banned: number; }
 
@@ -59,6 +63,8 @@ export default function UsersPage() {
           lastActive: u.lastActive, activeDays: u.activeDays,
           tokensUsed: u.tokensUsed, voiceMinutes: u.voiceMinutes, screenshotsUsed: u.screenshotsUsed, mockSessions: u.mockSessions,
           duplicateEmail: u.duplicateEmail,
+          adminGranted: u.adminGranted,
+          countTowardRevenue: u.countTowardRevenue,
         })),
       };
     }
@@ -66,6 +72,7 @@ export default function UsersPage() {
    const users = data.list;
 
   const [planChoice, setPlanChoice] = useState('');
+  const [countTowardRevenue, setCountTowardRevenue] = useState(false);
   const [acting, setActing] = useState(false);
   const [inlineChanging, setInlineChanging] = useState<string | null>(null);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
@@ -110,15 +117,15 @@ export default function UsersPage() {
   const applyPlan = async () => {
     if (!detail || !planChoice) return;
     setActing(true);
-    const r = await postAdmin('/api/users/upgrade', { userId: detail.uid, newPlan: planChoice });
+    const r = await postAdmin('/api/users/upgrade', { userId: detail.uid, newPlan: planChoice, countTowardRevenue });
     setActing(false);
-    if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); setPlanChoice(''); refetch(); }
+    if (r.ok) { flash('ok', r.message || 'Plan updated'); setDetail(null); setPlanChoice(''); setCountTowardRevenue(false); refetch(); }
     else flash('err', r.error || 'Failed to change plan');
   };
 
   const changePlanInline = async (uid: string, newPlan: string) => {
     setInlineChanging(uid);
-    const r = await postAdmin('/api/users/upgrade', { userId: uid, newPlan });
+    const r = await postAdmin('/api/users/upgrade', { userId: uid, newPlan, countTowardRevenue: false });
     setInlineChanging(null);
     if (r.ok) { flash('ok', `Plan → ${newPlan}`); refetch(); }
     else flash('err', r.error || 'Failed to change plan');
@@ -298,7 +305,7 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u, idx) => (
-                <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); }}>
+                <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); setCountTowardRevenue(false); }}>
                   <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
@@ -321,20 +328,25 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <select
-                      className="input"
-                      style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
-                      value={u.plan}
-                      disabled={inlineChanging === u.uid}
-                      onChange={(e) => changePlanInline(u.uid, e.target.value)}
-                    >
-                      <option value="free">FREE</option>
-                      <option value="quick_pass">QUICK PASS</option>
-                      <option value="pro">PRO</option>
-                      <option value="power">POWER</option>
-                    </select>
-                  </td>
+                   <td onClick={(e) => e.stopPropagation()}>
+                     <div className="flex items-center gap-1">
+                       <select
+                         className="input"
+                         style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
+                         value={u.plan}
+                         disabled={inlineChanging === u.uid}
+                         onChange={(e) => changePlanInline(u.uid, e.target.value)}
+                       >
+                         <option value="free">FREE</option>
+                         <option value="quick_pass">QUICK PASS</option>
+                         <option value="pro">PRO</option>
+                         <option value="power">POWER</option>
+                       </select>
+                       {u.adminGranted && (
+                         <span className="badge badge-orange" style={{ fontSize: 9, padding: '1px 4px' }} title="Plan was set manually by an admin">Admin</span>
+                       )}
+                     </div>
+                   </td>
                   <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
                   <td>
                     {u.lastActive ? (
@@ -436,6 +448,9 @@ export default function UsersPage() {
               <div className="flex items-center justify-center gap-2 mt-2">
                 <span className={`badge ${PLAN_BADGE[detail.plan]}`}>{detail.plan.toUpperCase()}</span>
                 <span className={`badge ${STATUS_BADGE[detail.status]}`}>{detail.status}</span>
+                {detail.adminGranted && (
+                  <span className="badge badge-orange" title="Plan was set manually by an admin">Added by admin</span>
+                )}
               </div>
             </div>
             <div className="divider"/>
@@ -466,6 +481,14 @@ export default function UsersPage() {
                 <option value="power">Power</option>
               </select>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={countTowardRevenue}
+                    onChange={(e) => setCountTowardRevenue(e.target.checked)}
+                  />
+                  Count this plan toward revenue
+                </label>
                 <button className="btn btn-primary w-full" disabled={acting || !planChoice} onClick={applyPlan}>
                   {acting ? 'Working…' : 'Apply Plan Change'}
                 </button>

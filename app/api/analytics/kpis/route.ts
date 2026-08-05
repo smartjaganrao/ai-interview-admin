@@ -58,6 +58,8 @@ export async function GET() {
         const status = d.status || 'inactive';
         if (status !== 'active' || !(plan in fallbackPrice)) return;
 
+        if (d.adminGranted && d.countTowardRevenue !== true) return;
+
         const amount = Number(d.amount) || 0;
         const monthlyEquivalent = amount > 0
           ? (d.billing === 'yearly' ? amount / 12 : amount)

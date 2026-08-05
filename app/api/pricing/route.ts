@@ -4,10 +4,20 @@ import { isAdminRequest, getSession } from '@/lib/session-server';
 import { PLANS, PlanId } from '@/lib/pricing-config';
 import { getCached, invalidateCache } from '@/lib/route-cache';
 
+interface PlanFields {
+  oneTime: number;
+  monthly: number;
+  yearly: number;
+  active: boolean;
+  displayOrder: number;
+  badge: string;
+  highlighted: boolean;
+}
+
 export const dynamic = 'force-dynamic';
 
 const DEFAULTS = {
-  plans: {} as Record<PlanId, any>,
+  plans: {} as Record<PlanId, PlanFields>,
   offer: { active: false, label: '', percentOff: 0, appliesTo: 'all' as const, expiresAt: null as number | null },
 };
 
@@ -27,17 +37,17 @@ export async function GET() {
       const snap = await db!.collection('settings').doc('pricing').get();
       if (!snap.exists) return NextResponse.json(JSON.parse(JSON.stringify(DEFAULTS)));
       const d = snap.data() ?? {};
-      const plans: Record<PlanId, any> = { free: {}, quick_pass: {}, pro: {}, power: {} };
+      const plans: Record<PlanId, PlanFields> = { free: DEFAULTS.plans.free, quick_pass: DEFAULTS.plans.quick_pass, pro: DEFAULTS.plans.pro, power: DEFAULTS.plans.power };
       PLANS.forEach(p => {
-        const stored = (d.plans as any)?.[p.id] || {};
+        const stored = (d.plans as Record<string, unknown>)?.[p.id] || {};
         plans[p.id] = {
-          oneTime: Number(stored.oneTime ?? p.price),
-          monthly: Number(stored.monthly ?? (p.billingType === 'subscription' ? p.price : 0)),
-          yearly: Number(stored.yearly ?? (p.billingType === 'subscription' ? p.price * 10 : 0)),
-          active: stored.active ?? p.isActive,
-          displayOrder: stored.displayOrder ?? p.displayOrder,
-          badge: stored.badge ?? p.badge ?? '',
-          highlighted: stored.highlighted ?? p.isHighlighted,
+          oneTime: Number((stored as PlanFields).oneTime ?? p.price),
+          monthly: Number((stored as PlanFields).monthly ?? (p.billingType === 'subscription' ? p.price : 0)),
+          yearly: Number((stored as PlanFields).yearly ?? (p.billingType === 'subscription' ? p.price * 10 : 0)),
+          active: (stored as PlanFields).active ?? p.isActive,
+          displayOrder: (stored as PlanFields).displayOrder ?? p.displayOrder,
+          badge: (stored as PlanFields).badge ?? p.badge ?? '',
+          highlighted: (stored as PlanFields).highlighted ?? p.isHighlighted,
         };
       });
       return NextResponse.json({
@@ -72,14 +82,14 @@ export async function POST(request: NextRequest) {
       return Number.isFinite(n) && n >= 0 ? Math.round(n) : fallback;
     };
 
-    const plans: Record<PlanId, any> = {} as any;
+    const plans: Record<PlanId, PlanFields> = {} as Record<PlanId, PlanFields>;
     PLANS.forEach(p => {
-      const stored = (body?.plans?.[p.id] || {});
+      const stored = (body?.plans?.[p.id] || {}) as Record<string, unknown>;
       plans[p.id] = {
         oneTime: num(stored.oneTime, p.price),
         monthly: num(stored.monthly, p.billingType === 'subscription' ? p.price : 0),
         yearly: num(stored.yearly, p.billingType === 'subscription' ? p.price * 10 : 0),
-        active: stored.active ?? p.isActive,
+        active: (stored.active ?? p.isActive) as boolean,
         displayOrder: num(stored.displayOrder, p.displayOrder),
         badge: String(stored.badge ?? p.badge ?? '').slice(0, 50),
         highlighted: !!stored.highlighted,

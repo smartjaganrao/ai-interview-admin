@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
       screenshotsUsed: activity.get(doc.id)?.screenshotsUsed ?? 0,
       mockSessions:    activity.get(doc.id)?.mockSessions ?? 0,
       duplicateEmail:  false,
+      adminGranted:    (doc.data().adminGranted as boolean) ?? false,
+      countTowardRevenue: (doc.data().countTowardRevenue as boolean) ?? false,
     }));
 
     // Backfill missing email/name from Firebase Auth for any partial user documents
