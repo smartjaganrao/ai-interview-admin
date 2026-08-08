@@ -39,12 +39,13 @@ export async function GET() {
     const dbInstance = db!;
     const items: Item[] = [];
 
-    const [tickets, users, logs, creators, creatorsForPending] = await Promise.all([
+    const [tickets, users, logs, creators] = await Promise.all([
       dbInstance.collection('support_tickets').where('status', '==', 'open').limit(50).get(),
       dbInstance.collection('users').orderBy('createdAt', 'desc').limit(15).get(),
       dbInstance.collection('admin_logs').orderBy('timestamp', 'desc').limit(100).get(),
-      dbInstance.collection('creators').orderBy('createdAt', 'desc').limit(15).get(),
-      dbInstance.collection('creators').limit(500).get(),
+      // Single creators read: ordered for the feed AND used for pending payouts.
+      // Previously two separate reads (15 + 500); now one read of 500 serves both.
+      dbInstance.collection('creators').orderBy('createdAt', 'desc').limit(500).get(),
     ]);
 
     const ticketDocs = tickets.docs
@@ -80,7 +81,8 @@ export async function GET() {
 
     let pendingPayoutTotal = 0;
     let pendingPayoutCount = 0;
-    for (const doc of creatorsForPending.docs) {
+    // Use the same creators read for pending payout totals
+    for (const doc of creators.docs) {
       const d = doc.data();
       const pending = Math.max(0, (d.totalEarned ?? 0) - (d.totalPaid ?? 0));
       if (pending > 0) { pendingPayoutTotal += pending; pendingPayoutCount++; }

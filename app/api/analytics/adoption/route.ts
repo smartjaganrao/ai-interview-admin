@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 import { getActivityMap, segmentFor, type Segment } from '@/lib/usage-activity';
 import { getCached } from '@/lib/route-cache';
@@ -21,14 +21,6 @@ interface AdoptionUser {
   segment: Segment;
 }
 
-/**
- * GET — desktop-app adoption funnel. For every registered (non-banned) user,
- * joins their usage_tracking activity and classifies them as:
- *   never    — signed up, never used the desktop app
- *   active7  — used in the last 7 days
- *   active30 — used in the last 30 days (but not last 7)
- *   dormant  — used at some point, but not in 30+ days (churn risk)
- */
 export async function GET() {
   try {
     if (!(await isAdminRequest())) {
@@ -77,6 +69,23 @@ export async function GET() {
       const totalUsers = users.length;
       const activated = totalUsers - counts.never;
       const activationRate = totalUsers > 0 ? Math.round((activated / totalUsers) * 100) : 0;
+
+      if (auth) {
+        const missing = users.filter(u => !u.email || !u.name);
+        if (missing.length > 0) {
+          const authClient = auth;
+          const results = await Promise.allSettled(
+            missing.map(u => authClient.getUser(u.id).catch(() => null))
+          );
+          results.forEach((result, i) => {
+            if (result.status === 'fulfilled' && result.value) {
+              const fb = result.value;
+              if (!missing[i].email && fb.email) missing[i].email = fb.email;
+              if (!missing[i].name && fb.displayName) missing[i].name = fb.displayName;
+            }
+          });
+        }
+      }
 
       users.sort((a, b) => b.lastActive - a.lastActive);
 

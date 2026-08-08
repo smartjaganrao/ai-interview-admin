@@ -42,13 +42,27 @@ export async function GET() {
         usersByMonth[monthKey].push({ userId, plan });
       });
 
+      // Batch-fetch all subscription docs for this cohort instead of N+1
+      const allUserIds = usersSnapshot.docs.map(d => d.id);
+      const subPromises = allUserIds.map(uid =>
+        firestore.collection('subscriptions').doc(uid).get().catch(() => null)
+      );
+      const subSnaps = await Promise.all(subPromises);
+      const subMap = new Map<string, { status?: string }>();
+      subSnaps.forEach((snap, idx) => {
+        if (snap?.exists) {
+          const d = snap.data() as Record<string, unknown>;
+          subMap.set(allUserIds[idx], { status: (d.status as string) || 'inactive' });
+        }
+      });
+
       for (const [month, users] of Object.entries(usersByMonth)) {
         const cohortUsers = users as { userId: string; plan: string }[];
         let stillActive = 0;
 
         for (const user of cohortUsers) {
-          const subDoc = await firestore.collection('subscriptions').doc(user.userId).get();
-          const isActive = subDoc.exists && subDoc.data()?.status === 'active';
+          const sub = subMap.get(user.userId);
+          const isActive = sub?.status === 'active';
           if (isActive) stillActive++;
         }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 import { getCached } from '@/lib/route-cache';
@@ -21,9 +21,20 @@ export async function GET() {
     return getCached('analytics:api-usage', 15 * 60 * 1000, async () => {
       const firestore = db!;
 
-      // Get API usage by week (last 12 weeks)
-      const usageByWeek: Record<string, { tokens: number; voiceMinutes: number; screenshots: number }> = {};
+      // Get API usage by week (last 12 weeks) — single collectionGroup scan
+      // instead of 12 separate per-week queries. Each month doc is read once
+      // and bucketed client-side, cutting listener/read cost ~12x.
       const now = new Date();
+      const twelveWeeksAgo = new Date(now);
+      twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 11 * 7);
+      twelveWeeksAgo.setHours(0, 0, 0, 0);
+
+      const usageSnapshot = await firestore
+        .collectionGroup('months')
+        .where('timestamp', '>=', twelveWeeksAgo.getTime())
+        .get();
+
+      const usageByWeek: Record<string, { tokens: number; voiceMinutes: number; screenshots: number }> = {};
 
       for (let i = 11; i >= 0; i--) {
         const weekStart = new Date(now);
@@ -38,30 +49,37 @@ export async function GET() {
           day: 'numeric',
         });
 
-        // Get all usage records for this week
-        const usageSnapshot = await firestore
-          .collectionGroup('months')
-          .where('timestamp', '>=', weekStart.getTime())
-          .where('timestamp', '<', weekEnd.getTime())
-          .get();
-
-        let tokens = 0;
-        let voiceMinutes = 0;
-        let screenshots = 0;
-
-        usageSnapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          tokens += data.tokensUsed || 0;
-          voiceMinutes += data.voiceMinutes || 0;
-          screenshots += data.screenshotsUsed || 0;
-        });
-
-        usageByWeek[weekKey] = {
-          tokens: Math.round(tokens / 1000), // Convert to thousands for chart
-          voiceMinutes: Math.round(voiceMinutes),
-          screenshots: screenshots,
-        };
+        usageByWeek[weekKey] = { tokens: 0, voiceMinutes: 0, screenshots: 0 };
       }
+
+      usageSnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        const ts = data.timestamp as number | undefined;
+        if (!ts) return;
+
+        for (let i = 11; i >= 0; i--) {
+          const weekStart = new Date(now);
+          weekStart.setDate(weekStart.getDate() - i * 7);
+          weekStart.setHours(0, 0, 0, 0);
+
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 7);
+
+          if (ts >= weekStart.getTime() && ts < weekEnd.getTime()) {
+            const weekKey = weekStart.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            });
+            const bucket = usageByWeek[weekKey];
+            if (bucket) {
+              bucket.tokens += data.tokensUsed || 0;
+              bucket.voiceMinutes += data.voiceMinutes || 0;
+              bucket.screenshots += data.screenshotsUsed || 0;
+            }
+            break;
+          }
+        }
+      });
 
       // Convert to array format for charts
       const usageData = Object.entries(usageByWeek).map(([week, usage]) => ({
