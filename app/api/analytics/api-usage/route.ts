@@ -22,17 +22,15 @@ export async function GET() {
       const firestore = db!;
 
       // Get API usage by week (last 12 weeks) — single collectionGroup scan
-      // instead of 12 separate per-week queries. Each month doc is read once
+      // instead of 12 separate per-week queries. Each day doc is read once
       // and bucketed client-side, cutting listener/read cost ~12x.
       const now = new Date();
       const twelveWeeksAgo = new Date(now);
       twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 11 * 7);
       twelveWeeksAgo.setHours(0, 0, 0, 0);
+      const cutoff = twelveWeeksAgo.getTime();
 
-      const usageSnapshot = await firestore
-        .collectionGroup('months')
-        .where('timestamp', '>=', twelveWeeksAgo.getTime())
-        .get();
+      const usageSnapshot = await firestore.collectionGroup('days').get();
 
       const usageByWeek: Record<string, { tokens: number; voiceMinutes: number; screenshots: number }> = {};
 
@@ -54,8 +52,8 @@ export async function GET() {
 
       usageSnapshot.docs.forEach((doc) => {
         const data = doc.data();
-        const ts = data.timestamp as number | undefined;
-        if (!ts) return;
+        const ts = (data.lastUpdated as number | undefined) || 0;
+        if (!ts || ts < cutoff) return;
 
         for (let i = 11; i >= 0; i--) {
           const weekStart = new Date(now);
@@ -72,9 +70,9 @@ export async function GET() {
             });
             const bucket = usageByWeek[weekKey];
             if (bucket) {
-              bucket.tokens += data.tokensUsed || 0;
-              bucket.voiceMinutes += data.voiceMinutes || 0;
-              bucket.screenshots += data.screenshotsUsed || 0;
+              bucket.tokens += (data.tokensUsed as number) || 0;
+              bucket.voiceMinutes += (data.voiceMinutes as number) || 0;
+              bucket.screenshots += (data.screenshotsUsed as number) || 0;
             }
             break;
           }

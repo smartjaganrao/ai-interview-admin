@@ -70,3 +70,4 @@ firebase-debug.log
 # Local dev Firebase config (contains sensitive keys)
 config.dev.json
 config.json.prod-bak
+.env*

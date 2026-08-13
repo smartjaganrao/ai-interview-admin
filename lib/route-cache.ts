@@ -13,7 +13,12 @@ export function getCached<T>(
   }
   cache.delete(key);
   const promise = fetcher().then((data) => {
-    cache.set(key, { data, expiresAt: now + ttlMs });
+    // Don't cache Response objects — their body stream is single-use and
+    // silently returns empty on reuse, which makes analytics/users pages
+    // appear empty after the first load.
+    if (!(data instanceof Response)) {
+      cache.set(key, { data, expiresAt: now + ttlMs });
+    }
     return data;
   }).catch((err) => {
     throw err;
