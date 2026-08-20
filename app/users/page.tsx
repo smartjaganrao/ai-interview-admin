@@ -219,6 +219,18 @@ export default function UsersPage() {
     refetch();
   };
 
+  const bulkResetProfile = async () => {
+    const n = selected.length;
+    if (!window.confirm(`Require ${n} selected user(s) to complete their profile on next login?`)) return;
+    setActing(true);
+    const res = await fetch('/api/users/reset-profile', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ userIds: selected }) });
+    const data = await res.json().catch(() => ({}));
+    setActing(false);
+    setSelected([]);
+    flash(res.ok ? 'ok' : 'err', res.ok ? `Reset profile for ${n} user(s)` : (data.error || 'Failed'));
+    refetch();
+  };
+
   const runDeleteAll = async () => {
     if (deleteAllConfirm !== 'DELETE ALL DATA') return;
     setDeleteStatus('deleting');
@@ -278,6 +290,7 @@ export default function UsersPage() {
             <button className="btn btn-secondary btn-sm" disabled={acting} onClick={() => bulkSetPlan('power')}>Make Power</button>
             <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkBan}>Ban</button>
             <button className="btn btn-danger btn-sm" disabled={acting} onClick={bulkDelete}>Delete</button>
+            <button className="btn btn-secondary btn-sm" disabled={acting} onClick={bulkResetProfile}>Require profile completion</button>
           </div>
         )}
         <div className="filter-bar-right">
