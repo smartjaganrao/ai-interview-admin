@@ -16,6 +16,14 @@ interface PlanFields {
 
 export const dynamic = 'force-dynamic';
 
+// Landing is a separate deployment with its own independent in-memory pricing
+// cache (getDynamicPricing() in its firebase-admin.ts) — invalidateCache()
+// below only clears this admin app's own cache, it never reaches landing's.
+// Without this call, a price/offer change here can take up to
+// PRICING_CACHE_TTL (+ the /api/pricing route's stale-while-revalidate
+// window) to actually show up on the live site.
+const LANDING_URL = 'https://javihai.in';
+
 const DEFAULTS = {
   plans: {} as Record<PlanId, PlanFields>,
   offer: { active: false, label: '', percentOff: 0, appliesTo: 'all' as const, expiresAt: null as number | null },
@@ -111,6 +119,15 @@ export async function POST(request: NextRequest) {
     );
 
     invalidateCache('pricing:current');
+
+    // Best-effort — landing being briefly unreachable shouldn't fail this
+    // save; its own cache TTL is still the fallback safety net either way.
+    if (process.env.PRICING_INVALIDATE_SECRET) {
+      fetch(`${LANDING_URL}/api/pricing/invalidate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.PRICING_INVALIDATE_SECRET}` },
+      }).catch((err) => console.error('[pricing POST] landing cache invalidation failed:', err));
+    }
 
     await db.collection('admin_logs').add({
       adminUid: session?.uid || 'system',
