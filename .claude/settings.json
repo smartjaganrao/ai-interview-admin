@@ -9,6 +9,15 @@
             "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For focused questions, run `graphify query \\\"<question>\\\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.\"}}'   || true ;; esac"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys,re; d=json.load(sys.stdin); ti=d.get('tool_input',{}); path=ti.get('file_path') or ti.get('path') or ''; base=path.rsplit('/',1)[-1]; ok = re.match(r'^\\.env(\\..+)?$', base) and 'example' not in base.lower(); print(json.dumps({'decision':'block','reason':'Blocked: editing '+base+' \u2014 this project shares one production Firebase/Firestore project with no dev or staging environment, and this file holds live secrets. Edit it manually outside Claude Code if this is intentional.'})) if ok else None\" 2>/dev/null || true"
+          }
+        ]
       }
     ]
   }
