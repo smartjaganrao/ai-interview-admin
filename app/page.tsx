@@ -261,11 +261,15 @@ export default function AdminDashboard() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <a href={releaseQ.data.releaseUrl} target="_blank" rel="noopener" className="btn btn-secondary w-full">Release notes</a>
+              {/* Direct-download proxy, not the raw GitHub asset URL — the repo
+                  is private, so a bare github.com link 404s/prompts login for
+                  anyone without direct repo access. javihai.in/api/download/*
+                  streams the file with the org's own GitHub token. */}
               {releaseQ.data.winUrl && (
-                <a href={releaseQ.data.winUrl} className="btn btn-ghost w-full">Download Windows (.exe)</a>
+                <a href="https://javihai.in/api/download/win" className="btn btn-ghost w-full">Download Windows (portable .exe)</a>
               )}
               {releaseQ.data.macUrl && (
-                <a href={releaseQ.data.macUrl} className="btn btn-ghost w-full">Download macOS (.dmg)</a>
+                <a href="https://javihai.in/api/download/mac" className="btn btn-ghost w-full">Download macOS (arm64 .dmg)</a>
               )}
             </div>
           </div>
