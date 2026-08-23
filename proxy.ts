@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const SESSION_COOKIE = 'admin-session';
-const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/logout', '/api/health'];
+// '/api/cron/*' bypasses the cookie gate here but still enforces its own
+// CRON_SECRET bearer-token check inside the route handler — Vercel Cron
+// requests carry no session cookie, so without this they'd be redirected
+// to /login before ever reaching that check.
+const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/logout', '/api/health', '/api/cron/'];
 
 // Dev-only auth bypass: lets localhost skip the Google login wall. Guarded on
 // NODE_ENV so a production build can never enable it even if the flag leaks.
