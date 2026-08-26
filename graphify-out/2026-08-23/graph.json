@@ -4528,8 +4528,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "package_dependencies_jose",
-      "community": 271,
-      "community_name": "Google Indexing Issues",
+      "community": 3,
+      "community_name": "dependencies",
       "norm_label": "jose"
     },
     {
@@ -4539,8 +4539,8 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "jose",
-      "community": 271,
-      "community_name": "Google Indexing Issues",
+      "community": 3,
+      "community_name": "dependencies",
       "norm_label": "jose"
     },
     {
@@ -4572,8 +4572,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "package_dependencies_next",
-      "community": 3,
-      "community_name": "dependencies",
+      "community": 271,
+      "community_name": "Google Indexing Issues",
       "norm_label": "next"
     },
     {
@@ -4583,8 +4583,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "next",
-      "community": 3,
-      "community_name": "dependencies",
+      "community": 271,
+      "community_name": "Google Indexing Issues",
       "norm_label": "next"
     },
     {
@@ -4899,7 +4899,7 @@
       "label": "PUBLIC_PATHS",
       "file_type": "code",
       "source_file": "proxy.ts",
-      "source_location": "L8",
+      "source_location": "L4",
       "_origin": "ast",
       "id": "proxy_public_paths",
       "community": 29,
@@ -4910,7 +4910,7 @@
       "label": "proxy()",
       "file_type": "code",
       "source_file": "proxy.ts",
-      "source_location": "L16",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "proxy_proxy",
       "community": 29,
@@ -4921,7 +4921,7 @@
       "label": "config",
       "file_type": "code",
       "source_file": "proxy.ts",
-      "source_location": "L70",
+      "source_location": "L66",
       "_origin": "ast",
       "id": "proxy_config",
       "community": 29,
@@ -33173,7 +33173,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "proxy.ts",
-      "source_location": "L70",
+      "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
       "source": "proxy",
@@ -33184,7 +33184,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "proxy.ts",
-      "source_location": "L16",
+      "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
       "source": "proxy",
@@ -33195,7 +33195,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "proxy.ts",
-      "source_location": "L8",
+      "source_location": "L4",
       "weight": 1.0,
       "_origin": "ast",
       "source": "proxy",
@@ -33208,7 +33208,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "proxy.ts",
-      "source_location": "L33",
+      "source_location": "L29",
       "weight": 1.0,
       "_origin": "ast",
       "source": "proxy_proxy",
@@ -49847,5 +49847,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "ba4ae7765e056f15abae386d95634d8b6bf4916c"
+  "built_at_commit": "afac813ec6349cbee09d04ffe3cd80f9475549d8"
 }

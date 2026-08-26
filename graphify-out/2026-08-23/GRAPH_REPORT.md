@@ -1,7 +1,7 @@
 # Graph Report - ai-interview-admin  (2026-08-23)
 
 ## Corpus Check
-- 255 files · ~165,022 words
+- 255 files · ~164,978 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ba4ae776`
+- Built from commit: `afac813e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -324,7 +324,7 @@ Nodes (11): GET(), POST(), BlogPostInput, GET(), POST(), GET(), POST(), GET() (+
 
 ### Community 3 - "dependencies"
 Cohesion: 0.12
-Nodes (17): axios, firebase, js-cookie, next, dependencies, axios, firebase, js-cookie (+9 more)
+Nodes (17): axios, firebase, jose, js-cookie, dependencies, axios, firebase, jose (+9 more)
 
 ### Community 4 - "compilerOptions"
 Cohesion: 0.07
