@@ -82,10 +82,14 @@ export function useAdminData<T>(
           writeCache(url, data);
           setState({ data, isLive: true, loading: false, reason: 'live' });
         } else {
+          const json = await res.json().catch(() => ({}));
+          const errorMessage = typeof json.error === 'string' ? json.error : '';
           const reason: Reason =
-            res.status === 503 ? 'not-configured'
-            : res.status >= 500 ? 'error'
-            : 'unauthorized';
+            res.status === 503 || (res.status === 500 && /database not configured/i.test(errorMessage))
+              ? 'not-configured'
+              : res.status >= 500
+                ? 'error'
+                : 'unauthorized';
           const cached = readCached<T>(url);
           setState({
             data: cached?.data ?? initial,
