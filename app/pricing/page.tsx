@@ -55,9 +55,9 @@ export default function AdminPricingPage() {
     if (!form) {
       const fallback = PLANS.find(p => p.id === plan);
       return {
-        oneTime: fallback?.price ?? 0,
-        monthly: fallback?.price ?? 0,
-        yearly: fallback?.price ?? 0,
+        oneTime: 0,
+        monthly: 0,
+        yearly: 0,
         active: fallback?.isActive ?? true,
         displayOrder: fallback?.displayOrder ?? 0,
         badge: fallback?.badge ?? '',
