@@ -2,20 +2,38 @@ import * as admin from 'firebase-admin';
 
 let serviceAccountKey = null;
 
+function normalizeServiceAccountJson(raw: string): any {
+  // First attempt: standard parse.
   try {
-    const jsonString = process.env.FIREBASE_ADMIN_SDK_JSON;
-    if (jsonString) {
-      serviceAccountKey = JSON.parse(jsonString);
-      // Vercel/env var packaging often mangles multi-line PEM keys:
-      // convert literal "\n" sequences back to real newlines before init.
-      if (serviceAccountKey.private_key && typeof serviceAccountKey.private_key === 'string') {
-        serviceAccountKey.private_key = serviceAccountKey.private_key.replace(/\\n/g, '\n');
+    return JSON.parse(raw);
+  } catch {
+    // Fallback: env-var packaging often corrupts multi-line PEM keys.
+    // Try to sanitize only the private_key value and re-parse.
+    try {
+      const sanitized = raw.replace(/("private_key"\s*:\s*")([\s\S]*?)(")/, (match, start, key, end) => {
+        const normalized = key.replace(/\n/g, '\\n').replace(/\r/g, '');
+        return `${start}${normalized}${end}`;
+      });
+      const parsed = JSON.parse(sanitized);
+      if (parsed.private_key && typeof parsed.private_key === 'string') {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
       }
+      return parsed;
+    } catch {
+      return null;
     }
-  } catch (error) {
-    console.warn('[Firebase] Failed to parse service account JSON:', error);
-    serviceAccountKey = null;
   }
+}
+
+try {
+  const jsonString = process.env.FIREBASE_ADMIN_SDK_JSON;
+  if (jsonString) {
+    serviceAccountKey = normalizeServiceAccountJson(jsonString);
+  }
+} catch (error) {
+  console.warn('[Firebase] Failed to parse service account JSON:', error);
+  serviceAccountKey = null;
+}
 
 // Only initialize if we have valid credentials
 if (!admin.apps.length && serviceAccountKey && serviceAccountKey.private_key) {
