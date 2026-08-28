@@ -38,6 +38,13 @@ const IconPricing = () => (
     <line x1="7" y1="7" x2="7.01" y2="7"/>
   </svg>
 );
+const IconCoupons = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="9" r="2" /><circle cx="15" cy="15" r="2" />
+    <line x1="16" y1="8" x2="8" y2="16" />
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+  </svg>
+);
 const IconAudit = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -119,6 +126,7 @@ const NAV_SECTIONS: Array<{
     items: [
       { label: 'Creators', href: '/creators', icon: <IconCreators /> },
       { label: 'Pricing', href: '/pricing', icon: <IconPricing /> },
+      { label: 'Coupons', href: '/coupons', icon: <IconCoupons /> },
       { label: 'Announcements', href: '/announcements', icon: <IconAnnouncements /> },
       { label: 'Promotions', href: '/promotions', icon: <IconPromotions /> },
       { label: 'Blog', href: '/blog', icon: <IconBlog /> },
