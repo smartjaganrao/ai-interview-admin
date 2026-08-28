@@ -26,7 +26,16 @@ interface Pricing {
   offer: Offer;
 }
 
-const msToDateInput = (ms: number | null) => (ms ? new Date(ms).toISOString().slice(0, 10) : '');
+// datetime-local, not date — a bare date landed at UTC midnight (5:30am
+// IST), so "expires Sept 3" was actually cutting the offer off 5.5 hours
+// into the morning of Sept 3 IST instead of a clean day boundary. Same fix
+// as the coupons page's expiry input.
+const msToDateInput = (ms: number | null) => {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 export default function AdminPricingPage() {
   const { data, loading, reason, refetch } = useAdminData<Pricing | null>('/api/pricing', null);
@@ -252,7 +261,7 @@ export default function AdminPricingPage() {
                 </select>
               </label>
               <label className="text-sm text-muted">Expires (optional)
-                <input className="input mt-1" type="date" value={msToDateInput(form?.offer.expiresAt ?? null)}
+                <input className="input mt-1" type="datetime-local" value={msToDateInput(form?.offer.expiresAt ?? null)}
                   onChange={(e) => setOffer({ expiresAt: e.target.value ? new Date(e.target.value).getTime() : null })} />
               </label>
             </div>
