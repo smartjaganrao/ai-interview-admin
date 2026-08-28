@@ -17,6 +17,7 @@ interface CouponRecord {
   appliesTo: 'all' | PlanId;
   active: boolean;
   featured: boolean;
+  popup: boolean;
   expiresAt: number | null;
   createdAt: number;
   updatedAt: number;
@@ -26,7 +27,16 @@ interface CouponsDoc {
   coupons: Record<string, CouponRecord>;
 }
 
-const msToDateInput = (ms: number | null) => (ms ? new Date(ms).toISOString().slice(0, 10) : '');
+// datetime-local, not date — a popup coupon's countdown needs hour/minute
+// precision (a bare date landed at UTC midnight, ~5.5h into the day in IST).
+const msToDateTimeInput = (ms: number | null) => {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const oneHourFromNowInput = () => msToDateTimeInput(Date.now() + 60 * 60 * 1000);
 
 const emptyDraft = {
   code: '',
@@ -37,6 +47,7 @@ const emptyDraft = {
   expiresAt: '',
   active: true,
   featured: false,
+  popup: false,
 };
 
 export default function AdminCouponsPage() {
@@ -69,17 +80,30 @@ export default function AdminCouponsPage() {
   const coupons = form?.coupons ?? {};
   const sortedCoupons = Object.values(coupons).sort((a, b) => b.updatedAt - a.updatedAt);
 
-  // Only one coupon should be featured at a time — it's what the public
-  // pricing banner shows, and two featured coupons has no defined display
-  // rule (landing just picks whichever was updated most recently).
-  const unfeatureAllExcept = (coupons: Record<string, CouponRecord>, exceptCode?: string) =>
+  // Only one coupon should be featured, and only one shown as the popup, at
+  // a time — each is a single public display slot, and having two flagged
+  // has no defined winner (landing just picks whichever was updated most
+  // recently, which is surprising rather than useful).
+  const exclusiveToggle = (coupons: Record<string, CouponRecord>, field: 'featured' | 'popup', exceptCode?: string) =>
     Object.fromEntries(
-      Object.entries(coupons).map(([code, c]) => [code, code === exceptCode ? c : { ...c, featured: false }])
+      Object.entries(coupons).map(([code, c]) => [code, code === exceptCode ? c : { ...c, [field]: false }])
     );
+
+  // A popup needs one concrete plan (so its checkout link is unambiguous)
+  // and a real future deadline (so its countdown means something) — mirrors
+  // the server-side guard in app/api/coupons/route.ts.
+  const canBePopup = (c: Pick<CouponRecord, 'appliesTo' | 'expiresAt'>) =>
+    c.appliesTo !== 'all' && !!c.expiresAt && c.expiresAt > Date.now();
 
   const updateCoupon = (code: string, patch: Partial<CouponRecord>) => {
     if (!form) return;
-    const base = patch.featured ? unfeatureAllExcept(form.coupons, code) : form.coupons;
+    if (patch.popup && !canBePopup({ ...form.coupons[code], ...patch })) {
+      flash('err', 'A popup coupon needs a specific plan (not "All plans") and a future expiry time.');
+      return;
+    }
+    let base = form.coupons;
+    if (patch.featured) base = exclusiveToggle(base, 'featured', code);
+    if (patch.popup) base = exclusiveToggle(base, 'popup', code);
     setForm({ coupons: { ...base, [code]: { ...base[code], ...patch } } });
   };
 
@@ -103,6 +127,11 @@ export default function AdminCouponsPage() {
     const discountValue = draft.discountType === 'percent'
       ? Math.max(1, Math.min(90, Math.round(draft.discountValue)))
       : Math.max(1, Math.round(draft.discountValue));
+    const expiresAt = draft.expiresAt ? new Date(draft.expiresAt).getTime() : null;
+    if (draft.popup && !canBePopup({ appliesTo: draft.appliesTo, expiresAt })) {
+      setDraftError('A popup coupon needs a specific plan (not "All plans") and a future expiry time.');
+      return;
+    }
     const now = Date.now();
     const newCoupon: CouponRecord = {
       code,
@@ -112,11 +141,14 @@ export default function AdminCouponsPage() {
       appliesTo: draft.appliesTo,
       active: draft.active,
       featured: draft.featured,
-      expiresAt: draft.expiresAt ? new Date(draft.expiresAt).getTime() : null,
+      popup: draft.popup,
+      expiresAt,
       createdAt: now,
       updatedAt: now,
     };
-    const base = newCoupon.featured ? unfeatureAllExcept(form?.coupons ?? {}) : (form?.coupons ?? {});
+    let base = form?.coupons ?? {};
+    if (newCoupon.featured) base = exclusiveToggle(base, 'featured');
+    if (newCoupon.popup) base = exclusiveToggle(base, 'popup');
     setForm({ coupons: { ...base, [code]: newCoupon } });
     setDraft(emptyDraft);
     setDraftError('');
@@ -185,13 +217,13 @@ export default function AdminCouponsPage() {
                     </select>
                   </label>
                   <label className="text-sm text-muted">
-                    Expires (optional)
-                    <input className="input mt-1" type="date" value={msToDateInput(c.expiresAt)}
+                    Expires (optional, required for popup)
+                    <input className="input mt-1" type="datetime-local" value={msToDateTimeInput(c.expiresAt)}
                       onChange={(e) => updateCoupon(c.code, { expiresAt: e.target.value ? new Date(e.target.value).getTime() : null })} />
                   </label>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6 flex-wrap">
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={c.active} onChange={(e) => updateCoupon(c.code, { active: e.target.checked })} />
                     <span className="text-slate-300">Active</span>
@@ -199,6 +231,10 @@ export default function AdminCouponsPage() {
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={c.featured} onChange={(e) => updateCoupon(c.code, { featured: e.target.checked })} />
                     <span className="text-slate-300">Featured on public pricing banner</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-sm" title='Needs a specific plan and a future expiry time'>
+                    <input type="checkbox" checked={c.popup} onChange={(e) => updateCoupon(c.code, { popup: e.target.checked })} />
+                    <span className="text-slate-300">Show as new-customer welcome popup</span>
                   </label>
                 </div>
               </div>
@@ -249,11 +285,17 @@ export default function AdminCouponsPage() {
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <label className="text-sm text-muted">
-                Expires (optional)
-                <input className="input mt-1" type="date" value={draft.expiresAt}
+                Expires (optional, required for popup)
+                <input className="input mt-1" type="datetime-local" value={draft.expiresAt}
                   onChange={(e) => setDraft({ ...draft, expiresAt: e.target.value })} />
+                {draft.popup && !draft.expiresAt && (
+                  <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 6 }}
+                    onClick={() => setDraft({ ...draft, expiresAt: oneHourFromNowInput() })}>
+                    Set to 1 hour from now
+                  </button>
+                )}
               </label>
-              <div className="flex items-end gap-6">
+              <div className="flex items-end gap-6 flex-wrap">
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} />
                   <span className="text-slate-300">Active</span>
@@ -261,6 +303,10 @@ export default function AdminCouponsPage() {
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={draft.featured} onChange={(e) => setDraft({ ...draft, featured: e.target.checked })} />
                   <span className="text-slate-300">Featured</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm" title='Needs a specific plan and a future expiry time'>
+                  <input type="checkbox" checked={draft.popup} onChange={(e) => setDraft({ ...draft, popup: e.target.checked })} />
+                  <span className="text-slate-300">Show as popup</span>
                 </label>
               </div>
             </div>

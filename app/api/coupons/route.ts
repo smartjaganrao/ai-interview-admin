@@ -14,6 +14,7 @@ export interface CouponRecord {
   appliesTo: 'all' | PlanId;
   active: boolean;
   featured: boolean;
+  popup: boolean;
   expiresAt: number | null;
   createdAt: number;
   updatedAt: number;
@@ -81,6 +82,13 @@ export async function POST(request: NextRequest) {
         ? (raw.appliesTo as CouponRecord['appliesTo'])
         : 'all';
 
+      const expiresAt = raw.expiresAt ? Number(raw.expiresAt) : null;
+      // A popup coupon drives a direct checkout link and a live countdown —
+      // both need one concrete plan and a real future deadline. Force it off
+      // rather than reject the whole save, so a stray checkbox doesn't block
+      // saving unrelated coupon edits.
+      const popup = !!raw.popup && appliesTo !== 'all' && !!expiresAt && expiresAt > now;
+
       coupons[code] = {
         code,
         label: String(raw.label ?? code).slice(0, 80),
@@ -89,10 +97,20 @@ export async function POST(request: NextRequest) {
         appliesTo,
         active: !!raw.active,
         featured: !!raw.featured,
-        expiresAt: raw.expiresAt ? Number(raw.expiresAt) : null,
+        popup,
+        expiresAt,
         createdAt: existing[code]?.createdAt ?? now,
         updatedAt: now,
       };
+    }
+
+    // Defense in depth: the admin page already keeps "featured" and "popup"
+    // exclusive to one coupon each client-side, but enforce it here too
+    // since this is the actual write path — keep only the most-recently
+    // updated entry for each flag if more than one somehow arrives.
+    for (const key of ['featured', 'popup'] as const) {
+      const flagged = Object.values(coupons).filter((c) => c[key]).sort((a, b) => b.updatedAt - a.updatedAt);
+      flagged.slice(1).forEach((c) => { coupons[c.code][key] = false; });
     }
 
     await db.collection('settings').doc('coupons').set({
