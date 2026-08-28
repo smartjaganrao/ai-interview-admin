@@ -69,9 +69,18 @@ export default function AdminCouponsPage() {
   const coupons = form?.coupons ?? {};
   const sortedCoupons = Object.values(coupons).sort((a, b) => b.updatedAt - a.updatedAt);
 
+  // Only one coupon should be featured at a time — it's what the public
+  // pricing banner shows, and two featured coupons has no defined display
+  // rule (landing just picks whichever was updated most recently).
+  const unfeatureAllExcept = (coupons: Record<string, CouponRecord>, exceptCode?: string) =>
+    Object.fromEntries(
+      Object.entries(coupons).map(([code, c]) => [code, code === exceptCode ? c : { ...c, featured: false }])
+    );
+
   const updateCoupon = (code: string, patch: Partial<CouponRecord>) => {
     if (!form) return;
-    setForm({ coupons: { ...form.coupons, [code]: { ...form.coupons[code], ...patch } } });
+    const base = patch.featured ? unfeatureAllExcept(form.coupons, code) : form.coupons;
+    setForm({ coupons: { ...base, [code]: { ...base[code], ...patch } } });
   };
 
   const deleteCoupon = (code: string) => {
@@ -107,7 +116,8 @@ export default function AdminCouponsPage() {
       createdAt: now,
       updatedAt: now,
     };
-    setForm({ coupons: { ...(form?.coupons ?? {}), [code]: newCoupon } });
+    const base = newCoupon.featured ? unfeatureAllExcept(form?.coupons ?? {}) : (form?.coupons ?? {});
+    setForm({ coupons: { ...base, [code]: newCoupon } });
     setDraft(emptyDraft);
     setDraftError('');
   };
