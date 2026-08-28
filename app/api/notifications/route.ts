@@ -65,7 +65,18 @@ export async function GET() {
     for (const doc of payments) {
       const d = doc.data();
       const det = d.details || {};
-      items.push({ id: `payment_${doc.id}`, type: 'payment', title: `New ${det.plan || ''} subscription`.trim(), subtitle: det.amount ? `₹${det.amount}` : '', timestamp: d.timestamp || 0, href: '/users' });
+      // targetUserEmail is who actually paid — without it this item told you
+      // a plan and an amount but never who bought it, making it useless for
+      // following up on a specific payment.
+      const paidBy = d.targetUserEmail || '';
+      items.push({
+        id: `payment_${doc.id}`,
+        type: 'payment',
+        title: `New ${det.plan || ''} subscription`.trim(),
+        subtitle: [paidBy, det.amount ? `₹${det.amount}` : ''].filter(Boolean).join(' · '),
+        timestamp: d.timestamp || 0,
+        href: '/users',
+      });
     }
     for (const doc of refunds) {
       const d = doc.data();
