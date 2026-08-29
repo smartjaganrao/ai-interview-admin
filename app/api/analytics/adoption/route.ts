@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
-import { getActivityMap, segmentFor, type Segment } from '@/lib/usage-activity';
+import { getCachedActivityMap, segmentFor, type Segment } from '@/lib/usage-activity';
 import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ export async function GET() {
     return getCached('analytics:adoption', 15 * 60 * 1000, async () => {
       const [usersSnap, activity] = await Promise.all([
         firestore.collection('users').select('email', 'name', 'plan', 'status', 'createdAt', 'lastSeen').get(),
-        getActivityMap(),
+        getCachedActivityMap(),
       ]);
 
       const now = Date.now();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
-import { getActivityMap, segmentFor } from '@/lib/usage-activity';
+import { getCachedActivityMap, segmentFor } from '@/lib/usage-activity';
 import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     // every user is always included.
     const [snapshot, activity] = await Promise.all([
       queryRef.limit(500).get(),
-      getActivityMap(),
+      getCachedActivityMap(),
     ]);
 
     let users = snapshot.docs.map((doc) => ({

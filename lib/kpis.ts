@@ -93,14 +93,17 @@ export async function computeKpis(): Promise<Kpis> {
 
   let downgrades = 0;
   try {
+    // Scoped to this month at the Firestore level (not just filtered in
+    // memory after fetching) — admin_logs only ever grows, so without this
+    // every KPI computation re-read every user_upgrade log entry since the
+    // app launched, not just this month's. Needs a composite index on
+    // (action ASC, timestamp ASC) — see firestore.indexes.json.
     const logsSnapshot = await dbInstance
       .collection('admin_logs')
       .where('action', '==', 'user_upgrade')
+      .where('timestamp', '>=', thisMonthStart.getTime())
       .get();
-    downgrades = logsSnapshot.docs.filter((doc) => {
-      const d = doc.data();
-      return (d.timestamp || 0) >= thisMonthStart.getTime() && d.details?.newPlan === 'free';
-    }).length;
+    downgrades = logsSnapshot.docs.filter((doc) => doc.data().details?.newPlan === 'free').length;
   } catch {
     downgrades = 0;
   }

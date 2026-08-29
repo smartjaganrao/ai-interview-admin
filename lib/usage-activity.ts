@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase-admin';
+import { getCached } from '@/lib/route-cache';
 
 export interface UserActivity {
   lastActive: number;   // ms epoch of most recent usage_tracking day, 0 if never
@@ -45,6 +46,23 @@ export async function getActivityMap(): Promise<ActivityMap> {
     map.set(uid, cur);
   }
   return map;
+}
+
+/**
+ * Shared-cache wrapper around getActivityMap(). The underlying
+ * collectionGroup('days') scan reads every usage-day document ever written —
+ * it doesn't depend on pagination, search, or plan filters — but both
+ * callers (users/list and analytics/adoption) used to call getActivityMap()
+ * directly from inside their OWN per-route caches. users/list's cache key
+ * varies per page/limit/search/plan, so every distinct combination an admin
+ * browsed re-ran the full historical scan from scratch, and adoption ran a
+ * second independent copy on its own schedule. Caching this call on its own
+ * fixed key means the expensive scan runs at most once per TTL window,
+ * shared by both routes, regardless of how many list/filter combinations
+ * get requested in between.
+ */
+export function getCachedActivityMap(): Promise<ActivityMap> {
+  return getCached('usage:activity-map', 15 * 60 * 1000, getActivityMap);
 }
 
 const DAY = 24 * 60 * 60 * 1000;
