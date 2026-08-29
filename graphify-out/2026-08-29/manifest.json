@@ -65,8 +65,8 @@
     "semantic_hash": "71df6083aca7e74dfc29304252e0d868"
   },
   "app/api/analytics/adoption/route.ts": {
-    "mtime": 1787998735.1410046,
-    "ast_hash": "8ef65afec1171905bcbbc32edacef2aa",
+    "mtime": 1786186658.675546,
+    "ast_hash": "dd146b4bf4f47406cef1d9022e1d0e42",
     "semantic_hash": ""
   },
   "app/api/analytics/api-usage/route.ts": {
@@ -175,8 +175,8 @@
     "semantic_hash": "a25ca07cd8aea321e739c0ff46f8288f"
   },
   "app/api/notifications/route.ts": {
-    "mtime": 1787933249.5340517,
-    "ast_hash": "97457fd8fbd6240cd2590065060438b1",
+    "mtime": 1786181310.6745498,
+    "ast_hash": "8c2779273d7519677826665c61973747",
     "semantic_hash": ""
   },
   "app/api/pricing/route.ts": {
@@ -245,8 +245,8 @@
     "semantic_hash": "602ba1f520044f1bd6ecdbe08d69add3"
   },
   "app/api/users/list/route.ts": {
-    "mtime": 1787998735.1412795,
-    "ast_hash": "26c048210baf20c294fb3c84e7406bd8",
+    "mtime": 1785949637.531574,
+    "ast_hash": "c3a3e5ad4a8352ab96ccbc9cf2d2b99a",
     "semantic_hash": ""
   },
   "app/api/users/refund/route.ts": {
@@ -295,8 +295,8 @@
     "semantic_hash": ""
   },
   "app/pricing/page.tsx": {
-    "mtime": 1787926107.0651839,
-    "ast_hash": "71040afd166b36c410df4213d8dd3a1e",
+    "mtime": 1785953238.3880498,
+    "ast_hash": "67f9421097b306c6be6ac915d0cee8df",
     "semantic_hash": ""
   },
   "app/promotions/page.tsx": {
@@ -320,8 +320,8 @@
     "semantic_hash": ""
   },
   "components/AdminShell.tsx": {
-    "mtime": 1787917397.6836152,
-    "ast_hash": "2c49ada80fd2070c476b7a89838b9b9d",
+    "mtime": 1785830836.172634,
+    "ast_hash": "046a815a0cb9af88e1e7609bd274d162",
     "semantic_hash": ""
   },
   "components/BlogEditor.tsx": {
@@ -360,9 +360,9 @@
     "semantic_hash": "cac48e9dd21c7d17ed7c3d60407e5de8"
   },
   "lib/firebase-admin.ts": {
-    "mtime": 1787844561.4995968,
-    "ast_hash": "b021723f3fdeb791afa42b329b8db6a0",
-    "semantic_hash": ""
+    "mtime": 1782646638.0988758,
+    "ast_hash": "23cd78753cbbdbb4198404793fadb53a",
+    "semantic_hash": "23cd78753cbbdbb4198404793fadb53a"
   },
   "lib/firebase-client.ts": {
     "mtime": 1781350343.7446668,
@@ -390,13 +390,13 @@
     "semantic_hash": "9f258df8ff38f0276cc140c2ddd49874"
   },
   "lib/usage-activity.ts": {
-    "mtime": 1787998735.1417189,
-    "ast_hash": "4f738b0d9c19a33dcdd2b45536b0f801",
+    "mtime": 1785744936.9249315,
+    "ast_hash": "1e0c99e2e61cc199e004751bf9665ff9",
     "semantic_hash": ""
   },
   "lib/useAdminData.ts": {
-    "mtime": 1787842445.9031954,
-    "ast_hash": "a15f11fa877d57e0f1c1cb046f9fdd65",
+    "mtime": 1785779470.7076392,
+    "ast_hash": "828fd882cfc9f7940fe079975490ace2",
     "semantic_hash": ""
   },
   "next.config.ts": {
@@ -525,8 +525,8 @@
     "semantic_hash": ""
   },
   "lib/pricing-config.ts": {
-    "mtime": 1787911675.2437546,
-    "ast_hash": "a93391a7f40d701093d6c0ca343027de",
+    "mtime": 1785764498.4371169,
+    "ast_hash": "bc329e8ae72c329792116d9f9e2e40c6",
     "semantic_hash": ""
   },
   "lib/route-cache.ts": {
@@ -1305,18 +1305,8 @@
     "semantic_hash": ""
   },
   "lib/kpis.ts": {
-    "mtime": 1787998735.1415207,
-    "ast_hash": "b706f7ca04583be746af2107199a87b1",
-    "semantic_hash": ""
-  },
-  "app/api/coupons/route.ts": {
-    "mtime": 1787923017.6084206,
-    "ast_hash": "f286212e5e5c58fd1c106d18f92a6ad9",
-    "semantic_hash": ""
-  },
-  "app/coupons/page.tsx": {
-    "mtime": 1787923089.6887252,
-    "ast_hash": "3266c66a46b8120f51e16f7f1c510148",
+    "mtime": 1787464266.8683317,
+    "ast_hash": "91b587d7032e5e0c6aaabb7048a0917f",
     "semantic_hash": ""
   }
 }
