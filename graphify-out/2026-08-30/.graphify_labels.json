@@ -187,6 +187,7 @@
   "185": "8. Testing with React Router",
   "186": "9. Testing with Redux",
   "187": "firebase-admin",
+  "188": "firebase",
   "189": "SKILL.md",
   "190": "SKILL.md",
   "191": "SKILL.md",
@@ -266,6 +267,7 @@
   "265": "react",
   "266": "react-dom",
   "267": "@tiptap/extension-image",
+  "268": "@tanstack/react-query",
   "269": "@tiptap/extension-text-align",
   "270": "@tiptap/starter-kit",
   "271": "Google Indexing Issues"

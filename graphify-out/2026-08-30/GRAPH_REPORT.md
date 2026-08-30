@@ -1,16 +1,16 @@
-# Graph Report - ai-interview-admin  (2026-08-29)
+# Graph Report - ai-interview-admin  (2026-08-30)
 
 ## Corpus Check
-- 257 files · ~167,720 words
+- 258 files · ~167,950 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2103 nodes · 2442 edges · 270 communities (173 shown, 97 thin omitted)
+- 2109 nodes · 2452 edges · 272 communities (174 shown, 98 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eaaeb30b`
+- Built from commit: `fee9e382`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -201,6 +201,7 @@
 - 8. Testing with React Router
 - 9. Testing with Redux
 - firebase-admin
+- firebase
 - SKILL.md
 - SKILL.md
 - SKILL.md
@@ -279,6 +280,7 @@
 - react
 - react-dom
 - @tiptap/extension-image
+- @tanstack/react-query
 - @tiptap/extension-text-align
 - @tiptap/starter-kit
 - Google Indexing Issues
@@ -287,7 +289,7 @@
 1. `isAdminRequest()` - 76 edges
 2. `getSession()` - 64 edges
 3. `getCached()` - 39 edges
-4. `useAdminData()` - 30 edges
+4. `useAdminData()` - 31 edges
 5. `postAdmin()` - 23 edges
 6. `Complete GitHub Actions Guide` - 21 edges
 7. `Jest React Testing Examples` - 21 edges
@@ -310,7 +312,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (270 total, 97 thin omitted)
+## Communities (272 total, 98 thin omitted)
 
 ### Community 1 - "getSession"
 Cohesion: 0.11
@@ -322,7 +324,7 @@ Nodes (20): GET(), POST(), POST(), BlogPostInput, GET(), POST(), CouponRecord, D
 
 ### Community 3 - "dependencies"
 Cohesion: 0.12
-Nodes (17): axios, firebase, js-cookie, dependencies, axios, firebase, js-cookie, recharts (+9 more)
+Nodes (17): axios, jose, js-cookie, next, dependencies, axios, jose, js-cookie (+9 more)
 
 ### Community 4 - "compilerOptions"
 Cohesion: 0.07
@@ -333,16 +335,16 @@ Cohesion: 0.12
 Nodes (17): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, tailwindcss, @tailwindcss/postcss, @types/node (+9 more)
 
 ### Community 6 - "useAdminData"
-Cohesion: 0.16
-Nodes (15): AnalyticsPage(), EMPTY_KPIS, Kpis, PLAN_COLORS, RevPoint, T, UsagePoint, EmptyState() (+7 more)
+Cohesion: 0.19
+Nodes (11): AnalyticsPage(), EMPTY_KPIS, Kpis, PLAN_COLORS, RevPoint, T, UsagePoint, EmptyState() (+3 more)
 
 ### Community 7 - "session-server.ts"
 Cohesion: 0.21
 Nodes (9): JWKS, POST(), POST(), emailCustomer(), POST(), clearSession(), createSession(), DEV_SESSION (+1 more)
 
 ### Community 8 - "page.tsx"
-Cohesion: 0.14
-Nodes (10): AdoptionData, AdoptionPage(), AdoptionUser, relativeActive(), Segment, SEGMENTS, EmailTemplateGeneratorProps, Template (+2 more)
+Cohesion: 0.11
+Nodes (14): AdoptionData, AdoptionPage(), AdoptionUser, relativeActive(), Segment, SEGMENTS, PLAN_OPTIONS, PromotionsData (+6 more)
 
 ### Community 9 - "page.tsx"
 Cohesion: 0.18
@@ -359,10 +361,6 @@ Nodes (15): AdoptionUser, GET(), GET(), GET(), GET(), GET(), GET(), GET() (+7 mo
 ### Community 12 - "route.ts"
 Cohesion: 0.53
 Nodes (5): COLLECTIONS, deleteCollection(), deleteCollectionDeep(), deleteCollectionExcluding(), POST()
-
-### Community 13 - "page.tsx"
-Cohesion: 0.22
-Nodes (6): BlogAdminPage(), BlogPost, EMPTY_FORM, slugify(), wordCount(), Props
 
 ### Community 14 - "DataStates.tsx"
 Cohesion: 0.70
@@ -419,6 +417,10 @@ Nodes (34): Additional Resources, Analysis Tools, Best Practices, Caching, Commo
 ### Community 33 - "CI/CD and Automation"
 Cohesion: 0.07
 Nodes (29): Automation Beyond CI, Basic CI Pipeline, Build Cop Role, CI/CD and Automation, CI Optimization, Common Mistakes, Common Rationalizations, Dependabot / Renovate (+21 more)
+
+### Community 34 - "layout.tsx"
+Cohesion: 0.40
+Nodes (3): inter, metadata, Providers()
 
 ### Community 35 - "Sidebar.tsx"
 Cohesion: 0.07
@@ -477,16 +479,16 @@ Cohesion: 0.10
 Nodes (20): 10. Package versions aligned (spot check), 1. Git status (all repos), 2. Install dependencies (all repos), 3. Build (all repos), 4. Lint (all repos), 5. Typecheck (all repos), 6. Tests (desktop only), 7. Env vars present (+12 more)
 
 ### Community 52 - "useAdminData"
-Cohesion: 0.12
-Nodes (25): Admin, AdminsPage(), ROLE_BADGE, ROLES, Announcement, AnnouncementsPage(), AiAnswer, AnswersPage() (+17 more)
+Cohesion: 0.15
+Nodes (20): Admin, AdminsPage(), ROLE_BADGE, ROLES, Announcement, AnnouncementsPage(), AiAnswer, AnswersPage() (+12 more)
 
 ### Community 53 - "JSON-LD Structured Data in Next.js"
-Cohesion: 0.11
-Nodes (19): Article Schema, Best Practices, BreadcrumbList Schema, Common Schemas, Contents, Deprecated / no longer rich-result-eligible, FAQPage Schema, @graph multi-entity pattern (+11 more)
+Cohesion: 0.20
+Nodes (10): Best Practices, Contents, Deprecated / no longer rich-result-eligible, @graph multi-entity pattern, Implementation Pattern, JSON-LD Structured Data in Next.js, Structured data for AI search, Testing Tools (+2 more)
 
 ### Community 54 - "Next.js SEO Optimization"
-Cohesion: 0.15
-Nodes (13): Add noindex to a page, Cache Components & SEO, Canonical for dynamic routes, Common Mistakes to Avoid, Core Web Vitals Targets, Dynamic metadata per page, Key Principles, Next.js SEO Optimization (+5 more)
+Cohesion: 0.11
+Nodes (19): Add noindex to a page, app/layout.tsx - Root Metadata, app/manifest.ts - Web App Manifest, app/robots.ts - Robots Configuration, app/sitemap.ts - Dynamic Sitemap, Cache Components & SEO, Canonical for dynamic routes, Common Mistakes to Avoid (+11 more)
 
 ### Community 55 - "ReOrder: Keep Your Regulars Ordering Direct"
 Cohesion: 0.11
@@ -545,7 +547,7 @@ Cohesion: 0.21
 Nodes (9): LoginForm(), Sidebar(), useAdminAuth(), auth, db, firebaseConfig, googleProvider, loginWithGoogle() (+1 more)
 
 ### Community 69 - "Open Knowledge Format (OKF)"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (13): 1. Suganthan's free web tool (recommended for most sites), 2. WordPress plugin (pending wp.org approval), 3. By hand, A minimal concept file, Honest framing, Hosting & discovery, How to ship one, Open Knowledge Format (OKF) (+5 more)
 
 ### Community 70 - "Desktop release gate"
@@ -609,8 +611,8 @@ Cohesion: 0.20
 Nodes (9): Audit Tools, Contents, Core Web Vitals, Critical (Must Have), Next.js SEO Audit Checklist, Quick Commands, Red Flags to Watch, Rendering (+1 more)
 
 ### Community 85 - "Sitemap & Robots.txt in Next.js"
-Cohesion: 0.15
-Nodes (13): Basic Static Sitemap, Contents, Dynamic Sitemap with Database, Image Sitemap, Localized Sitemap, `MetadataRoute.Robots` fields, Multiple Sitemaps (Large Sites), Robots.txt Best Practices (+5 more)
+Cohesion: 0.12
+Nodes (17): Basic Robots.txt, Basic Static Sitemap, Contents, Dynamic Sitemap with Database, Environment-Based Robots, Image Sitemap, Localized Sitemap, `MetadataRoute.Robots` fields (+9 more)
 
 ### Community 86 - "React Best Practices"
 Cohesion: 0.20
@@ -629,7 +631,7 @@ Cohesion: 0.25
 Nodes (8): ApiUser, AVATAR_COLORS, lastActiveLabel(), PLAN_BADGE, STATUS_BADGE, User, UsersPage(), UserStats
 
 ### Community 90 - "How Each AI Platform Picks Sources"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Allowing AI Bots in robots.txt, ChatGPT, Claude, Google AI Overviews, How Each AI Platform Picks Sources, Microsoft Copilot, Perplexity, The Fundamentals (+1 more)
 
 ### Community 91 - "SKILL.md"
@@ -845,12 +847,12 @@ Cohesion: 0.40
 Nodes (5): Common Testing Patterns, Testing Accessibility, Testing Error Boundaries, Testing Lists and Iterations, Testing Portals
 
 ### Community 146 - "Nice to Have (Optimization)"
-Cohesion: 0.50
-Nodes (4): Basic Robots.txt, Environment-Based Robots, Multiple User Agents, Robots.txt Configuration
+Cohesion: 0.22
+Nodes (9): Article Schema, BreadcrumbList Schema, Common Schemas, FAQPage Schema, Organization Schema, Product Schema, Product snippet vs merchant listing experience, WebApplication Schema (+1 more)
 
 ### Community 147 - "Important (Should Have)"
-Cohesion: 0.33
-Nodes (6): app/layout.tsx - Root Metadata, app/manifest.ts - Web App Manifest, app/robots.ts - Robots Configuration, app/sitemap.ts - Dynamic Sitemap, Essential Files, OG / Twitter Images
+Cohesion: 0.29
+Nodes (6): ApiTicket, Message, PRIORITY_BADGE, STATUS_BADGE, SupportPage(), Ticket
 
 ### Community 148 - "Phrases That Signal AI Writing"
 Cohesion: 0.40
@@ -911,6 +913,10 @@ Nodes (4): Em Dashes: The Primary AI Tell, Guidelines, What To Do Instead, Why E
 ### Community 164 - "Prefer Statically Analyzable Paths"
 Cohesion: 0.50
 Nodes (3): File-System Paths, Import Paths, Prefer Statically Analyzable Paths
+
+### Community 166 - "route.ts"
+Cohesion: 0.48
+Nodes (6): AdminDataState, fetchAdminData(), FetchResult, readCached(), storageKey(), writeCache()
 
 ### Community 167 - "Security & Production"
 Cohesion: 0.67
@@ -993,9 +999,9 @@ Cohesion: 0.67
 Nodes (3): 9. Testing with Redux, Component: TodoList with Redux, Tests
 
 ## Knowledge Gaps
-- **1354 isolated node(s):** `idea-refine.sh script`, `Admin`, `ROLE_BADGE`, `ROLES`, `Segment` (+1349 more)
+- **1356 isolated node(s):** `idea-refine.sh script`, `Admin`, `ROLE_BADGE`, `ROLES`, `Segment` (+1351 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **97 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **98 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -1004,10 +1010,10 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **Why does `isAdminRequest()` connect `route.ts` to `getSession`, `isAdminRequest`, `session-server.ts`, `route.ts`, `DataStates.tsx`, `route.ts`, `route.ts`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `Complete GitHub Actions Guide` connect `Complete GitHub Actions Guide` to `Core Concepts`, `Deployment Patterns`, `Matrix Strategies`, `Best Practices`, `Performance Optimization`, `Framework-Specific Workflows`, `Local Workflow Patterns (Your Repos)`, `Runners`, `Triggers (on)`, `Common Actions`, `Security Scanning`, `Release Automation`, `Debugging Workflows`, `Testing Workflows`, `GitHub Actions CI/CD`, `Contexts`?**
+- **Why does `PlanId` connect `page.tsx` to `pricing-config.ts`, `route.ts`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **What connects `idea-refine.sh script`, `Admin`, `ROLE_BADGE` to the rest of the system?**
-  _1354 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1356 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AdminShell.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
 - **Should `getSession` be split into smaller, more focused modules?**

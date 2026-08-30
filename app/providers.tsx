@@ -9,7 +9,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes — matches the caching guidance this was built from
+            // Cached data never goes stale on its own — the only real API calls
+            // are the first-ever load (no cache yet) or an explicit refetch()
+            // (the page's Refresh button). No time-based background refetching.
+            staleTime: Infinity,
             retry: false,
             refetchOnWindowFocus: false,
           },

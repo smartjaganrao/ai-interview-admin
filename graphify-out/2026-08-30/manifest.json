@@ -280,8 +280,8 @@
     "semantic_hash": ""
   },
   "app/layout.tsx": {
-    "mtime": 1785063404.414154,
-    "ast_hash": "5dfd104a57b15bca765bf2c41216a4dd",
+    "mtime": 1788071824.6200864,
+    "ast_hash": "dee1075d617059f6bf8def24853b9981",
     "semantic_hash": ""
   },
   "app/login/page.tsx": {
@@ -395,8 +395,8 @@
     "semantic_hash": ""
   },
   "lib/useAdminData.ts": {
-    "mtime": 1787842445.9031954,
-    "ast_hash": "a15f11fa877d57e0f1c1cb046f9fdd65",
+    "mtime": 1788071840.6268172,
+    "ast_hash": "a0e5aae2c7855b80ad60aac54994e702",
     "semantic_hash": ""
   },
   "next.config.ts": {
@@ -405,8 +405,8 @@
     "semantic_hash": "9b77af189a21a7a64e4bd7a426f64176"
   },
   "package.json": {
-    "mtime": 1787463387.1625502,
-    "ast_hash": "6c61981a7d35467ddff897cb8766cbcb",
+    "mtime": 1788071785.9451323,
+    "ast_hash": "f4760b0604de502afda2521dad51c834",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -525,8 +525,8 @@
     "semantic_hash": ""
   },
   "lib/pricing-config.ts": {
-    "mtime": 1787911675.2437546,
-    "ast_hash": "a93391a7f40d701093d6c0ca343027de",
+    "mtime": 1788026513.7902904,
+    "ast_hash": "eb7bdeeda444e69ceb696b9ff69af2d8",
     "semantic_hash": ""
   },
   "lib/route-cache.ts": {
@@ -1317,6 +1317,11 @@
   "app/coupons/page.tsx": {
     "mtime": 1787923089.6887252,
     "ast_hash": "3266c66a46b8120f51e16f7f1c510148",
+    "semantic_hash": ""
+  },
+  "app/providers.tsx": {
+    "mtime": 1788071821.0778983,
+    "ast_hash": "7ca8ffac6064bef7c5668aa9f71c54d1",
     "semantic_hash": ""
   }
 }

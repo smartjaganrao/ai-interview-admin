@@ -99,10 +99,11 @@ async function fetchAdminData<T>(
  * React-Query-backed replacement for the old useEffect+fetch hook. Every
  * remount used to re-fetch unconditionally (`cache: 'no-store'`), so
  * navigating between admin pages and back re-hit the API (and, on a
- * server-cache miss, Firestore) every time. Query caching by `url` with a
- * 5-minute staleTime means a remount within that window reuses the last
- * result instead of re-fetching — the API/route-cache layer only sees a
- * request when data is actually stale or a caller calls refetch().
+ * server-cache miss, Firestore) every time. Query caching by `url` with
+ * staleTime: Infinity (set on the QueryClient in app/providers.tsx) means a
+ * remount never triggers a background re-fetch on its own — the API only
+ * sees a request on the very first load (no cache yet) or when a caller
+ * invokes refetch() (the page's Refresh button).
  */
 export function useAdminData<T>(
   url: string,
