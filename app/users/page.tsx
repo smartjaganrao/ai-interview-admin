@@ -313,7 +313,7 @@ export default function UsersPage() {
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -341,6 +341,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
+                  <td className="text-muted">{u.phone || '—'}</td>
                    <td onClick={(e) => e.stopPropagation()}>
                      <div className="flex items-center gap-1">
                        <select
@@ -382,7 +383,7 @@ export default function UsersPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
               )}
             </tbody>
           </table>
