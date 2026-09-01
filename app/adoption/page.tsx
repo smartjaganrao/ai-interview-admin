@@ -139,7 +139,7 @@ export default function AdoptionPage() {
               <span style={{ fontSize: 22, fontWeight: 800 }}>{data.counts[s.id]}</span>
             </div>
             <div className="text-sm text-muted" style={{ lineHeight: 1.5 }}>{s.hint}</div>
-            {(s.id === 'dormant' || s.id === 'never') && data.counts[s.id] > 0 && (
+            {data.counts[s.id] > 0 && (
               <button
                 className="btn btn-secondary btn-sm"
                 style={{ marginTop: 10 }}
