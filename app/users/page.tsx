@@ -313,7 +313,7 @@ export default function UsersPage() {
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Phone</th><th>Plan</th><th>Status</th><th>Last active</th><th>Active days</th><th>Usage</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Status</th><th>Last active</th><th>Source</th><th>Usage</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -369,11 +369,7 @@ export default function UsersPage() {
                       <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
                     )}
                   </td>
-                  <td>
-                    <span className={`badge ${u.activeDays ? 'badge-indigo' : 'badge-slate'}`} title="Distinct days with desktop-app usage recorded">
-                      {u.activeDays ?? 0}
-                    </span>
-                  </td>
+                  <td className="text-muted">{u.referralSource || '—'}</td>
                   <td>
                     <span className="text-xs text-muted">
                       {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
