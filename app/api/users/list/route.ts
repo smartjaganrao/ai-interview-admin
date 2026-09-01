@@ -59,7 +59,10 @@ export async function GET(request: NextRequest) {
       phone:           (doc.data().phone           || '') as string,
       experienceLevel: (doc.data().experienceLevel || '') as string,
       city:            (doc.data().city            || '') as string,
-      referralSource:  (doc.data().referralSource  || '') as string,
+      // CompleteProfileModal (landing app) writes this nested under
+      // acquisition.customerSelectedSource, not a top-level referralSource
+      // field — fall back to it the same way the landing dashboard does.
+      referralSource:  (doc.data().referralSource || doc.data().acquisition?.customerSelectedSource || '') as string,
       lastActive:      Math.max(activity.get(doc.id)?.lastActive ?? 0, (doc.data().lastSeen || 0) as number),
       activeDays:      activity.get(doc.id)?.activeDays ?? 0,
       tokensUsed:      activity.get(doc.id)?.tokensUsed ?? 0,
