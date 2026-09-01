@@ -43,35 +43,48 @@ export async function POST(request: NextRequest) {
   const targetAll = !byUserIds && selectedPlans.length === 0;
 
   const idSet = new Set(explicitIds);
-  const usersSnap = await db.collection('users').select('email', 'status', 'plan').get();
-  const recipients = Array.from(
-    new Set(
-      usersSnap.docs
-        .filter((d) => {
-          const u = d.data();
-          if (u.status === 'banned' || !u.email) return false;
-          if (byUserIds) return idSet.has(d.id);
-          if (targetAll) return true;
-          return selectedPlans.includes((u.plan as string) || 'free');
-        })
-        .map((d) => (d.data().email as string).trim().toLowerCase())
-    )
-  );
+  const usersSnap = await db.collection('users').select('email', 'status', 'plan', 'name').get();
 
-  if (recipients.length === 0) {
+  // Dedupe by lowercased email while keeping the first name we saw for it —
+  // a Set<string> here would lose the name needed for {{first_name}}.
+  const recipientsByEmail = new Map<string, string>(); // email -> firstName
+  usersSnap.docs.forEach((d) => {
+    const u = d.data();
+    if (u.status === 'banned' || !u.email) return;
+    if (byUserIds) { if (!idSet.has(d.id)) return; }
+    else if (!targetAll && !selectedPlans.includes((u.plan as string) || 'free')) return;
+
+    const email = (u.email as string).trim().toLowerCase();
+    if (recipientsByEmail.has(email)) return;
+    const firstName = ((u.name as string) || '').trim().split(/\s+/)[0] || 'there';
+    recipientsByEmail.set(email, firstName);
+  });
+
+  if (recipientsByEmail.size === 0) {
     return NextResponse.json({ error: 'No eligible recipients found for the selected audience' }, { status: 400 });
   }
 
+  const recipients = Array.from(recipientsByEmail.keys());
   const fullHtml = wrapPromotionEmail(html);
+  // The AI template generator (see generate-template/route.ts) writes
+  // greetings like "Hi {{first_name}}," on its own initiative — nothing
+  // upstream ever told it to, and until now nothing downstream ever
+  // substituted it either, so every promotion sent it out verbatim. Replace
+  // per-recipient with their actual first name (any casing/spacing inside
+  // the braces).
+  const FIRST_NAME_PLACEHOLDER = /\{\{\s*first[_\s]?name\s*\}\}/gi;
+  const personalizedRecipients = Array.from(recipientsByEmail.entries()).map(([email, firstName]) => ({
+    email,
+    html: fullHtml.replace(FIRST_NAME_PLACEHOLDER, firstName),
+  }));
 
   try {
     const response = await fetch(BACKEND_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        to: recipients,
+        to: personalizedRecipients,
         subject: subject.trim(),
-        html: fullHtml,
         fromName: 'JavihAI',
       }),
     });
