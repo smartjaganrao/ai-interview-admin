@@ -303,9 +303,9 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table (desktop/tablet) */}
       <div className="card-flat">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="data-table">
             <thead>
               <tr>
@@ -313,7 +313,7 @@ export default function UsersPage() {
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Phone</th><th>Plan</th><th>Status</th><th>Last active</th><th>Source</th><th>Usage</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>Source</th><th>Usage</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -361,7 +361,6 @@ export default function UsersPage() {
                        )}
                      </div>
                    </td>
-                  <td><span className={`badge ${STATUS_BADGE[u.status]}`}>{u.status}</span></td>
                   <td>
                     {u.lastActive ? (
                       <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
@@ -379,11 +378,109 @@ export default function UsersPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Card list (mobile) */}
+        <div className="md:hidden">
+          {filtered.length > 0 && (
+            <div className="flex items-center justify-between" style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+              <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
+                Select all
+              </label>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} users</span>
+            </div>
+          )}
+          {filtered.map((u, idx) => (
+            <div
+              key={u.uid}
+              onClick={() => { setDetail(u); setPlanChoice(''); setCountTowardRevenue(false); }}
+              style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3">
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{idx + 1}</span>
+                  <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
+                    {u.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium">{u.name}</div>
+                      {u.duplicateEmail && (
+                        <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full" title="Duplicate email address">⚠</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted">{u.email}</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={selected.includes(u.uid)}
+                  onChange={() => toggle(u.uid)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Plan</div>
+                  <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                    <select
+                      className="input"
+                      style={{ padding: '2px 6px', fontSize: 11, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
+                      value={u.plan}
+                      disabled={inlineChanging === u.uid}
+                      onChange={(e) => changePlanInline(u.uid, e.target.value)}
+                    >
+                      <option value="free">FREE</option>
+                      <option value="quick_pass">QUICK PASS</option>
+                      <option value="pro">PRO</option>
+                      <option value="power">POWER</option>
+                    </select>
+                    {u.adminGranted && (
+                      <span className="badge badge-orange" style={{ fontSize: 9, padding: '1px 4px' }} title="Plan was set manually by an admin">Admin</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Phone</div>
+                  <div>{u.phone || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Last active</div>
+                  <div>
+                    {u.lastActive ? (
+                      <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
+                    ) : (
+                      <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Source</div>
+                  <div>{u.referralSource || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Usage</div>
+                  <div className="text-muted">
+                    {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Joined</div>
+                  <div className="text-muted">{u.joined}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div>
+          )}
+        </div>
+
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Showing {filtered.length} of {users.length} users</span>
           <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
