@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState, EmptyState } from '@/components/DataStates';
+import { Loader, ErrorState, EmptyState, RefreshBar } from '@/components/DataStates';
 import { PLANS, PlanId } from '@/lib/pricing-config';
 
 type DiscountType = 'percent' | 'flat';
@@ -51,7 +51,7 @@ const emptyDraft = {
 };
 
 export default function AdminCouponsPage() {
-  const { data, loading, reason, refetch } = useAdminData<CouponsDoc | null>('/api/coupons', null);
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<CouponsDoc | null>('/api/coupons', null);
 
   const [form, setForm] = useState<CouponsDoc | null>(null);
   const [saving, setSaving] = useState(false);
@@ -168,6 +168,7 @@ export default function AdminCouponsPage() {
 
   return (
     <AdminShell title="Coupons" subtitle="Create and manage promotional discount codes">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

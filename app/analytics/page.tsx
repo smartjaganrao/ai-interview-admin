@@ -2,7 +2,7 @@
 
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
-import { Loader, ErrorState, EmptyState } from '@/components/DataStates';
+import { Loader, ErrorState, EmptyState, RefreshBar } from '@/components/DataStates';
 import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -53,7 +53,11 @@ export default function AnalyticsPage() {
           Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={kpiQ.refetch}>Retry</button>
         </div>
       )}
-      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <RefreshBar
+        isLive={!hasCached}
+        updatedAt={kpiQ.dataUpdatedAt}
+        onRefresh={() => { kpiQ.refetch(); revQ.refetch(); useQ.refetch(); }}
+      />
 
       {/* Metrics (real only) */}
       <div className="stats-grid">

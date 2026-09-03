@@ -4,7 +4,7 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface AiAnswer {
   id: string;
@@ -34,7 +34,7 @@ export default function AnswersPage() {
     return `/api/answers?${params.toString()}`;
   };
 
-  const { data, loading, reason, refetch } = useAdminData<{ messages: AiAnswer[]; total: number; hasMore: boolean }>(
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{ messages: AiAnswer[]; total: number; hasMore: boolean }>(
     buildUrl(),
     { messages: [], total: 0, hasMore: false },
     (json) => {
@@ -83,6 +83,7 @@ export default function AnswersPage() {
 
   return (
     <AdminShell title="AI Answers" subtitle="View and delete cloud AI interview answers">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

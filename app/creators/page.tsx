@@ -4,7 +4,7 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface Creator {
   id: string;
@@ -31,7 +31,7 @@ export default function CreatorsPage() {
   const [acting, setActing] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
-  const { data: creators, loading, reason, refetch } = useAdminData<Creator[]>(
+  const { data: creators, loading, reason, refetch, dataUpdatedAt } = useAdminData<Creator[]>(
     '/api/creators/list', [],
     (json) => ((json as { creators?: Creator[] }).creators) || [],
   );
@@ -83,6 +83,7 @@ export default function CreatorsPage() {
 
   return (
     <AdminShell title="Creators" subtitle="Referral partners, commissions &amp; payouts">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

@@ -6,7 +6,7 @@ import PromotionEditor from '@/components/PromotionEditor';
 import EmailTemplateGenerator from '@/components/EmailTemplateGenerator';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface SendRecord {
   id: string;
@@ -35,7 +35,7 @@ const PLAN_OPTIONS: Array<{ id: 'free' | 'quick_pass' | 'pro' | 'power'; label: 
 ];
 
 export default function PromotionsPage() {
-  const { data, loading, reason, refetch } = useAdminData<PromotionsData>(
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<PromotionsData>(
     '/api/promotions',
     { draft: null, history: [], recipientCount: 0, planCounts: { free: 0, pro: 0, power: 0 } },
     (json) => json as PromotionsData
@@ -118,6 +118,7 @@ export default function PromotionsPage() {
 
   return (
     <AdminShell title="Promotions" subtitle="Compose and send a promotional email to your subscribers">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

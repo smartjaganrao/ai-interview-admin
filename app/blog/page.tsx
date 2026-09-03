@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 import BlogEditor from '@/components/BlogEditor';
 
 interface BlogPost {
@@ -52,7 +52,7 @@ function Counter({ value, limit }: { value: number; limit: number }) {
 }
 
 export default function BlogAdminPage() {
-  const { data: posts, loading, reason, refetch } = useAdminData<BlogPost[]>(
+  const { data: posts, loading, reason, refetch, dataUpdatedAt } = useAdminData<BlogPost[]>(
     '/api/blog', [],
     (json) => (json as { posts?: BlogPost[] }).posts || []
   );
@@ -232,6 +232,7 @@ export default function BlogAdminPage() {
 
   return (
     <AdminShell title="Blog" subtitle="Write and publish posts shown on the landing page">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

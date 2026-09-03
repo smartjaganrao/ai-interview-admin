@@ -4,12 +4,12 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface Announcement { id: string; title: string; body: string; link: string | null; active: boolean; createdAt: number }
 
 export default function AnnouncementsPage() {
-  const { data: announcements, loading, reason, refetch } = useAdminData<Announcement[]>(
+  const { data: announcements, loading, reason, refetch, dataUpdatedAt } = useAdminData<Announcement[]>(
     '/api/announcements', [],
     (json) => (json as { announcements?: Announcement[] }).announcements || []
   );
@@ -67,6 +67,7 @@ export default function AnnouncementsPage() {
 
   return (
     <AdminShell title="Announcements" subtitle="What's New — shown to visitors on the landing page">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

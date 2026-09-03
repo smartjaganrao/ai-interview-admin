@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 import {
   PLANS,
   PlanId,
@@ -38,7 +38,7 @@ const msToDateInput = (ms: number | null) => {
 };
 
 export default function AdminPricingPage() {
-  const { data, loading, reason, refetch } = useAdminData<Pricing | null>('/api/pricing', null);
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<Pricing | null>('/api/pricing', null);
 
   const [form, setForm] = useState<Pricing | null>(null);
   const [saving, setSaving] = useState(false);
@@ -141,6 +141,7 @@ export default function AdminPricingPage() {
 
   return (
     <AdminShell title="Pricing & Plans" subtitle="Control plan prices, features, badges, and display order">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

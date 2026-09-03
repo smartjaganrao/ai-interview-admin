@@ -59,6 +59,10 @@ export async function GET(request: NextRequest) {
       phone:           (doc.data().phone           || '') as string,
       experienceLevel: (doc.data().experienceLevel || '') as string,
       city:            (doc.data().city            || '') as string,
+      // Set by the desktop app's heartbeat (recordHeartbeat in
+      // auth.service.ts) — 'win' | 'mac' | 'other', absent until they've
+      // actually opened the desktop app at least once.
+      platform:        (doc.data().platform         || '') as string,
       // CompleteProfileModal (landing app) writes this nested under
       // acquisition.customerSelectedSource, not a top-level referralSource
       // field — fall back to it the same way the landing dashboard does.

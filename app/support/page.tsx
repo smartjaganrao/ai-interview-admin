@@ -4,7 +4,7 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface Message {
   senderType: 'user' | 'admin'; senderEmail: string; message: string; timestamp: number;
@@ -32,7 +32,7 @@ export default function SupportPage() {
   const [sendStatus, setSendStatus] = useState<''|'sent'|'error'>('');
 
   const url = `/api/support/tickets?limit=100${filter !== 'all' ? `&status=${filter}` : ''}`;
-  const { data: tickets, loading, reason, refetch } = useAdminData<Ticket[]>(url, [], (json) => {
+  const { data: tickets, loading, reason, refetch, dataUpdatedAt } = useAdminData<Ticket[]>(url, [], (json) => {
     const arr = (json as { tickets?: ApiTicket[] }).tickets || [];
     return arr.map((t) => ({
       id:t.id, title:t.title, user:t.userEmail||'—', status:t.status, priority:t.priority,
@@ -97,6 +97,7 @@ export default function SupportPage() {
 
   return (
     <AdminShell title="Support" subtitle="Customer tickets &amp; issue resolution">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {hasCached && (
         <div className="alert alert-warning" style={{ marginBottom: 20, fontSize: 12 }}>
           Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>

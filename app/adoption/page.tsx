@@ -6,7 +6,7 @@ import PromotionEditor from '@/components/PromotionEditor';
 import EmailTemplateGenerator from '@/components/EmailTemplateGenerator';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 type Segment = 'active7' | 'active30' | 'dormant' | 'never';
 
@@ -51,7 +51,7 @@ function relativeActive(ts: number): string {
 }
 
 export default function AdoptionPage() {
-  const { data, loading, reason, refetch } = useAdminData<AdoptionData>(
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<AdoptionData>(
     '/api/analytics/adoption',
     { totalUsers: 0, activated: 0, activationRate: 0, counts: { active7: 0, active30: 0, dormant: 0, never: 0 }, users: [] },
     (json) => json as AdoptionData
@@ -101,6 +101,7 @@ export default function AdoptionPage() {
 
   return (
     <AdminShell title="App Usage" subtitle="Who has activated and is actually using the desktop app">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

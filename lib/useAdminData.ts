@@ -10,6 +10,8 @@ interface AdminDataState<T> {
   loading: boolean;
   reason: Reason;
   refetch: () => void;
+  /** ms epoch of the last successful fetch (React Query's own tracking) — 0 if never. */
+  dataUpdatedAt: number;
 }
 
 interface FetchResult<T> {
@@ -132,6 +134,7 @@ export function useAdminData<T>(
     refetch: () => {
       void query.refetch();
     },
+    dataUpdatedAt: query.dataUpdatedAt,
   };
 }
 

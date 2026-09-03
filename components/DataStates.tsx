@@ -1,6 +1,58 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { errorMessage, type Reason } from '@/lib/useAdminData';
+
+/** "3m ago" / "2h ago" / "5d ago" — shared by every page's RefreshBar. */
+export function relTime(ts: number): string {
+  if (!ts) return '';
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+/**
+ * Standard header row for every admin page backed by useAdminData: a "Live
+ * data" badge (only when isLive — omitted entirely otherwise, per "if not
+ * live data not there"), a "Refresh" button, and a "Updated Xs/m/h ago"
+ * timestamp from the same query's dataUpdatedAt. Re-renders the timestamp
+ * every 15s on its own so "just now" ages without needing a refetch.
+ */
+export function RefreshBar({
+  isLive,
+  updatedAt,
+  onRefresh,
+}: {
+  isLive: boolean;
+  updatedAt: number;
+  onRefresh: () => void;
+}) {
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick((n) => n + 1), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {isLive && <span className="live-indicator">Live data</span>}
+        {updatedAt > 0 && (
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Updated {relTime(updatedAt)}</span>
+        )}
+      </div>
+      <button className="btn btn-secondary btn-sm" onClick={onRefresh}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        Refresh
+      </button>
+    </div>
+  );
+}
 
 /** Centered loading spinner shown while an API request is in flight. */
 export function Loader({ label = 'Loading…' }: { label?: string }) {
