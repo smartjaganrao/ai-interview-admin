@@ -50,6 +50,39 @@ const PLAN_BADGE: Record<string, string> = { free:'badge-slate', quick_pass:'bad
 const STATUS_BADGE: Record<string, string> = { active:'badge-green', inactive:'badge-slate', banned:'badge-red' };
 const AVATAR_COLORS = ['#6366F1','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D4'];
 
+// Manual WhatsApp outreach via wa.me deep links — opens WhatsApp Web with the
+// message pre-filled for the admin to review and send themselves. No API,
+// no Meta template approval, no Twilio — those are only required for
+// automated/unattended sends, not a human clicking Send in their own
+// WhatsApp Web. See [[whatsapp-welcome-notification]] memory for why the
+// automated version is currently blocked.
+const WHATSAPP_TEMPLATES: Record<string, (firstName: string) => string> = {
+  welcome: (name) => `Hi ${name}! 👋 Thanks for signing up for JavihAI. Ready to try it out? Download here: javihai.in/dashboard — takes less than a minute to set up.`,
+  reengage: (name) => `Hi ${name}, noticed you haven't tried JavihAI yet — it's a free AI copilot that listens during your interview calls and gives you answers in real time. Want a quick walkthrough?`,
+  update: (name) => `Hi ${name}! JavihAI just got a big update — check out what's new: javihai.in/dashboard`,
+  custom: () => '',
+};
+const WHATSAPP_TEMPLATE_LABELS: Record<string, string> = {
+  welcome: 'Welcome / Get Started',
+  reengage: 'Re-engagement nudge',
+  update: 'Product update',
+  custom: 'Custom (blank)',
+};
+
+/** Digits-only, country code included — the format wa.me expects (no +, spaces, or dashes). */
+function toWaMeDigits(phone: string): string {
+  return phone.replace(/[^\d]/g, '');
+}
+
+function openWhatsApp(phone: string, name: string, templateKey: string) {
+  const digits = toWaMeDigits(phone);
+  if (!digits) return;
+  const firstName = (name || 'there').split(' ')[0];
+  const text = WHATSAPP_TEMPLATES[templateKey]?.(firstName) ?? '';
+  const url = `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
@@ -357,7 +390,31 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="text-muted">{u.phone || '—'}</td>
+                  <td className="text-muted">
+                    <div className="flex items-center gap-1.5">
+                      <span>{u.phone || '—'}</span>
+                      {u.phone && (
+                        <select
+                          className="input"
+                          style={{ padding: '1px 4px', fontSize: 11, width: 34, color: 'var(--success, #22c55e)' }}
+                          value=""
+                          title="Send WhatsApp message"
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const key = e.target.value;
+                            if (key) openWhatsApp(u.phone!, u.name, key);
+                            e.target.value = '';
+                          }}
+                        >
+                          <option value="">💬</option>
+                          {Object.keys(WHATSAPP_TEMPLATES).map((key) => (
+                            <option key={key} value={key}>{WHATSAPP_TEMPLATE_LABELS[key]}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </td>
                    <td onClick={(e) => e.stopPropagation()}>
                      <div className="flex items-center gap-1">
                        <select
@@ -464,7 +521,29 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Phone</div>
-                  <div>{u.phone || '—'}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span>{u.phone || '—'}</span>
+                    {u.phone && (
+                      <select
+                        className="input"
+                        style={{ padding: '1px 4px', fontSize: 11, width: 34, color: 'var(--success, #22c55e)' }}
+                        value=""
+                        title="Send WhatsApp message"
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const key = e.target.value;
+                          if (key) openWhatsApp(u.phone!, u.name, key);
+                          e.target.value = '';
+                        }}
+                      >
+                        <option value="">💬</option>
+                        {Object.keys(WHATSAPP_TEMPLATES).map((key) => (
+                          <option key={key} value={key}>{WHATSAPP_TEMPLATE_LABELS[key]}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Last active</div>
