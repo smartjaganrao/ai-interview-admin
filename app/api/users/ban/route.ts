@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     const shouldBan = ban !== false; // default to ban unless explicitly false
+
+    // Never let an admin ban their own account — bulk "select all → Ban"
+    // would otherwise lock the acting admin out with no way back in.
+    // Self-unban is harmless and stays allowed.
+    if (shouldBan && session?.uid && userId === session.uid) {
+      return NextResponse.json({ error: 'Cannot ban your own account' }, { status: 400 });
+    }
     const userDoc = await db.collection('users').doc(userId).get();
 
     await db.collection('users').doc(userId).set(
