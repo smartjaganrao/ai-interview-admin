@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface Log {
   id: string|number; admin: string; action: string; target: string;
@@ -36,7 +36,7 @@ export default function AuditPage() {
   const [clearStatus, setClearStatus] = useState<'idle'|'deleting'|'done'>('idle');
 
   const url = `/api/audit/logs?limit=100${actionFilter !== 'all' ? `&action=${actionFilter}` : ''}`;
-  const { data: logs, loading, reason, refetch } = useAdminData<Log[]>(url, [], (json) => {
+  const { data: logs, loading, reason, refetch, dataUpdatedAt } = useAdminData<Log[]>(url, [], (json) => {
     const arr = (json as { logs?: ApiLog[] }).logs || [];
     return arr.map((l) => ({
       id: l.id, admin: l.adminEmail, action: l.action, target: l.targetUserEmail || '—',
@@ -93,6 +93,7 @@ export default function AuditPage() {
 
   return (
     <AdminShell title="Audit Logs" subtitle="Record of all admin actions">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {/* Clear All modal */}
       {showClearModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>

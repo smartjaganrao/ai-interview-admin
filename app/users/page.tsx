@@ -4,13 +4,14 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, relTime } from '@/components/DataStates';
 
 interface User {
   uid: string; email: string; name: string;
   plan: 'free' | 'quick_pass' | 'pro' | 'power'; status: 'active' | 'inactive' | 'banned';
   joined: string; questions: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
+  platform?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
@@ -20,11 +21,20 @@ interface User {
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
+  platform?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
   adminGranted?: boolean;
   countTowardRevenue?: boolean;
+}
+
+/** 'win' | 'mac' | 'other' (set by the desktop app's heartbeat) -> display label. */
+function osLabel(platform?: string): string {
+  if (platform === 'mac') return 'Mac';
+  if (platform === 'win') return 'Windows';
+  if (platform === 'other') return 'Other';
+  return '—';
 }
 interface UserStats { total: number; active: number; paid: number; banned: number; }
 
@@ -47,7 +57,7 @@ export default function UsersPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [detail, setDetail] = useState<User | null>(null);
 
-  const { data, loading, reason, refetch } = useAdminData<{ list: User[]; stats: UserStats }>(
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{ list: User[]; stats: UserStats }>(
     '/api/users/list?limit=100', { list: [], stats: { total: 0, active: 0, paid: 0, banned: 0 } },
     (json) => {
       const j = json as { users?: ApiUser[]; stats?: UserStats };
@@ -60,6 +70,7 @@ export default function UsersPage() {
           joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
           questions: 0,
           phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
+          platform: u.platform,
           lastActive: u.lastActive, activeDays: u.activeDays,
           tokensUsed: u.tokensUsed, voiceMinutes: u.voiceMinutes, screenshotsUsed: u.screenshotsUsed, mockSessions: u.mockSessions,
           duplicateEmail: u.duplicateEmail,
@@ -252,7 +263,12 @@ export default function UsersPage() {
           Showing cached data. Live data unavailable. <button className="btn btn-ghost btn-sm" style={{ marginLeft: 8 }} onClick={refetch}>Retry</button>
         </div>
       )}
-      {!hasCached && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        {!hasCached && <span className="live-indicator">Live data</span>}
+        {dataUpdatedAt > 0 && (
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Updated {relTime(dataUpdatedAt)}</span>
+        )}
+      </div>
 
       {/* Stats */}
       <div className="stats-grid" style={{ marginBottom: 20 }}>
@@ -313,7 +329,7 @@ export default function UsersPage() {
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>Source</th><th>Usage</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>OS</th><th>Source</th><th>Usage</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -368,6 +384,7 @@ export default function UsersPage() {
                       <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
                     )}
                   </td>
+                  <td className="text-muted">{osLabel(u.platform)}</td>
                   <td className="text-muted">{u.referralSource || '—'}</td>
                   <td>
                     <span className="text-xs text-muted">
@@ -378,7 +395,7 @@ export default function UsersPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
               )}
             </tbody>
           </table>
@@ -567,6 +584,7 @@ export default function UsersPage() {
                 { label: 'Member Since', value: detail.joined },
                 { label: 'Last Active (app)', value: detail.lastActive ? `${lastActiveLabel(detail.lastActive)} (${new Date(detail.lastActive).toLocaleDateString()})` : 'Never used the app' },
                 { label: 'Active Days', value: String(detail.activeDays ?? 0) },
+                { label: 'Operating System', value: osLabel(detail.platform) },
                 { label: 'Mobile Number', value: detail.phone || '—' },
                 { label: 'Experience Level', value: detail.experienceLevel || '—' },
                 { label: 'City', value: detail.city || '—' },

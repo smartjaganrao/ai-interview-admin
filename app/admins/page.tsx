@@ -4,7 +4,7 @@ import { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
 import { postAdmin } from '@/lib/adminActions';
-import { Loader, ErrorState } from '@/components/DataStates';
+import { Loader, ErrorState, RefreshBar } from '@/components/DataStates';
 
 interface Admin { uid: string; email: string; role: 'super-admin'|'admin'|'moderator'|'analyst'; createdAt: number | null }
 
@@ -12,7 +12,7 @@ const ROLE_BADGE: Record<string, string> = { 'super-admin':'badge-purple', admin
 const ROLES: Admin['role'][] = ['super-admin', 'admin', 'moderator', 'analyst'];
 
 export default function AdminsPage() {
-  const { data: admins, loading, reason, refetch } = useAdminData<Admin[]>(
+  const { data: admins, loading, reason, refetch, dataUpdatedAt } = useAdminData<Admin[]>(
     '/api/admins', [],
     (json) => (json as { admins?: Admin[] }).admins || []
   );
@@ -64,6 +64,7 @@ export default function AdminsPage() {
 
   return (
     <AdminShell title="Admins" subtitle="Manage who has access to this panel">
+      <RefreshBar isLive={reason === 'live'} updatedAt={dataUpdatedAt} onRefresh={refetch} />
       {toast && (
         <div className={`admin-toast ${toast.kind === 'ok' ? 'admin-toast-ok' : 'admin-toast-err'}`}>
           {toast.kind === 'ok' ? '✓' : '⚠'} {toast.text}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import AdminShell from '@/components/AdminShell';
 import { useAdminData } from '@/lib/useAdminData';
-import { Loader, ErrorState, EmptyState } from '@/components/DataStates';
+import { Loader, ErrorState, EmptyState, RefreshBar } from '@/components/DataStates';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -85,7 +85,11 @@ export default function AdminDashboard() {
           <button className="btn btn-ghost btn-sm" style={{ marginLeft: 10 }} onClick={kpiQ.refetch}>Retry</button>
         </div>
       )}
-      {hasLiveData && <span className="live-indicator" style={{ marginBottom: 20 }}>Live data</span>}
+      <RefreshBar
+        isLive={hasLiveData}
+        updatedAt={kpiQ.dataUpdatedAt}
+        onRefresh={() => { kpiQ.refetch(); revQ.refetch(); actQ.refetch(); releaseQ.refetch(); }}
+      />
 
       {/* KPI Cards */}
       <div className="stats-grid">
