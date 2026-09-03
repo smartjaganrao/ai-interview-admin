@@ -9,7 +9,7 @@ interface AdminDataState<T> {
   isLive: boolean;
   loading: boolean;
   reason: Reason;
-  refetch: () => void;
+  refetch: () => Promise<unknown>;
   /** ms epoch of the last successful fetch (React Query's own tracking) — 0 if never. */
   dataUpdatedAt: number;
 }
@@ -129,11 +129,13 @@ export function useAdminData<T>(
   return {
     data: query.data?.data ?? initial,
     isLive: query.data?.isLive ?? false,
-    loading: query.isFetching,
+    // isLoading (not isFetching) — true only while there's no data yet (the
+    // very first load). isFetching also covers background refetches, which
+    // made every Refresh-button click blank the whole page instead of just
+    // updating in place; RefreshBar shows its own spinner for that instead.
+    loading: query.isLoading,
     reason: query.data?.reason ?? 'loading',
-    refetch: () => {
-      void query.refetch();
-    },
+    refetch: () => query.refetch(),
     dataUpdatedAt: query.dataUpdatedAt,
   };
 }

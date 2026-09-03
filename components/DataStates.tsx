@@ -28,13 +28,26 @@ export function RefreshBar({
 }: {
   isLive: boolean;
   updatedAt: number;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<unknown>;
 }) {
   const [, forceTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 15_000);
     return () => clearInterval(id);
   }, []);
+
+  // Local spinner state — awaits whatever onRefresh returns so the button
+  // gives feedback during a refresh without the page's own loading gate
+  // (which only covers the true first load) blanking the whole page.
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleClick = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -44,11 +57,15 @@ export function RefreshBar({
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Updated {relTime(updatedAt)}</span>
         )}
       </div>
-      <button className="btn btn-secondary btn-sm" onClick={onRefresh}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <button className="btn btn-secondary btn-sm" onClick={handleClick} disabled={isRefreshing}>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round"
+          style={isRefreshing ? { animation: 'spin 0.8s linear infinite' } : undefined}
+        >
           <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
         </svg>
-        Refresh
+        {isRefreshing ? 'Refreshing…' : 'Refresh'}
       </button>
     </div>
   );
