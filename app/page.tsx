@@ -88,7 +88,7 @@ export default function AdminDashboard() {
       <RefreshBar
         isLive={hasLiveData}
         updatedAt={kpiQ.dataUpdatedAt}
-        onRefresh={() => { kpiQ.refetch(); revQ.refetch(); actQ.refetch(); releaseQ.refetch(); }}
+        onRefresh={() => Promise.all([kpiQ.refetch(), revQ.refetch(), actQ.refetch(), releaseQ.refetch()])}
       />
 
       {/* KPI Cards */}

@@ -56,7 +56,7 @@ export default function AnalyticsPage() {
       <RefreshBar
         isLive={!hasCached}
         updatedAt={kpiQ.dataUpdatedAt}
-        onRefresh={() => { kpiQ.refetch(); revQ.refetch(); useQ.refetch(); }}
+        onRefresh={() => Promise.all([kpiQ.refetch(), revQ.refetch(), useQ.refetch()])}
       />
 
       {/* Metrics (real only) */}
