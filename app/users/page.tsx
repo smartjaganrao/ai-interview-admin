@@ -355,14 +355,14 @@ export default function UsersPage() {
       {/* Table (desktop/tablet) */}
       <div className="card-flat">
         <div className="overflow-x-auto hidden md:block">
-          <table className="data-table">
+          <table className="data-table data-table-compact">
             <thead>
               <tr>
                 <th style={{ width: 32, color: 'var(--text-muted)', fontSize: 11 }}>#</th>
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>OS</th><th>Source</th><th>Usage</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>OS</th><th>Source</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -374,19 +374,19 @@ export default function UsersPage() {
                   </td>
                    <td>
                     <div className="flex items-center gap-3">
-                      <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
+                      <div className="avatar avatar-sm" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <div className="font-medium">{u.name}</div>
+                          <div className="font-medium" style={{ fontSize: 13, lineHeight: 1.3 }}>{u.name}</div>
                           {u.duplicateEmail && (
                             <span className="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full" title="Duplicate email address">
                               ⚠ Duplicate
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-muted">{u.email}</div>
+                        <div className="text-muted" style={{ fontSize: 11, lineHeight: 1.3 }}>{u.email}</div>
                       </div>
                     </div>
                   </td>
@@ -419,7 +419,7 @@ export default function UsersPage() {
                      <div className="flex items-center gap-1">
                        <select
                          className="input"
-                         style={{ padding: '2px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
+                         style={{ padding: '1px 6px', fontSize: 11, width: 90, opacity: inlineChanging === u.uid ? 0.5 : 1 }}
                          value={u.plan}
                          disabled={inlineChanging === u.uid}
                          onChange={(e) => changePlanInline(u.uid, e.target.value)}
@@ -443,16 +443,11 @@ export default function UsersPage() {
                   </td>
                   <td className="text-muted">{osLabel(u.platform)}</td>
                   <td className="text-muted">{u.referralSource || '—'}</td>
-                  <td>
-                    <span className="text-xs text-muted">
-                      {Math.round((u.tokensUsed || 0) / 500)} ans · {(u.voiceMinutes || 0).toFixed(1)}m · {(u.screenshotsUsed || 0)} scr · {(u.mockSessions || 0)} mock
-                    </span>
-                  </td>
                   <td className="text-muted">{u.joined}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
               )}
             </tbody>
           </table>
