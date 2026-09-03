@@ -9,12 +9,47 @@ export interface Kpis {
   churnRate: number;
 }
 
+type PlanKey = 'free' | 'quick_pass' | 'pro' | 'power';
+
+interface SubscriptionDoc {
+  plan?: string;
+  status?: string;
+  adminGranted?: boolean;
+  countTowardRevenue?: boolean;
+  amount?: unknown;
+  billing?: string;
+}
+
 /**
- * MRR is computed from each subscription's stored paid amount, never from the
- * live pricing config — a subscriber's effective price must not retroactively
- * change just because admin edits pricing later. Live pricing is only a
- * fallback for legacy subscriptions with no stored amount.
+ * A single subscription's contribution to MRR, or null if it shouldn't count
+ * at all (inactive, unrecognized plan, or an admin comp not flagged to count
+ * toward revenue). Computed from the subscription's own stored paid amount,
+ * never from the live pricing config — a subscriber's effective price must
+ * not retroactively change just because admin edits pricing later. Live
+ * pricing (fallbackPrice) is only used for legacy subscriptions that predate
+ * storing amount/billing on the doc.
+ *
+ * Pulled out of computeKpis() as its own function specifically so this rule
+ * — the one thing in this file most likely to silently regress — can be unit
+ * tested without mocking Firestore.
  */
+export function computeSubscriptionMrrContribution(
+  sub: SubscriptionDoc,
+  fallbackPrice: Record<string, number>
+): { plan: PlanKey; monthlyEquivalent: number } | null {
+  const plan = sub.plan || 'free';
+  const status = sub.status || 'inactive';
+  if (status !== 'active' || !(plan in fallbackPrice)) return null;
+  if (sub.adminGranted && sub.countTowardRevenue !== true) return null;
+
+  const amount = Number(sub.amount) || 0;
+  const monthlyEquivalent = amount > 0
+    ? (sub.billing === 'yearly' ? amount / 12 : amount)
+    : fallbackPrice[plan];
+
+  return { plan: plan as PlanKey, monthlyEquivalent };
+}
+
 export async function computeKpis(): Promise<Kpis> {
   if (!db) throw new Error('Database not configured');
   const dbInstance = db;
@@ -52,19 +87,9 @@ export async function computeKpis(): Promise<Kpis> {
   let mrrByPlan = { free: 0, quick_pass: 0, pro: 0, power: 0 };
 
   subsSnapshot.docs.forEach((doc) => {
-    const d = doc.data();
-    const plan = d.plan || 'free';
-    const status = d.status || 'inactive';
-    if (status !== 'active' || !(plan in fallbackPrice)) return;
-
-    if (d.adminGranted && d.countTowardRevenue !== true) return;
-
-    const amount = Number(d.amount) || 0;
-    const monthlyEquivalent = amount > 0
-      ? (d.billing === 'yearly' ? amount / 12 : amount)
-      : fallbackPrice[plan];
-
-    mrrByPlan[plan as keyof typeof mrrByPlan] += monthlyEquivalent;
+    const contribution = computeSubscriptionMrrContribution(doc.data(), fallbackPrice);
+    if (!contribution) return;
+    mrrByPlan[contribution.plan] += contribution.monthlyEquivalent;
   });
 
   mrrByPlan = {
