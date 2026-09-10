@@ -694,7 +694,7 @@ export default function SettingsPage() {
               <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                 {[
                   { label:'Product Name', type:'text', defaultValue:'JavihAI' },
-                  { label:'Support Email', type:'email', defaultValue:'support@javihai.in' },
+                  { label:'Support Email', type:'email', defaultValue:'javihaiofficial@gmail.com' },
                 ].map((f,i) => (
                   <div key={i}>
                     <label style={{ display:'block', fontSize:12, fontWeight:600, color:'var(--text-muted)', marginBottom:6 }}>{f.label}</label>
