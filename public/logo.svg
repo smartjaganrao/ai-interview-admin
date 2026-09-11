@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E90FF;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#8B2BE2;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="jGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#e0d0ff;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Brain shape -->
+  <path d="M100 30
+    C75 30 55 45 50 65
+    C40 68 30 78 30 92
+    C30 106 40 116 52 118
+    C55 135 70 148 88 150
+    L88 158
+    C88 162 92 165 96 165
+    L104 165
+    C108 165 112 162 112 158
+    L112 150
+    C130 148 145 135 148 118
+    C160 116 170 106 170 92
+    C170 78 160 68 150 65
+    C145 45 125 30 100 30Z"
+    fill="url(#brainGrad)" opacity="0.95"/>
+
+  <!-- Brain groove -->
+  <path d="M100 55 C100 55 100 130 100 145"
+    stroke="rgba(255,255,255,0.25)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Left lobe detail -->
+  <path d="M60 80 C55 90 57 108 65 115"
+    stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Right lobe detail -->
+  <path d="M140 80 C145 90 143 108 135 115"
+    stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Circuit dots and lines (top right) -->
+  <circle cx="148" cy="46" r="4" fill="#00BFFF" opacity="0.9"/>
+  <circle cx="162" cy="38" r="3" fill="#00BFFF" opacity="0.7"/>
+  <circle cx="155" cy="30" r="2.5" fill="#00BFFF" opacity="0.6"/>
+  <line x1="148" y1="46" x2="162" y2="38" stroke="#00BFFF" stroke-width="1.5" opacity="0.7"/>
+  <line x1="162" y1="38" x2="155" y2="30" stroke="#00BFFF" stroke-width="1.5" opacity="0.6"/>
+  <line x1="148" y1="46" x2="148" y2="60" stroke="#00BFFF" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- J letter -->
+  <text x="100" y="128"
+    font-family="Arial Black, Arial, sans-serif"
+    font-weight="900"
+    font-size="72"
+    fill="url(#jGrad)"
+    text-anchor="middle"
+    dominant-baseline="middle">J</text>
+</svg>
