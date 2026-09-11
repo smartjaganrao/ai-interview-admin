@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For focused questions, run `graphify query \\\"<question>\\\"` (scoped subgraph, usually much smaller than GRAPH_REPORT.md) instead of grepping raw files. Read GRAPH_REPORT.md only for broad architecture context.\"}}'   || true ;; esac"
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys,re,subprocess as sp; d=json.load(sys.stdin); cmd=d.get('tool_input',{}).get('command',''); m1=re.search(r'git\\s+push\\s+(\\S+\\s+)?(main\\b|v[0-9]+\\.[0-9]+\\.[0-9]+\\b)', cmd); m2=re.match(r'^\\s*git\\s+push\\s*(origin)?\\s*$', cmd); branch=(sp.run(['git','branch','--show-current'],capture_output=True,text=True,timeout=3).stdout.strip() if (m2 and not m1) else ''); risky = bool(m1) or (bool(m2) and branch=='main'); print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'ask','permissionDecisionReason':'Standing rule: confirm before pushing main or a release tag, even after verification or a prior approval this session.'}})) if risky else None\" 2>/dev/null || true"
           }
         ]
       },
@@ -15,7 +19,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import json,sys,re; d=json.load(sys.stdin); ti=d.get('tool_input',{}); path=ti.get('file_path') or ti.get('path') or ''; base=path.rsplit('/',1)[-1]; ok = re.match(r'^\\.env(\\..+)?$', base) and 'example' not in base.lower(); print(json.dumps({'decision':'block','reason':'Blocked: editing '+base+' \u2014 this project shares one production Firebase/Firestore project with no dev or staging environment, and this file holds live secrets. Edit it manually outside Claude Code if this is intentional.'})) if ok else None\" 2>/dev/null || true"
+            "command": "python3 -c \"import json,sys,re; d=json.load(sys.stdin); ti=d.get('tool_input',{}); path=ti.get('file_path') or ti.get('path') or ''; base=path.rsplit('/',1)[-1]; ok = re.match(r'^\\.env(\\..+)?$', base) and 'example' not in base.lower(); print(json.dumps({'decision':'block','reason':'Blocked: editing '+base+' — this project shares one production Firebase/Firestore project with no dev or staging environment, and this file holds live secrets. Edit it manually outside Claude Code if this is intentional.'})) if ok else None\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; case \"$f\" in */graphify-out/*|graphify-out/*|\"\") exit 0;; esac; [ -f graphify-out/graph.json ] && graphify update .; } >/tmp/claude-graphify-posttooluse.log 2>&1 || true",
+            "async": true,
+            "statusMessage": "Refreshing graphify knowledge graph…"
           }
         ]
       }
