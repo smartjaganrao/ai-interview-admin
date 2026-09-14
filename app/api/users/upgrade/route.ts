@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { clearCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,12 @@ export async function POST(request: NextRequest) {
       timestamp: now,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
+
+    // /api/users/list caches its response for 5 minutes (route-cache.ts) —
+    // without this, the admin's own refetch() right after a plan change
+    // kept serving the pre-change cached list, making the change look like
+    // it silently didn't take even though Firestore was already updated.
+    clearCache();
 
     return NextResponse.json({ success: true, message: `Plan changed ${oldPlan} → ${newPlan}` });
   } catch (error: unknown) {

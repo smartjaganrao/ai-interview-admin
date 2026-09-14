@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { clearCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,11 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
+
+    // See users/upgrade/route.ts — the users list's cached usage numbers
+    // (usage:activity-map, 15-minute TTL) otherwise keep showing the
+    // pre-reset quota to the admin's own next refetch().
+    clearCache();
 
     return NextResponse.json({ success: true, message: `Quota reset for ${day}` });
   } catch (error: unknown) {

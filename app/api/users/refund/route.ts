@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as admin from 'firebase-admin';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { clearCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,10 @@ export async function POST(request: NextRequest) {
       timestamp: now,
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
+
+    // See users/upgrade/route.ts — /api/users/list's 5-minute cache
+    // otherwise masks this change from the admin's own next refetch().
+    clearCache();
 
     const note = paidUnrecoverable > 0
       ? ` (₹${paidUnrecoverable} commission was already paid out — recover manually)`

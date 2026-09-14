@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest, getSession } from '@/lib/session-server';
+import { clearCache } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now(),
       ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
     });
+
+    // See upgrade/route.ts — /api/users/list's 5-minute cache otherwise
+    // masks this change from the admin's own next refetch().
+    clearCache();
 
     return NextResponse.json({ success: true, status: shouldBan ? 'banned' : 'active' });
   } catch (error: unknown) {
