@@ -145,8 +145,6 @@
   "143": "Component Testing Strategies",
   "144": "Testing Custom Hooks",
   "145": "Common Testing Patterns",
-  "146": "Important (Should Have)",
-  "147": "js-cookie",
   "148": "Phrases That Signal AI Writing",
   "149": "Canonicalization & i18n",
   "150": "International Sitemaps",
@@ -269,5 +267,6 @@
   "267": "@tiptap/extension-image",
   "268": "@tanstack/react-query",
   "269": "@tiptap/extension-text-align",
-  "270": "@tiptap/starter-kit"
+  "270": "@tiptap/starter-kit",
+  "271": "Google Indexing Issues"
 }
