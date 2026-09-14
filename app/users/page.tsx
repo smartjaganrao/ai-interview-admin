@@ -448,8 +448,15 @@ export default function UsersPage() {
                        )}
                      </div>
                    </td>
-                  <td className={u.planExpiresAt && isPastExpiry(u.planExpiresAt) ? 'text-red-400' : 'text-muted'} style={{ fontSize: 11 }}>
-                    {u.plan === 'free' ? '—' : (u.planExpiresAt ? expiryLabel(u.planExpiresAt) : '—')}
+                  <td style={{ fontSize: 11 }}>
+                    {/* Color class on this inner span, not the <td> — .data-table
+                        td's own `color` rule (specificity 0,1,1) otherwise beats
+                        a bare utility class (0,1,0) on the cell, silently
+                        no-op'ing the red (confirmed live: an actually-past-due
+                        expiry rendered in the same muted color as a future one). */}
+                    <span className={u.planExpiresAt && isPastExpiry(u.planExpiresAt) ? 'text-red-400' : 'text-muted'}>
+                      {u.plan === 'free' ? '—' : (u.planExpiresAt ? expiryLabel(u.planExpiresAt) : '—')}
+                    </span>
                   </td>
                   <td>
                     {u.lastActive ? (

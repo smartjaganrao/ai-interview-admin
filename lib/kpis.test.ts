@@ -69,4 +69,25 @@ describe('computeSubscriptionMrrContribution', () => {
     );
     expect(result).toEqual({ plan: 'power', monthlyEquivalent: 999 });
   });
+
+  it('still counts a real payer whose plan an admin later adjusted', () => {
+    // The actual bug this test guards against: /api/users/upgrade stamps
+    // adminGranted:true on EVERY admin plan write, even a small adjustment
+    // to a customer who genuinely paid via Razorpay. Without paymentId as a
+    // durable signal, this real payer's MRR would silently vanish the
+    // moment an admin touched their plan for any unrelated reason.
+    const result = computeSubscriptionMrrContribution(
+      { plan: 'pro', status: 'active', amount: 499, billing: 'monthly', adminGranted: true, paymentId: 'pay_real123' },
+      fallbackPrice
+    );
+    expect(result).toEqual({ plan: 'pro', monthlyEquivalent: 499 });
+  });
+
+  it('excludes a pure comp with neither a real paymentId nor an explicit revenue flag', () => {
+    const result = computeSubscriptionMrrContribution(
+      { plan: 'power', status: 'active', amount: 999, billing: 'monthly', adminGranted: true, paymentId: null },
+      fallbackPrice
+    );
+    expect(result).toBeNull();
+  });
 });

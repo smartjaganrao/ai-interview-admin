@@ -16,18 +16,50 @@ interface SubscriptionDoc {
   status?: string;
   adminGranted?: boolean;
   countTowardRevenue?: boolean;
+  paymentId?: string | null;
   amount?: unknown;
   billing?: string;
 }
 
 /**
+ * True when a subscription represents real money — a genuine paymentId
+ * (only ever written by the actual Razorpay path, never touched by any
+ * admin route) or an explicit admin override, or simply not an admin comp
+ * at all. Shared between the MRR calc below and the Purchases page
+ * (app/api/purchases/list/route.ts) so both surfaces agree on the same
+ * definition of "real payment" instead of drifting into two subtly
+ * different rules.
+ */
+export function isRealPayment(sub: {
+  adminGranted?: boolean;
+  countTowardRevenue?: boolean;
+  paymentId?: string | null;
+}): boolean {
+  return !sub.adminGranted || !!sub.countTowardRevenue || !!sub.paymentId;
+}
+
+/**
  * A single subscription's contribution to MRR, or null if it shouldn't count
- * at all (inactive, unrecognized plan, or an admin comp not flagged to count
- * toward revenue). Computed from the subscription's own stored paid amount,
- * never from the live pricing config — a subscriber's effective price must
- * not retroactively change just because admin edits pricing later. Live
- * pricing (fallbackPrice) is only used for legacy subscriptions that predate
- * storing amount/billing on the doc.
+ * at all (inactive, unrecognized plan, or a comp with no real payment behind
+ * it). Computed from the subscription's own stored paid amount, never from
+ * the live pricing config — a subscriber's effective price must not
+ * retroactively change just because admin edits pricing later. Live pricing
+ * (fallbackPrice) is only used for legacy subscriptions that predate storing
+ * amount/billing on the doc.
+ *
+ * `adminGranted` alone does NOT mean "no real payment" — app/api/users/
+ * upgrade/route.ts stamps it on every admin-initiated plan write, including
+ * an admin merely adjusting a plan for a customer who already paid for real
+ * (that route never touches paymentId/amount, so they survive untouched).
+ * `paymentId` is the durable signal: only the actual Razorpay payment path
+ * (persistSubscription in ai-interview-landing) ever writes it, and no admin
+ * route ever clears it — so its presence proves a real payment occurred
+ * regardless of what admin actions happened to the record afterward. Before
+ * this checked adminGranted+countTowardRevenue alone, ANY admin touching an
+ * already-paying customer's plan (for any reason — a downgrade, a typo fix,
+ * an unrelated adjustment) silently zeroed their MRR contribution, because
+ * upgrade/route.ts sets adminGranted:true unconditionally and
+ * countTowardRevenue defaults to false unless the admin explicitly ticks it.
  *
  * Pulled out of computeKpis() as its own function specifically so this rule
  * — the one thing in this file most likely to silently regress — can be unit
@@ -40,7 +72,7 @@ export function computeSubscriptionMrrContribution(
   const plan = sub.plan || 'free';
   const status = sub.status || 'inactive';
   if (status !== 'active' || !(plan in fallbackPrice)) return null;
-  if (sub.adminGranted && sub.countTowardRevenue !== true) return null;
+  if (!isRealPayment(sub)) return null;
 
   const amount = Number(sub.amount) || 0;
   const monthlyEquivalent = amount > 0

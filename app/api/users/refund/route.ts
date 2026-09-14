@@ -27,12 +27,40 @@ export async function POST(request: NextRequest) {
 
     const now = Date.now();
 
-    // 1) Downgrade + mark refunded
-    await db.collection('subscriptions').doc(userId).set(
-      { status: 'refunded', plan: 'free', cancelAtPeriodEnd: false, refundedAt: now, updatedAt: now },
+    // 1) Downgrade + mark refunded. plan is reset to 'free' here (it's the
+    // field that matters for access), but that would otherwise make a
+    // refunded purchase's history entry show "FREE" instead of what was
+    // actually bought and refunded — refundedPlan preserves that for the
+    // Purchases page (app/api/purchases/list/route.ts) to display.
+    const subRef = db.collection('subscriptions').doc(userId);
+    const subSnap = await subRef.get();
+    const refundedPlan = (subSnap.data()?.plan as string) || null;
+    const refundedPaymentId = (subSnap.data()?.paymentId as string) || null;
+    await subRef.set(
+      { status: 'refunded', plan: 'free', refundedPlan, cancelAtPeriodEnd: false, refundedAt: now, updatedAt: now },
       { merge: true },
     );
     await db.collection('users').doc(userId).set({ plan: 'free', updatedAt: now }, { merge: true });
+
+    // Mark the matching payments/{paymentId} ledger entry (see
+    // persistSubscription in ai-interview-landing/lib/firebase-admin.ts) so
+    // the Purchases page's Lifetime Revenue excludes it going forward — that
+    // money genuinely went back to the customer. Only marks the payment
+    // currently on record (subscriptions/{uid}.paymentId is the LATEST real
+    // payment, which is what a refund action realistically refers to — an
+    // admin refunding a user is refunding their current/active charge, not
+    // reaching back into older already-consumed one-time passes). No-op if
+    // there's no paymentId (e.g. a pure admin comp with nothing to refund).
+    if (refundedPaymentId) {
+      // update(), not set(...,{merge:true}) — a payment made before this
+      // ledger existed (or before the one-off backfill runs) has no
+      // payments/{paymentId} doc at all yet; set+merge would silently
+      // create a sparse phantom entry with only refundedAt and no amount,
+      // which would then miscount "Total Transactions" for nothing. update()
+      // throws NOT_FOUND instead, which is the correct, harmless outcome
+      // here — there's genuinely nothing to mark.
+      await db.collection('payments').doc(refundedPaymentId).update({ refundedAt: now }).catch(() => {});
+    }
 
     // 2) Claw back accrued creator commissions from this user's payments
     const comms = await db.collection('creator_commissions').where('userId', '==', userId).get();
