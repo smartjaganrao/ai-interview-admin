@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
 import { getCachedActivityMap, segmentFor } from '@/lib/usage-activity';
+import { getCachedSubscriptionsMap } from '@/lib/subscriptions-map';
 import { getCached } from '@/lib/route-cache';
 
 export const dynamic = 'force-dynamic';
@@ -44,9 +45,10 @@ export async function GET(request: NextRequest) {
     // says 24, list shows 20, newest users missing" bug. Sorting in memory
     // with a guaranteed fallback (Firestore's own doc-creation time) means
     // every user is always included.
-    const [snapshot, activity] = await Promise.all([
+    const [snapshot, activity, subscriptions] = await Promise.all([
       queryRef.limit(500).get(),
       getCachedActivityMap(),
+      getCachedSubscriptionsMap(),
     ]);
 
     let users = snapshot.docs.map((doc) => ({
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest) {
       duplicateEmail:  false,
       adminGranted:    (doc.data().adminGranted as boolean) ?? false,
       countTowardRevenue: (doc.data().countTowardRevenue as boolean) ?? false,
+      planExpiresAt:   subscriptions.get(doc.id)?.planExpiresAt ?? null,
     }));
 
     // Backfill missing email/name from Firebase Auth for any partial user documents

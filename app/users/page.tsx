@@ -17,6 +17,7 @@ interface User {
   duplicateEmail?: boolean;
   adminGranted?: boolean;
   countTowardRevenue?: boolean;
+  planExpiresAt?: number | null;
 }
 interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
@@ -27,6 +28,7 @@ interface ApiUser {
   duplicateEmail?: boolean;
   adminGranted?: boolean;
   countTowardRevenue?: boolean;
+  planExpiresAt?: number | null;
 }
 
 /** 'win' | 'mac' | 'other' (set by the desktop app's heartbeat) -> display label. */
@@ -44,6 +46,17 @@ function lastActiveLabel(ts: number): string {
   if (days === 1) return 'yesterday';
   if (days < 30) return `${days}d ago`;
   return `${Math.floor(days / 30)}mo ago`;
+}
+
+/** Date + time, e.g. "14 Oct 2026, 3:45 pm" — the admin needs the exact
+ * moment a paid plan lapses, not just a relative "in 3 days". */
+function expiryLabel(ts: number): string {
+  return new Date(ts).toLocaleString(undefined, {
+    day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+function isPastExpiry(ts: number): boolean {
+  return ts < Date.now();
 }
 
 const PLAN_BADGE: Record<string, string> = { free:'badge-slate', quick_pass:'badge-emerald', pro:'badge-indigo', power:'badge-purple' };
@@ -109,6 +122,7 @@ export default function UsersPage() {
           duplicateEmail: u.duplicateEmail,
           adminGranted: u.adminGranted,
           countTowardRevenue: u.countTowardRevenue,
+          planExpiresAt: u.planExpiresAt,
         })),
       };
     }
@@ -362,7 +376,7 @@ export default function UsersPage() {
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
                 </th>
-                <th>User</th><th>Phone</th><th>Plan</th><th>Last active</th><th>OS</th><th>Source</th><th>Joined</th>
+                <th>User</th><th>Phone</th><th>Plan</th><th>Expires</th><th>Last active</th><th>OS</th><th>Source</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
@@ -434,6 +448,9 @@ export default function UsersPage() {
                        )}
                      </div>
                    </td>
+                  <td className={u.planExpiresAt && isPastExpiry(u.planExpiresAt) ? 'text-red-400' : 'text-muted'} style={{ fontSize: 11 }}>
+                    {u.plan === 'free' ? '—' : (u.planExpiresAt ? expiryLabel(u.planExpiresAt) : '—')}
+                  </td>
                   <td>
                     {u.lastActive ? (
                       <span title={new Date(u.lastActive).toLocaleString()}>{lastActiveLabel(u.lastActive)}</span>
@@ -447,7 +464,7 @@ export default function UsersPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
               )}
             </tbody>
           </table>
@@ -512,6 +529,12 @@ export default function UsersPage() {
                     {u.adminGranted && (
                       <span className="badge badge-orange" style={{ fontSize: 9, padding: '1px 4px' }} title="Plan was set manually by an admin">Admin</span>
                     )}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>Expires</div>
+                  <div className={u.planExpiresAt && isPastExpiry(u.planExpiresAt) ? 'text-red-400' : 'text-muted'}>
+                    {u.plan === 'free' ? '—' : (u.planExpiresAt ? expiryLabel(u.planExpiresAt) : '—')}
                   </div>
                 </div>
                 <div>
@@ -656,6 +679,7 @@ export default function UsersPage() {
               {[
                 { label: 'User ID', value: detail.uid },
                 { label: 'Member Since', value: detail.joined },
+                { label: 'Plan Expires', value: detail.plan === 'free' ? 'N/A (free plan)' : (detail.planExpiresAt ? expiryLabel(detail.planExpiresAt) : '—') },
                 { label: 'Last Active (app)', value: detail.lastActive ? `${lastActiveLabel(detail.lastActive)} (${new Date(detail.lastActive).toLocaleDateString()})` : 'Never used the app' },
                 { label: 'Active Days', value: String(detail.activeDays ?? 0) },
                 { label: 'Operating System', value: osLabel(detail.platform) },
