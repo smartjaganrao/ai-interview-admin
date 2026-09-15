@@ -269,5 +269,6 @@
   "267": "@tiptap/extension-image",
   "268": "@tanstack/react-query",
   "269": "@tiptap/extension-text-align",
-  "270": "@tiptap/starter-kit"
+  "270": "@tiptap/starter-kit",
+  "271": "Important (Should Have)"
 }

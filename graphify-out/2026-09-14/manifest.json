@@ -5,8 +5,8 @@
     "semantic_hash": "fe5e4f3feccdbc4e578c774140365231"
   },
   ".claude/settings.json": {
-    "mtime": 1787462866.9346356,
-    "ast_hash": "25056c4121dec1ee3c585f027b084f32",
+    "mtime": 1789150442.24939,
+    "ast_hash": "527d89b3c1da9889840c0a7fe908dd66",
     "semantic_hash": ""
   },
   "app/admins/page.tsx": {
@@ -235,33 +235,33 @@
     "semantic_hash": ""
   },
   "app/api/users/ban/route.ts": {
-    "mtime": 1788442966.3179326,
-    "ast_hash": "c838686601bd6cef43566964587e85e9",
+    "mtime": 1789389108.085337,
+    "ast_hash": "21682df6b39fe4aefa9bbe0163e58636",
     "semantic_hash": ""
   },
   "app/api/users/delete/route.ts": {
-    "mtime": 1782044879.9800017,
-    "ast_hash": "602ba1f520044f1bd6ecdbe08d69add3",
-    "semantic_hash": "602ba1f520044f1bd6ecdbe08d69add3"
+    "mtime": 1789389114.7012482,
+    "ast_hash": "b423b481c4c6d6cfb32f27a3ad54c4a0",
+    "semantic_hash": ""
   },
   "app/api/users/list/route.ts": {
-    "mtime": 1788431607.3741121,
-    "ast_hash": "3b6e58bb56986b89b29f6e06d02b6574",
+    "mtime": 1789380251.9695392,
+    "ast_hash": "4185310ce7387fe79d25d5dcd962059a",
     "semantic_hash": ""
   },
   "app/api/users/refund/route.ts": {
-    "mtime": 1781724997.758685,
-    "ast_hash": "31d3b4c75b9c98f7585df3b5575fae59",
-    "semantic_hash": "31d3b4c75b9c98f7585df3b5575fae59"
+    "mtime": 1789389121.6528869,
+    "ast_hash": "359ce75dac9ee6eafa4526385f33f2e4",
+    "semantic_hash": ""
   },
   "app/api/users/reset-quota/route.ts": {
-    "mtime": 1782067106.9062397,
-    "ast_hash": "6a4a7406c477fff17dba086d8d70bdf1",
-    "semantic_hash": "6a4a7406c477fff17dba086d8d70bdf1"
+    "mtime": 1789389135.7622879,
+    "ast_hash": "0a43f25bc6d02bffb466d3850ba65208",
+    "semantic_hash": ""
   },
   "app/api/users/upgrade/route.ts": {
-    "mtime": 1785902566.1935203,
-    "ast_hash": "1a27236ef5636f7113dee5cc57b5718b",
+    "mtime": 1789389101.1227808,
+    "ast_hash": "c83e59e46252482986f44e95aea71767",
     "semantic_hash": ""
   },
   "app/audit/page.tsx": {
@@ -305,9 +305,9 @@
     "semantic_hash": ""
   },
   "app/settings/page.tsx": {
-    "mtime": 1782282087.9159281,
-    "ast_hash": "ccb3ab56b0be7fb8c6ee31f0405c3015",
-    "semantic_hash": "ccb3ab56b0be7fb8c6ee31f0405c3015"
+    "mtime": 1789052249.96597,
+    "ast_hash": "614ebdb5b1c0bf4bd072378fa79a7a3d",
+    "semantic_hash": ""
   },
   "app/support/page.tsx": {
     "mtime": 1788431607.3772109,
@@ -315,13 +315,13 @@
     "semantic_hash": ""
   },
   "app/users/page.tsx": {
-    "mtime": 1788459561.3937342,
-    "ast_hash": "1f9bd51cb2b6735750173eac3a3d14ce",
+    "mtime": 1789393285.072201,
+    "ast_hash": "4a7b0300db116616cd400f438c551f86",
     "semantic_hash": ""
   },
   "components/AdminShell.tsx": {
-    "mtime": 1787917397.6836152,
-    "ast_hash": "2c49ada80fd2070c476b7a89838b9b9d",
+    "mtime": 1789393104.7646103,
+    "ast_hash": "e76fc35b05373e9d7086a034c9ab7ce7",
     "semantic_hash": ""
   },
   "components/BlogEditor.tsx": {
@@ -510,8 +510,8 @@
     "semantic_hash": ""
   },
   "app/api/users/reset-profile/route.ts": {
-    "mtime": 1787244407.76117,
-    "ast_hash": "f160aa05af4ecff2a06c7e26bccd9f65",
+    "mtime": 1789389128.3208077,
+    "ast_hash": "6fdf7aa7e9de3cfac8fd2a65fc2b222c",
     "semantic_hash": ""
   },
   "components/NotificationBell.tsx": {
@@ -1305,8 +1305,8 @@
     "semantic_hash": ""
   },
   "lib/kpis.ts": {
-    "mtime": 1788443157.5521228,
-    "ast_hash": "97db775eb4809d3a25bcd5502e10ce25",
+    "mtime": 1789393919.631647,
+    "ast_hash": "af8f1286ad5ceecb934b153628d6f488",
     "semantic_hash": ""
   },
   "app/api/coupons/route.ts": {
@@ -1325,13 +1325,38 @@
     "semantic_hash": ""
   },
   "lib/kpis.test.ts": {
-    "mtime": 1788443157.5518157,
-    "ast_hash": "22e3aab12466e5d03185bb10e323ce69",
+    "mtime": 1789393899.697619,
+    "ast_hash": "ed0e46a520b7049b8d7f30d96e5d87d5",
     "semantic_hash": ""
   },
   "vitest.config.ts": {
     "mtime": 1788443157.5536082,
     "ast_hash": "fb266b6adfd50d175066e68c0934a2cc",
+    "semantic_hash": ""
+  },
+  "lib/subscriptions-map.ts": {
+    "mtime": 1789380242.2649262,
+    "ast_hash": "2ac2c019053f90aba827725838cb9661",
+    "semantic_hash": ""
+  },
+  ".claude/agents/code-reviewer.md": {
+    "mtime": 1789150496.5368395,
+    "ast_hash": "13a0c7118a78ba0b42c1642642608242",
+    "semantic_hash": ""
+  },
+  "public/logo.svg": {
+    "mtime": 1789155202.219203,
+    "ast_hash": "06d44a8aae844a530bc05a0e6bf2e36a",
+    "semantic_hash": ""
+  },
+  "app/api/purchases/list/route.ts": {
+    "mtime": 1789393934.1393445,
+    "ast_hash": "101b4a14348e97eee316838cbf435287",
+    "semantic_hash": ""
+  },
+  "app/purchases/page.tsx": {
+    "mtime": 1789393982.8230758,
+    "ast_hash": "49addc0d5187d9eb106ca6f467c97765",
     "semantic_hash": ""
   }
 }

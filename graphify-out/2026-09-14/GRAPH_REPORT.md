@@ -1,16 +1,16 @@
-# Graph Report - ai-interview-admin  (2026-09-03)
+# Graph Report - ai-interview-admin  (2026-09-14)
 
 ## Corpus Check
-- 260 files · ~170,006 words
+- 264 files · ~174,134 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2125 nodes · 2488 edges · 271 communities (175 shown, 96 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.5)
+- 2150 nodes · 2564 edges · 272 communities (176 shown, 96 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a12dafe2`
+- Built from commit: `4a017512`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -282,18 +282,19 @@
 - @tanstack/react-query
 - @tiptap/extension-text-align
 - @tiptap/starter-kit
+- Important (Should Have)
 
 ## God Nodes (most connected - your core abstractions)
-1. `isAdminRequest()` - 76 edges
+1. `isAdminRequest()` - 78 edges
 2. `getSession()` - 64 edges
-3. `getCached()` - 39 edges
-4. `useAdminData()` - 31 edges
+3. `getCached()` - 43 edges
+4. `useAdminData()` - 33 edges
 5. `postAdmin()` - 23 edges
 6. `Complete GitHub Actions Guide` - 21 edges
 7. `Jest React Testing Examples` - 21 edges
 8. `getPlanById()` - 19 edges
 9. `Code Review and Quality` - 19 edges
-10. `Jest React Testing` - 17 edges
+10. `ErrorState()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `AnalyticsPage()` --calls--> `useAdminData()`  [EXTRACTED]
@@ -310,15 +311,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (271 total, 96 thin omitted)
+## Communities (272 total, 96 thin omitted)
 
 ### Community 1 - "getSession"
-Cohesion: 0.11
-Nodes (18): GET(), DELETE(), PATCH(), GET(), POST(), POST(), POST(), POST() (+10 more)
+Cohesion: 0.13
+Nodes (14): GET(), POST(), DELETE(), PATCH(), POST(), POST(), POST(), GET() (+6 more)
 
 ### Community 2 - "isAdminRequest"
-Cohesion: 0.11
-Nodes (20): GET(), POST(), POST(), BlogPostInput, GET(), POST(), CouponRecord, DiscountType (+12 more)
+Cohesion: 0.12
+Nodes (17): GET(), POST(), CouponRecord, DiscountType, GET(), PlanId, POST(), DEFAULTS (+9 more)
 
 ### Community 3 - "dependencies"
 Cohesion: 0.11
@@ -333,12 +334,12 @@ Cohesion: 0.11
 Nodes (19): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, tailwindcss, @tailwindcss/postcss, @types/node (+11 more)
 
 ### Community 6 - "useAdminData"
-Cohesion: 0.24
-Nodes (10): Announcement, ACTION_BADGE, ApiLog, AuditPage(), fmt(), Log, ErrorState(), RefreshBar() (+2 more)
+Cohesion: 0.15
+Nodes (15): AnalyticsPage(), EMPTY_KPIS, Kpis, PLAN_COLORS, RevPoint, T, UsagePoint, ACTION_BADGE (+7 more)
 
 ### Community 7 - "session-server.ts"
 Cohesion: 0.21
-Nodes (9): JWKS, POST(), POST(), emailCustomer(), POST(), clearSession(), createSession(), DEV_SESSION (+1 more)
+Nodes (9): JWKS, POST(), POST(), GET(), isRealPayment(), clearSession(), createSession(), DEV_SESSION (+1 more)
 
 ### Community 8 - "page.tsx"
 Cohesion: 0.14
@@ -353,12 +354,12 @@ Cohesion: 0.18
 Nodes (11): ACTION_DOT, AdminDashboard(), ApiLog, EMPTY_KPIS, EMPTY_RELEASE, Kpis, PLAN_COLORS, ReleaseInfo (+3 more)
 
 ### Community 11 - "route.ts"
-Cohesion: 0.17
-Nodes (15): AdoptionUser, GET(), GET(), GET(), GET(), GET(), GET(), GET() (+7 more)
+Cohesion: 0.15
+Nodes (18): AdoptionUser, GET(), GET(), GET(), GET(), GET(), GET(), getCached() (+10 more)
 
 ### Community 12 - "route.ts"
-Cohesion: 0.53
-Nodes (5): COLLECTIONS, deleteCollection(), deleteCollectionDeep(), deleteCollectionExcluding(), POST()
+Cohesion: 0.22
+Nodes (9): Article Schema, BreadcrumbList Schema, Common Schemas, FAQPage Schema, Organization Schema, Product Schema, Product snippet vs merchant listing experience, WebApplication Schema (+1 more)
 
 ### Community 13 - "page.tsx"
 Cohesion: 0.22
@@ -385,16 +386,16 @@ Cohesion: 0.25
 Nodes (6): add, dep, __dirname, envPath, m, value
 
 ### Community 20 - "route.ts"
-Cohesion: 0.27
-Nodes (3): GET(), Item, ResendConfig
+Cohesion: 0.23
+Nodes (11): AVATAR_COLORS, billingLabel(), dateLabel(), isPastExpiry(), PLAN_BADGE, Purchase, PurchasesPage(), PurchaseStats (+3 more)
 
 ### Community 21 - "SEO Audit"
 Cohesion: 0.05
 Nodes (42): Audit Framework, Audit Report Structure, Canonicalization for Multilingual Sites, Common Issues by Site Type, Content/Blog Sites, Content Depth, Content Optimization, Content Quality Across Locales (+34 more)
 
 ### Community 22 - "route.ts"
-Cohesion: 0.50
-Nodes (4): COLLECTIONS_BY_DOC_ID, COLLECTIONS_BY_USERID_FIELD, deleteUserData(), POST()
+Cohesion: 0.14
+Nodes (14): POST(), POST(), COLLECTIONS_BY_DOC_ID, COLLECTIONS_BY_USERID_FIELD, deleteUserData(), POST(), POST(), POST() (+6 more)
 
 ### Community 23 - "grant-admin.mjs"
 Cohesion: 0.40
@@ -430,7 +431,7 @@ Nodes (29): 1. Correctness, 2. Readability & Simplicity, 3. Architecture, 4. Sec
 
 ### Community 39 - "pricing-config.ts"
 Cohesion: 0.12
-Nodes (29): AnyPlanId, BillingType, canDowngradeTo(), canUpgradeTo(), DurationType, getPlanBadge(), getPlanBillingLabel(), getPlanById() (+21 more)
+Nodes (29): BillingType, canDowngradeTo(), canUpgradeTo(), DurationType, getPlanBadge(), getPlanBillingLabel(), getPlanById(), getPlanCta() (+21 more)
 
 ### Community 40 - "Browser Testing with DevTools"
 Cohesion: 0.08
@@ -482,11 +483,11 @@ Nodes (20): 10. Package versions aligned (spot check), 1. Git status (all repos)
 
 ### Community 52 - "useAdminData"
 Cohesion: 0.12
-Nodes (24): Admin, AdminsPage(), ROLE_BADGE, ROLES, AnnouncementsPage(), AiAnswer, AnswersPage(), AVATAR_COLORS (+16 more)
+Nodes (25): Admin, AdminsPage(), ROLE_BADGE, ROLES, Announcement, AnnouncementsPage(), AiAnswer, AnswersPage() (+17 more)
 
 ### Community 53 - "JSON-LD Structured Data in Next.js"
-Cohesion: 0.11
-Nodes (19): Article Schema, Best Practices, BreadcrumbList Schema, Common Schemas, Contents, Deprecated / no longer rich-result-eligible, FAQPage Schema, @graph multi-entity pattern (+11 more)
+Cohesion: 0.20
+Nodes (10): Best Practices, Contents, Deprecated / no longer rich-result-eligible, @graph multi-entity pattern, Implementation Pattern, JSON-LD Structured Data in Next.js, Structured data for AI search, Testing Tools (+2 more)
 
 ### Community 54 - "Next.js SEO Optimization"
 Cohesion: 0.11
@@ -613,8 +614,8 @@ Cohesion: 0.20
 Nodes (9): Audit Tools, Contents, Core Web Vitals, Critical (Must Have), Next.js SEO Audit Checklist, Quick Commands, Red Flags to Watch, Rendering (+1 more)
 
 ### Community 85 - "Sitemap & Robots.txt in Next.js"
-Cohesion: 0.20
-Nodes (10): Basic Robots.txt, Contents, Environment-Based Robots, `MetadataRoute.Robots` fields, Multiple User Agents, Robots.txt Best Practices, Robots.txt Configuration, Sitemap Best Practices (+2 more)
+Cohesion: 0.50
+Nodes (3): BlogPostInput, GET(), POST()
 
 ### Community 86 - "React Best Practices"
 Cohesion: 0.20
@@ -625,12 +626,12 @@ Cohesion: 0.20
 Nodes (9): 1. Eliminating Waterfalls (async), 2. Bundle Size Optimization (bundle), 3. Server-Side Performance (server), 4. Client-Side Data Fetching (client), 5. Re-render Optimization (rerender), 6. Rendering Performance (rendering), 7. JavaScript Performance (js), 8. Advanced Patterns (advanced) (+1 more)
 
 ### Community 88 - "page.tsx"
-Cohesion: 0.25
-Nodes (7): AnalyticsPage(), EMPTY_KPIS, Kpis, PLAN_COLORS, RevPoint, T, UsagePoint
+Cohesion: 0.53
+Nodes (5): COLLECTIONS, deleteCollection(), deleteCollectionDeep(), deleteCollectionExcluding(), POST()
 
 ### Community 89 - "page.tsx"
-Cohesion: 0.19
-Nodes (13): ApiUser, AVATAR_COLORS, lastActiveLabel(), openWhatsApp(), osLabel(), PLAN_BADGE, STATUS_BADGE, toWaMeDigits() (+5 more)
+Cohesion: 0.17
+Nodes (15): ApiUser, AVATAR_COLORS, expiryLabel(), isPastExpiry(), lastActiveLabel(), openWhatsApp(), osLabel(), PLAN_BADGE (+7 more)
 
 ### Community 90 - "How Each AI Platform Picks Sources"
 Cohesion: 0.22
@@ -670,7 +671,7 @@ Nodes (10): name, private, scripts, build, dev, lint, start, test (+2 more)
 
 ### Community 99 - "page.tsx"
 Cohesion: 0.16
-Nodes (16): AdminCouponsPage(), CouponRecord, CouponsDoc, DiscountType, emptyDraft, msToDateTimeInput(), oneHourFromNowInput(), AdminPlanData (+8 more)
+Nodes (15): AdminCouponsPage(), CouponRecord, CouponsDoc, DiscountType, emptyDraft, msToDateTimeInput(), oneHourFromNowInput(), AdminPlanData (+7 more)
 
 ### Community 100 - "NotificationBell.tsx"
 Cohesion: 0.29
@@ -749,12 +750,12 @@ Cohesion: 0.25
 Nodes (7): buildCommand, crons, framework, installCommand, name, outputDirectory, version
 
 ### Community 119 - "route.ts"
-Cohesion: 0.15
-Nodes (13): GET(), POST(), DELETE(), PATCH(), ALLOWED_TYPES, POST(), POST(), DEFAULTS (+5 more)
+Cohesion: 0.13
+Nodes (13): GET(), GET(), DELETE(), PATCH(), POST(), ALLOWED_TYPES, POST(), GET() (+5 more)
 
 ### Community 120 - "Essential Files"
-Cohesion: 0.29
-Nodes (7): Basic Static Sitemap, Dynamic Sitemap with Database, Image Sitemap, Localized Sitemap, Multiple Sitemaps (Large Sites), Sitemap Configuration, Video Sitemap
+Cohesion: 0.12
+Nodes (17): Basic Robots.txt, Basic Static Sitemap, Contents, Dynamic Sitemap with Database, Environment-Based Robots, Image Sitemap, Localized Sitemap, `MetadataRoute.Robots` fields (+9 more)
 
 ### Community 121 - "Citations vs. Recommendations: The AI Visibility Ladder"
 Cohesion: 0.33
@@ -849,8 +850,8 @@ Cohesion: 0.40
 Nodes (5): Common Testing Patterns, Testing Accessibility, Testing Error Boundaries, Testing Lists and Iterations, Testing Portals
 
 ### Community 146 - "Important (Should Have)"
-Cohesion: 0.40
-Nodes (5): Images, Important (Should Have), Links & Navigation, Open Graph & Social, Structured Data
+Cohesion: 0.50
+Nodes (3): Known high-risk areas in this repo, What NOT to do, What to actually do
 
 ### Community 148 - "Phrases That Signal AI Writing"
 Cohesion: 0.40
@@ -996,25 +997,29 @@ Nodes (3): 8. Testing with React Router, Component: Navigation, Tests
 Cohesion: 0.67
 Nodes (3): 9. Testing with Redux, Component: TodoList with Redux, Tests
 
+### Community 271 - "Important (Should Have)"
+Cohesion: 0.40
+Nodes (5): Images, Important (Should Have), Links & Navigation, Open Graph & Social, Structured Data
+
 ## Knowledge Gaps
-- **1363 isolated node(s):** `idea-refine.sh script`, `Admin`, `ROLE_BADGE`, `ROLES`, `Segment` (+1358 more)
+- **1372 isolated node(s):** `idea-refine.sh script`, `Admin`, `ROLE_BADGE`, `ROLES`, `Segment` (+1367 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **96 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PLANS` connect `page.tsx` to `pricing-config.ts`, `route.ts`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `PlanId` connect `page.tsx` to `pricing-config.ts`, `route.ts`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `isAdminRequest()` connect `route.ts` to `getSession`, `isAdminRequest`, `session-server.ts`, `route.ts`, `DataStates.tsx`, `route.ts`, `route.ts`?**
+- **Why does `PLANS` connect `pricing-config.ts` to `isAdminRequest`, `page.tsx`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Why does `isAdminRequest()` connect `route.ts` to `getSession`, `isAdminRequest`, `session-server.ts`, `route.ts`, `DataStates.tsx`, `Sitemap & Robots.txt in Next.js`, `route.ts`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `getSession()` connect `getSession` to `isAdminRequest`, `session-server.ts`, `route.ts`, `DataStates.tsx`, `route.ts`, `route.ts`, `Sitemap & Robots.txt in Next.js`, `route.ts`, `route.ts`, `page.tsx`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **What connects `idea-refine.sh script`, `Admin`, `ROLE_BADGE` to the rest of the system?**
-  _1363 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1372 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `AdminShell.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08695652173913043 - nodes in this community are weakly interconnected._
 - **Should `getSession` be split into smaller, more focused modules?**
-  _Cohesion score 0.10634920634920635 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12681159420289856 - nodes in this community are weakly interconnected._
 - **Should `isAdminRequest` be split into smaller, more focused modules?**
-  _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11688311688311688 - nodes in this community are weakly interconnected._
