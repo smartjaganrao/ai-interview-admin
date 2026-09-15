@@ -74,6 +74,19 @@ export function computeSubscriptionMrrContribution(
   if (status !== 'active' || !(plan in fallbackPrice)) return null;
   if (!isRealPayment(sub)) return null;
 
+  // One-time purchases (Quick Pass, Pro — billing: 'one-time') are not
+  // recurring revenue at all. This used to only branch on billing ===
+  // 'yearly' vs "else, treat as monthly" — a one-time purchase fell into
+  // that else branch and got counted as if its FULL purchase amount recurs
+  // every month for as long as the subscription doc stays 'active' (e.g. a
+  // single ₹250 Quick Pass inflating "Monthly Revenue" by ₹250 every month
+  // until it expires). That's what made the Dashboard's MRR figure
+  // disagree with the Purchases page's honest Lifetime/Active Revenue sums
+  // — MRR should only reflect genuinely recurring subscriptions (Power).
+  if (sub.billing === 'one-time') {
+    return { plan: plan as PlanKey, monthlyEquivalent: 0 };
+  }
+
   const amount = Number(sub.amount) || 0;
   const monthlyEquivalent = amount > 0
     ? (sub.billing === 'yearly' ? amount / 12 : amount)
@@ -160,13 +173,33 @@ export async function computeKpis(): Promise<Kpis> {
       .where('action', '==', 'user_upgrade')
       .where('timestamp', '>=', thisMonthStart.getTime())
       .get();
-    downgrades = logsSnapshot.docs.filter((doc) => doc.data().details?.newPlan === 'free').length;
+    // oldPlan must have actually been paid — without this, an admin
+    // toggling an unrelated field (e.g. countTowardRevenue) on an
+    // already-free user logs newPlan:'free' too, and got counted as a
+    // "downgrade" despite never having left a paid plan. Confirmed live:
+    // 6 of 13 "downgrades" one month were free -> free no-ops.
+    downgrades = logsSnapshot.docs.filter((doc) => {
+      const d = doc.data().details;
+      return d?.newPlan === 'free' && d?.oldPlan && d.oldPlan !== 'free';
+    }).length;
   } catch {
     downgrades = 0;
   }
 
   const activeSubscribers = Object.values(usersByPlan).reduce((a, b) => a + b, 0) - usersByPlan.free;
-  const churnRate = activeSubscribers > 0 ? (downgrades / activeSubscribers) * 100 : 0;
+  // Denominator is subscribers at the START of the period (current + the
+  // ones who left this month), not the current count — dividing by the
+  // current count means every departure shrinks the denominator along with
+  // growing the numerator, which can mechanically exceed 100% any time
+  // downgrades approach the (already-small) remaining base. Confirmed live:
+  // even after fixing the free->free miscount above, 7 real downgrades
+  // against 5 currently-active subscribers gave 140%. This is the standard
+  // "churned / (churned + still-active)" formula — always 0-100% by
+  // construction. Not a true cohort-retention number (that needs an actual
+  // subscriber-count snapshot at period start, which isn't tracked
+  // anywhere yet) but a correct, bounded approximation without one.
+  const startOfPeriodSubscribers = activeSubscribers + downgrades;
+  const churnRate = startOfPeriodSubscribers > 0 ? (downgrades / startOfPeriodSubscribers) * 100 : 0;
 
   return {
     totalUsers,

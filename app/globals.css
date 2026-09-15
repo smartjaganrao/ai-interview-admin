@@ -557,6 +557,19 @@ body {
   font-weight: 500;
 }
 
+/* Visible companion to a stat-card's `title` attribute — `title` is a
+   hover-only tooltip and never surfaces on touch devices, so any hint
+   explaining a non-obvious number (e.g. why "Churn Rate" isn't a literal
+   retention figure) needs a real, always-visible line too, not just hover
+   text for mouse users. */
+.stat-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.75;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
 .stat-change {
   display: inline-flex;
   align-items: center;

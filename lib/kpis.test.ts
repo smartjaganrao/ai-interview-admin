@@ -38,6 +38,22 @@ describe('computeSubscriptionMrrContribution', () => {
     expect(result).toEqual({ plan: 'pro', monthlyEquivalent: 499 });
   });
 
+  it('excludes one-time purchases from MRR — they are not recurring revenue', () => {
+    // The actual bug this guards against: Quick Pass and Pro are billing:
+    // 'one-time', but the old formula only branched on billing === 'yearly'
+    // vs "else, treat as monthly" — a one-time purchase fell into that else
+    // branch and got counted as if its full amount recurred every month for
+    // as long as the subscription doc stayed active (a single ₹250 Quick
+    // Pass inflating "Monthly Revenue" by ₹250/mo indefinitely). This is
+    // what made the Dashboard's MRR disagree with the Purchases page's
+    // honest Lifetime/Active Revenue sums.
+    const result = computeSubscriptionMrrContribution(
+      { plan: 'quick_pass', status: 'active', amount: 250, billing: 'one-time' },
+      fallbackPrice
+    );
+    expect(result).toEqual({ plan: 'quick_pass', monthlyEquivalent: 0 });
+  });
+
   it('excludes inactive subscriptions', () => {
     const result = computeSubscriptionMrrContribution(
       { plan: 'pro', status: 'cancelled', amount: 499, billing: 'monthly' },

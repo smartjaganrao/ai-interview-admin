@@ -35,7 +35,17 @@ export async function GET() {
 
   const cacheKey = session?.uid ? `notifications:${session.uid}` : 'notifications:anon';
 
-  return getCached(cacheKey, 60 * 1000, async () => {
+  // Was 60s, matching the client's own 60s poll interval almost exactly —
+  // meaning nearly every poll was a real Firestore read, not a cache hit.
+  // This one route reads up to 665 docs per miss (50 tickets + 15 users +
+  // 100 admin_logs + 500 creators); left open for a full workday, that's
+  // well over 300K reads/day from this feature alone — several times the
+  // entire Firestore free-tier daily quota (confirmed hit repeatedly in
+  // production: RESOURCE_EXHAUSTED errors on this exact route, 736
+  // occurrences from 2026-08-27 through today). 5 minutes matches every
+  // other admin route's cache convention (kpis, purchases, users) — plenty
+  // fresh for a notification feed, and cuts this route's read volume ~5x.
+  return getCached(cacheKey, 5 * 60 * 1000, async () => {
     const dbInstance = db!;
     const items: Item[] = [];
 

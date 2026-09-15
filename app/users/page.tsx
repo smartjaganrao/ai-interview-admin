@@ -12,6 +12,7 @@ interface User {
   joined: string; questions: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   platform?: string;
+  appVersion?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
@@ -23,6 +24,7 @@ interface ApiUser {
   id: string; email: string; name: string; plan: 'free'|'quick_pass'|'pro'|'power'; status?: string; createdAt: number;
   phone?: string; experienceLevel?: string; city?: string; referralSource?: string;
   platform?: string;
+  appVersion?: string;
   lastActive?: number; activeDays?: number;
   tokensUsed?: number; voiceMinutes?: number; screenshotsUsed?: number; mockSessions?: number;
   duplicateEmail?: boolean;
@@ -116,7 +118,7 @@ export default function UsersPage() {
           joined: u.createdAt ? new Date(u.createdAt).toISOString().slice(0,10) : '—',
           questions: 0,
           phone: u.phone, experienceLevel: u.experienceLevel, city: u.city, referralSource: u.referralSource,
-          platform: u.platform,
+          platform: u.platform, appVersion: u.appVersion,
           lastActive: u.lastActive, activeDays: u.activeDays,
           tokensUsed: u.tokensUsed, voiceMinutes: u.voiceMinutes, screenshotsUsed: u.screenshotsUsed, mockSessions: u.mockSessions,
           duplicateEmail: u.duplicateEmail,
@@ -465,7 +467,10 @@ export default function UsersPage() {
                       <span className="badge badge-red" title="No desktop-app usage recorded">Never used</span>
                     )}
                   </td>
-                  <td className="text-muted">{osLabel(u.platform)}</td>
+                  <td className="text-muted">
+                    {osLabel(u.platform)}
+                    {u.appVersion && <span style={{ fontSize: 10, opacity: 0.7 }}> · v{u.appVersion}</span>}
+                  </td>
                   <td className="text-muted">{u.referralSource || '—'}</td>
                   <td className="text-muted">{u.joined}</td>
                 </tr>
@@ -690,6 +695,7 @@ export default function UsersPage() {
                 { label: 'Last Active (app)', value: detail.lastActive ? `${lastActiveLabel(detail.lastActive)} (${new Date(detail.lastActive).toLocaleDateString()})` : 'Never used the app' },
                 { label: 'Active Days', value: String(detail.activeDays ?? 0) },
                 { label: 'Operating System', value: osLabel(detail.platform) },
+                { label: 'App Version', value: detail.appVersion ? `v${detail.appVersion}` : '—' },
                 { label: 'Mobile Number', value: detail.phone || '—' },
                 { label: 'Experience Level', value: detail.experienceLevel || '—' },
                 { label: 'City', value: detail.city || '—' },

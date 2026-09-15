@@ -104,14 +104,15 @@ export default function AdminDashboard() {
           <div className="stat-label">Total Users</div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card" title="Recurring subscription value only (Power plan) — one-time purchases like Quick Pass and Pro don't count toward MRR since they don't recur monthly. See the Purchases page for total money collected.">
           <div className="stat-icon stat-icon-green">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
           <div className="stat-value">₹{k.totalMRR.toLocaleString()}</div>
-          <div className="stat-label">Monthly Revenue</div>
+          <div className="stat-label">Recurring Revenue (MRR)</div>
+          <div className="stat-hint">Power plan only — one-time purchases excluded</div>
         </div>
 
         <div className="stat-card">
@@ -124,7 +125,7 @@ export default function AdminDashboard() {
           <div className="stat-label">Active This Week</div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card" title="Approximation: downgrades this month ÷ (downgrades + currently-active subscribers). Not a true cohort-retention rate — there's no subscriber-count snapshot at period start yet — but always bounded 0-100%.">
           <div className="stat-icon stat-icon-orange">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
@@ -132,6 +133,7 @@ export default function AdminDashboard() {
           </div>
           <div className="stat-value">{k.churnRate}%</div>
           <div className="stat-label">Churn Rate</div>
+          <div className="stat-hint">Approximation, not true cohort retention</div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type Reason = 'live' | 'unauthorized' | 'not-configured' | 'error' | 'loading';
 
@@ -112,19 +113,34 @@ export function useAdminData<T>(
   initial: T,
   select?: (json: unknown) => T
 ): AdminDataState<T> {
-  const cachedAtStart = readCached<T>(url);
+  const queryClient = useQueryClient();
 
   const query = useQuery<FetchResult<T>>({
     queryKey: ['admin-data', url],
     queryFn: () => fetchAdminData(url, initial, select),
-    // Seed from localStorage so a page revisited after a hard reload (i.e.
-    // no in-memory query cache) still shows data instantly instead of a
-    // blank loading state, same as the old hook.
-    initialData: cachedAtStart
-      ? { data: cachedAtStart.data, isLive: true, reason: 'live' as Reason }
-      : undefined,
-    initialDataUpdatedAt: cachedAtStart?.ts,
   });
+
+  // Seed from localStorage so a page revisited after a hard reload (i.e. no
+  // in-memory query cache) still shows data quickly instead of a blank
+  // loading state, same intent as the old hook. Done in an effect — not read
+  // synchronously in the render body — because the server has no
+  // localStorage: reading it during render made the client's first render
+  // (with cached data) disagree with the server-rendered HTML (without it),
+  // which is a hard React hydration-mismatch error, not just a stale-data
+  // quirk. Confirmed live: every admin page threw "Hydration failed" on
+  // every load. Runs after the real fetchAdminData() call above has already
+  // started, so this only fills the gap until that live response lands.
+  useEffect(() => {
+    if (queryClient.getQueryData(['admin-data', url])) return; // already has data (live or previously seeded)
+    const cached = readCached<T>(url);
+    if (!cached) return;
+    queryClient.setQueryData<FetchResult<T>>(
+      ['admin-data', url],
+      { data: cached.data, isLive: true, reason: 'live' as Reason },
+      { updatedAt: cached.ts }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
 
   return {
     data: query.data?.data ?? initial,

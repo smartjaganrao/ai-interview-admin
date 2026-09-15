@@ -129,19 +129,20 @@ export default function PurchasesPage() {
           never mistaken for each other. */}
       <div className="stats-grid" style={{ marginBottom: 20 }}>
         {[
-          { label: 'Lifetime Revenue', value: `₹${stats.lifetimeRevenue.toLocaleString('en-IN')}`, hint: 'All real payments ever kept — never drops when a plan expires' },
-          { label: 'Active Revenue', value: `₹${stats.activeRevenue.toLocaleString('en-IN')}`, hint: 'Real payments on currently-active plans only' },
-          { label: 'Total Transactions', value: stats.totalTransactions, hint: 'Every individual real payment — a customer who bought twice counts as 2 here' },
-          { label: 'Customers', value: stats.total, hint: 'Distinct customers below — one row each, even if they bought more than once' },
+          { label: 'Lifetime Revenue', value: `₹${stats.lifetimeRevenue.toLocaleString('en-IN')}`, hint: 'All real payments ever kept — never drops when a plan expires', shortHint: 'Never drops on expiry' },
+          { label: 'Active Revenue', value: `₹${stats.activeRevenue.toLocaleString('en-IN')}`, hint: 'Real payments on currently-active plans only', shortHint: 'Active plans only' },
+          { label: 'Total Transactions', value: stats.totalTransactions, hint: 'Every individual real payment — a customer who bought twice counts as 2 here', shortHint: 'Repeat buyers count twice' },
+          { label: 'Customers', value: stats.total, hint: 'Distinct customers below — one row each, even if they bought more than once', shortHint: 'Distinct customers, deduped' },
           { label: 'Active', value: stats.active },
           { label: 'Expired', value: stats.expired },
           { label: 'Refunded', value: stats.refunded },
-          ...(stats.refundedAmount > 0 ? [{ label: 'Refunded Amount', value: `₹${stats.refundedAmount.toLocaleString('en-IN')}`, hint: 'Money actually returned — already excluded from Lifetime Revenue' }] : []),
+          ...(stats.refundedAmount > 0 ? [{ label: 'Refunded Amount', value: `₹${stats.refundedAmount.toLocaleString('en-IN')}`, hint: 'Money actually returned — already excluded from Lifetime Revenue', shortHint: 'Excluded from Lifetime Revenue' }] : []),
           ...(stats.mismatched > 0 ? [{ label: 'Plan Mismatch ⚠', value: stats.mismatched }] : []),
         ].map((s, i) => (
           <div key={i} className="stat-card" title={s.hint}>
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
+            {'shortHint' in s && s.shortHint && <div className="stat-hint">{s.shortHint}</div>}
           </div>
         ))}
       </div>

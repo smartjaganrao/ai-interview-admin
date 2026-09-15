@@ -27,23 +27,27 @@ export async function POST(request: NextRequest) {
 
     const userDoc = await db.collection('users').doc(userId).get();
     const oldPlan = userDoc.data()?.plan || 'free';
-    const renewalDate = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const renewalDate = now + 30 * 24 * 60 * 60 * 1000;
 
     const adminGranted = true;
-    const now = Date.now();
 
-    await db.collection('subscriptions').doc(userId).set(
-      {
-        plan: newPlan,
-        planType: 'subscription',
-        status: 'active',
-        renewalDate,
-        updatedAt: now,
-        adminGranted,
-        countTowardRevenue,
-      },
-      { merge: true }
-    );
+    // Downgrading to free is not a subscription renewal — it must not leave
+    // the subscriptions doc looking like an active paid plan. Previously
+    // this always wrote status:'active' + a fresh 30-day renewalDate
+    // regardless of newPlan, so a free downgrade kept its old paid `amount`
+    // untouched underneath a status/renewalDate saying "active, renews in
+    // 30 days". That stale doc then fed two other surfaces: the Purchases
+    // page showed the customer as FREE + active with a real ₹ amount and a
+    // future expiry (confirmed live), and its activeRevenue sum
+    // (app/api/purchases/list/route.ts) — which only checks
+    // status==='active', not plan — kept counting their old amount as
+    // currently-active revenue even though they no longer pay anything.
+    const subscriptionUpdate = newPlan === 'free'
+      ? { plan: newPlan, status: 'expired', updatedAt: now, adminGranted, countTowardRevenue }
+      : { plan: newPlan, planType: 'subscription', status: 'active', renewalDate, updatedAt: now, adminGranted, countTowardRevenue };
+
+    await db.collection('subscriptions').doc(userId).set(subscriptionUpdate, { merge: true });
     await db.collection('users').doc(userId).set(
       {
         plan: newPlan,
