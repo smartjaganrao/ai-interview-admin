@@ -38,10 +38,13 @@ try {
 // Only initialize if we have valid credentials
 if (!admin.apps.length && serviceAccountKey && serviceAccountKey.private_key) {
   try {
+    if (typeof serviceAccountKey.private_key === 'string') {
+      serviceAccountKey.private_key = serviceAccountKey.private_key.replace(/\\n/g, '\n');
+    }
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccountKey),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'ai-interview-tutor',
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'ai-interview-tutor.firebasestorage.app',
     });
   } catch (error) {
     console.warn('[Firebase] Failed to initialize admin SDK:', error);
@@ -54,3 +57,4 @@ export const auth = admin.apps.length > 0 ? admin.auth() : null;
 export const storage = admin.apps.length > 0 ? admin.storage() : null;
 
 export default admin;
+
