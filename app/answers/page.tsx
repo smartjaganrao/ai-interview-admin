@@ -19,6 +19,7 @@ interface AiAnswer {
 
 export default function AnswersPage() {
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [userIdFilter, setUserIdFilter] = useState('');
   const [sessionIdFilter, setSessionIdFilter] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -28,24 +29,40 @@ export default function AnswersPage() {
   const buildUrl = () => {
     const params = new URLSearchParams();
     params.set('page', String(page));
-    params.set('limit', '20');
+    params.set('limit', String(limit));
     if (userIdFilter.trim()) params.set('userId', userIdFilter.trim());
     if (sessionIdFilter.trim()) params.set('sessionId', sessionIdFilter.trim());
     return `/api/answers?${params.toString()}`;
   };
 
-  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{ messages: AiAnswer[]; total: number; hasMore: boolean }>(
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{
+    messages: AiAnswer[];
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  }>(
     buildUrl(),
-    { messages: [], total: 0, hasMore: false },
+    { messages: [], total: 0, totalPages: 1, hasMore: false },
     (json) => {
-      const j = json as { messages?: AiAnswer[]; total?: number; hasMore?: boolean };
+      const j = json as { messages?: AiAnswer[]; total?: number; totalPages?: number; hasMore?: boolean };
       return {
         messages: j.messages || [],
         total: j.total || 0,
+        totalPages: j.totalPages || Math.ceil((j.total || 0) / limit) || 1,
         hasMore: j.hasMore || false,
       };
     }
   );
+
+  const totalAnswers = data.total;
+  const totalPages = data.totalPages || Math.ceil(totalAnswers / limit) || 1;
+  const startIdx = totalAnswers > 0 ? (page - 1) * limit + 1 : 0;
+  const endIdx = Math.min(page * limit, totalAnswers);
+
+  const handleLimitChange = (val: number) => {
+    setLimit(val);
+    setPage(1);
+  };
 
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data.messages.length > 0;
@@ -125,7 +142,7 @@ export default function AnswersPage() {
           </button>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
-          Showing {data.messages.length} of {data.total} answers
+          Showing {startIdx}–{endIdx} of {totalAnswers} answers
         </div>
       </div>
 
@@ -159,7 +176,7 @@ export default function AnswersPage() {
                 data.messages.map((msg, idx) => (
                   <tr key={msg.id} style={{ cursor: 'pointer' }} onClick={() => setDetail(msg)}>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>
-                      {(page - 1) * 20 + idx + 1}
+                      {startIdx + idx}
                     </td>
                     <td>
                       <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>
@@ -215,16 +232,66 @@ export default function AnswersPage() {
             </tbody>
           </table>
         </div>
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Page {page} of {data.total > 0 ? Math.ceil(data.total / 20) : 1}
-          </span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              Previous
+
+        {/* Pagination Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Showing <strong>{startIdx}–{endIdx}</strong> of <strong>{totalAnswers}</strong> answers
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>Per page:</span>
+              <select
+                className="input"
+                style={{ padding: '2px 6px', fontSize: 12, width: 64 }}
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+            >
+              « First
             </button>
-            <button className="btn btn-secondary btn-sm" disabled={!data.hasMore} onClick={() => setPage(page + 1)}>
-              Next
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              title="Previous Page"
+            >
+              ‹ Prev
+            </button>
+
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 4px' }}>
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              title="Next Page"
+            >
+              Next ›
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+            >
+              Last »
             </button>
           </div>
         </div>

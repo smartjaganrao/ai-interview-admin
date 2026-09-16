@@ -19,7 +19,7 @@ export async function GET() {
       );
     }
 
-    return getCached('analytics:kpis', 5 * 60 * 1000, () => computeKpis()).then((data) => {
+    return getCached('analytics:kpis', 15 * 60 * 1000, () => computeKpis()).then((data) => {
       return NextResponse.json(data);
     }).catch((error) => {
       console.error('[analytics/kpis] cache fetch error:', error);

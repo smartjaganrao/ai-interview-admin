@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { isAdminRequest } from '@/lib/session-server';
+import { getCached } from '@/lib/route-cache';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -50,46 +51,109 @@ export async function GET(request: NextRequest) {
     const actionFilter = searchParams.get('action') || '';
     const adminFilter = searchParams.get('admin') || '';
 
-    const pageSize = Math.min(limit, 100);
-    const offset = (page - 1) * pageSize;
+    const cacheKey = `audit:logs:${page}:${limit}:${actionFilter}:${adminFilter}`;
 
-    // Order by a single field only (auto-indexed) and apply the action/admin
-    // filters in memory — avoids needing a composite index (action + timestamp).
-    const snapshot = await db
-      .collection('admin_logs')
-      .orderBy('timestamp', 'desc')
-      .limit(500)
-      .get();
+    return getCached(cacheKey, 5 * 60 * 1000, async () => {
+      const firestore = db!;
+      const pageSize = Math.min(Math.max(1, limit), 200);
 
-    let logs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      adminEmail: doc.data().adminEmail || 'Unknown',
-      action: doc.data().action || 'unknown',
-      targetUserEmail: doc.data().targetUserEmail || '',
-      details: doc.data().details || {},
-      timestamp: doc.data().timestamp || 0,
-      ipAddress: doc.data().ipAddress || 'unknown',
-    }));
+      let queryRef: FirebaseFirestore.Query = firestore.collection('admin_logs');
+      if (actionFilter && actionFilter !== 'all') {
+        queryRef = queryRef.where('action', '==', actionFilter);
+      }
 
-    if (actionFilter && actionFilter !== 'all') {
-      logs = logs.filter((l) => l.action === actionFilter);
-    }
-    if (adminFilter) {
-      logs = logs.filter((l) =>
-        l.adminEmail.toLowerCase().includes(adminFilter.toLowerCase())
-      );
-    }
+      if (adminFilter) {
+        const snapshot = await queryRef.get();
+        let logs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          adminEmail: doc.data().adminEmail || 'Unknown',
+          action: doc.data().action || 'unknown',
+          targetUserEmail: doc.data().targetUserEmail || '',
+          details: doc.data().details || {},
+          timestamp: doc.data().timestamp || 0,
+          ipAddress: doc.data().ipAddress || 'unknown',
+        }));
+        logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        logs = logs.filter((l) =>
+          l.adminEmail.toLowerCase().includes(adminFilter.toLowerCase())
+        );
 
-    const totalCount = logs.length;
-    const paged = logs.slice(offset, offset + pageSize);
+        const totalCount = logs.length;
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const offset = (safePage - 1) * pageSize;
+        const paged = logs.slice(offset, offset + pageSize);
 
-    return NextResponse.json({
-      logs: paged,
-      total: totalCount,
-      page,
-      limit: pageSize,
-      hasMore: offset + pageSize < totalCount,
-    });
+        return {
+          logs: paged,
+          total: totalCount,
+          page: safePage,
+          limit: pageSize,
+          totalPages,
+          hasMore: offset + pageSize < totalCount,
+        };
+      }
+
+      try {
+        const countSnap = await queryRef.count().get();
+        const totalCount = countSnap.data().count;
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const offset = (safePage - 1) * pageSize;
+
+        const snapshot = await queryRef
+          .orderBy('timestamp', 'desc')
+          .offset(offset)
+          .limit(pageSize)
+          .get();
+
+        const logs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          adminEmail: doc.data().adminEmail || 'Unknown',
+          action: doc.data().action || 'unknown',
+          targetUserEmail: doc.data().targetUserEmail || '',
+          details: doc.data().details || {},
+          timestamp: doc.data().timestamp || 0,
+          ipAddress: doc.data().ipAddress || 'unknown',
+        }));
+
+        return {
+          logs,
+          total: totalCount,
+          page: safePage,
+          limit: pageSize,
+          totalPages,
+          hasMore: offset + pageSize < totalCount,
+        };
+      } catch {
+        const snapshot = await queryRef.get();
+        let logs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          adminEmail: doc.data().adminEmail || 'Unknown',
+          action: doc.data().action || 'unknown',
+          targetUserEmail: doc.data().targetUserEmail || '',
+          details: doc.data().details || {},
+          timestamp: doc.data().timestamp || 0,
+          ipAddress: doc.data().ipAddress || 'unknown',
+        }));
+        logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        const totalCount = logs.length;
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const offset = (safePage - 1) * pageSize;
+        const paged = logs.slice(offset, offset + pageSize);
+
+        return {
+          logs: paged,
+          total: totalCount,
+          page: safePage,
+          limit: pageSize,
+          totalPages,
+          hasMore: offset + pageSize < totalCount,
+        };
+      }
+    }).then((data) => NextResponse.json(data));
   } catch (error) {
     console.error('Error fetching audit logs:', error);
     const message = error instanceof Error ? error.message : 'Failed to fetch audit logs';

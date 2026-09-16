@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface NotificationItem {
@@ -57,17 +57,14 @@ export default function NotificationBell() {
       .catch(() => { clearTimeout(timeoutId); });
   };
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
   const toggleOpen = () => {
     const next = !open;
     setOpen(next);
-    if (next && unreadCount > 0) {
-      fetch('/api/notifications/mark-read', { method: 'POST', credentials: 'include' }).then(() => setUnreadCount(0));
+    if (next) {
+      load();
+      if (unreadCount > 0) {
+        fetch('/api/notifications/mark-read', { method: 'POST', credentials: 'include' }).then(() => setUnreadCount(0));
+      }
     }
   };
 

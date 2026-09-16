@@ -50,6 +50,8 @@ function billingLabel(billing: string | null): string {
 }
 
 export default function PurchasesPage() {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -68,14 +70,6 @@ export default function PurchasesPage() {
     }
   );
   const purchases = data.purchases;
-  // useAdminData seeds its very first render from a per-URL localStorage
-  // cache (lib/useAdminData.ts's readCached), which can hold a response
-  // shaped by an OLDER version of this page's stats schema (e.g. before
-  // lifetimeRevenue/activeRevenue/refundedAmount replaced a single
-  // totalRevenue field) — that cache persists across server restarts and
-  // even new tabs, so it isn't just a dev-testing artifact; a real admin
-  // revisiting this page after a schema change would hit it too. Normalize
-  // with defaults here instead of trusting every numeric field to exist.
   const stats: PurchaseStats = {
     total: data.stats?.total ?? 0,
     totalTransactions: data.stats?.totalTransactions ?? 0,
@@ -87,6 +81,11 @@ export default function PurchasesPage() {
     activeRevenue: data.stats?.activeRevenue ?? 0,
     refundedAmount: data.stats?.refundedAmount ?? 0,
   };
+
+  const handleSearchChange = (val: string) => { setSearch(val); setPage(1); };
+  const handlePlanFilterChange = (val: string) => { setPlanFilter(val); setPage(1); };
+  const handleStatusFilterChange = (val: string) => { setStatusFilter(val); setPage(1); };
+  const handleLimitChange = (val: number) => { setLimit(val); setPage(1); };
 
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && data.purchases.length > 0;
@@ -106,6 +105,13 @@ export default function PurchasesPage() {
       (statusFilter === 'all' || p.status === statusFilter)
     );
   });
+
+  const totalFiltered = filtered.length;
+  const totalPages = Math.ceil(totalFiltered / limit) || 1;
+  const safePage = Math.min(page, totalPages);
+  const startIdx = totalFiltered > 0 ? (safePage - 1) * limit + 1 : 0;
+  const endIdx = Math.min(safePage * limit, totalFiltered);
+  const paginatedPurchases = filtered.slice((safePage - 1) * limit, safePage * limit);
 
   return (
     <AdminShell title="Purchases" subtitle="Full purchase history — active, expired & refunded">
@@ -153,12 +159,12 @@ export default function PurchasesPage() {
           <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input className="input" placeholder="Search purchasers…" value={search} onChange={(e) => setSearch(e.target.value)}/>
+          <input className="input" placeholder="Search purchasers…" value={search} onChange={(e) => handleSearchChange(e.target.value)}/>
         </div>
-        <select className="input" style={{ width: 140 }} value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+        <select className="input" style={{ width: 140 }} value={planFilter} onChange={(e) => handlePlanFilterChange(e.target.value)}>
           <option value="all">All Plans</option><option value="quick_pass">Quick Pass</option><option value="pro">Pro</option><option value="power">Power</option>
         </select>
-        <select className="input" style={{ width: 140 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <select className="input" style={{ width: 140 }} value={statusFilter} onChange={(e) => handleStatusFilterChange(e.target.value)}>
           <option value="all">All Status</option><option value="active">Active</option><option value="expired">Expired</option><option value="refunded">Refunded</option>
         </select>
         <div className="filter-bar-right">
@@ -182,9 +188,9 @@ export default function PurchasesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p, idx) => (
+              {paginatedPurchases.map((p, idx) => (
                 <tr key={p.uid} style={{ cursor: 'pointer' }} onClick={() => setDetail(p)}>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{startIdx + idx}</td>
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="avatar avatar-sm" style={{ background: AVATAR_COLORS[(p.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
@@ -221,10 +227,6 @@ export default function PurchasesPage() {
                   <td><span className={`badge ${STATUS_BADGE[p.status] || 'badge-slate'}`}>{p.status}</span></td>
                   <td className="text-muted" style={{ fontSize: 11 }}>{dateLabel(p.startedAt)}</td>
                   <td style={{ fontSize: 11 }}>
-                    {/* The color class goes on this inner span, not the <td> —
-                        .data-table td's own `color` rule (specificity 0,1,1)
-                        otherwise beats a bare utility class (0,1,0) applied
-                        directly to the cell, silently no-op'ing the red. */}
                     <span className={p.planExpiresAt && isPastExpiry(p.planExpiresAt) ? 'text-red-400' : 'text-muted'}>
                       {dateLabel(p.planExpiresAt)}
                     </span>
@@ -240,12 +242,12 @@ export default function PurchasesPage() {
 
         {/* Card list (mobile) */}
         <div className="md:hidden">
-          {filtered.length > 0 && (
+          {paginatedPurchases.length > 0 && (
             <div className="flex items-center justify-between" style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} purchases</span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Showing {startIdx}–{endIdx} of {totalFiltered} purchases</span>
             </div>
           )}
-          {filtered.map((p, idx) => (
+          {paginatedPurchases.map((p, idx) => (
             <div
               key={p.uid}
               onClick={() => setDetail(p)}
@@ -253,7 +255,7 @@ export default function PurchasesPage() {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
-                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{idx + 1}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{startIdx + idx}</span>
                   <div className="avatar" style={{ background: AVATAR_COLORS[(p.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
                     {(p.name || p.email).charAt(0).toUpperCase()}
                   </div>
@@ -296,10 +298,67 @@ export default function PurchasesPage() {
           )}
         </div>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Showing {filtered.length} of {purchases.length} customers — one row each, even if they purchased more than once. Revenue totals above count every individual transaction.
-          </span>
+        {/* Pagination Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Showing <strong>{startIdx}–{endIdx}</strong> of <strong>{totalFiltered}</strong> customers
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>Per page:</span>
+              <select
+                className="input"
+                style={{ padding: '2px 6px', fontSize: 12, width: 64 }}
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+            >
+              « First
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              title="Previous Page"
+            >
+              ‹ Prev
+            </button>
+
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 4px' }}>
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              title="Next Page"
+            >
+              Next ›
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+            >
+              Last »
+            </button>
+          </div>
         </div>
       </div>
 

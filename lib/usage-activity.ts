@@ -62,7 +62,7 @@ export async function getActivityMap(): Promise<ActivityMap> {
  * get requested in between.
  */
 export function getCachedActivityMap(): Promise<ActivityMap> {
-  return getCached('usage:activity-map', 15 * 60 * 1000, getActivityMap);
+  return getCached('usage:activity-map', 60 * 60 * 1000, getActivityMap);
 }
 
 const DAY = 24 * 60 * 60 * 1000;

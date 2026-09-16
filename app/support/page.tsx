@@ -25,21 +25,43 @@ const STATUS_BADGE: Record<string,string> = { open:'badge-indigo', 'in-progress'
 const PRIORITY_BADGE: Record<string,string> = { low:'badge-slate', medium:'badge-yellow', high:'badge-orange', critical:'badge-red' };
 
 export default function SupportPage() {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [filter, setFilter] = useState('all');
   const [active, setActive] = useState<Ticket|null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<''|'sent'|'error'>('');
 
-  const url = `/api/support/tickets?limit=100${filter !== 'all' ? `&status=${filter}` : ''}`;
-  const { data: tickets, loading, reason, refetch, dataUpdatedAt } = useAdminData<Ticket[]>(url, [], (json) => {
-    const arr = (json as { tickets?: ApiTicket[] }).tickets || [];
-    return arr.map((t) => ({
-      id:t.id, title:t.title, user:t.userEmail||'—', status:t.status, priority:t.priority,
-      category:t.category||'other', created: t.createdAt ? new Date(t.createdAt).toISOString().slice(0,10):'—',
-      assigned:t.assignedTo, messageCount:t.messageCount, messages: t.messages||[],
-    }));
+  const url = `/api/support/tickets?page=${page}&limit=${limit}${filter !== 'all' ? `&status=${filter}` : ''}`;
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{
+    tickets: Ticket[];
+    total: number;
+    totalPages: number;
+  }>(url, { tickets: [], total: 0, totalPages: 1 }, (json) => {
+    const j = json as { tickets?: ApiTicket[]; total?: number; totalPages?: number };
+    const arr = j.tickets || [];
+    return {
+      total: j.total ?? arr.length,
+      totalPages: j.totalPages ?? 1,
+      tickets: arr.map((t) => ({
+        id:t.id, title:t.title, user:t.userEmail||'—', status:t.status, priority:t.priority,
+        category:t.category||'other', created: t.createdAt ? new Date(t.createdAt).toISOString().slice(0,10):'—',
+        assigned:t.assignedTo, messageCount:t.messageCount, messages: t.messages||[],
+      })),
+    };
   });
+
+  const tickets = data.tickets;
+  const totalTickets = data.total;
+  const totalPages = data.totalPages || Math.ceil(totalTickets / limit) || 1;
+  const startIdx = totalTickets > 0 ? (page - 1) * limit + 1 : 0;
+  const endIdx = Math.min(page * limit, totalTickets);
+
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+    setPage(1);
+  };
 
   const [changingStatus, setChangingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -116,7 +138,7 @@ export default function SupportPage() {
 
       <div className="tabs">
         {['all','open','in-progress','resolved'].map((s) => (
-          <button key={s} className={`tab${filter===s?' active':''}`} onClick={() => setFilter(s)}>
+          <button key={s} className={`tab${filter===s?' active':''}`} onClick={() => handleFilterChange(s)}>
             {s==='all'?'All Tickets':s.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase())}
           </button>
         ))}
@@ -154,6 +176,69 @@ export default function SupportPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Pagination Footer */}
+      <div style={{ marginTop: 12, padding: '12px 16px', background: 'var(--surface-flat)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Showing <strong>{startIdx}–{endIdx}</strong> of <strong>{totalTickets}</strong> tickets
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+            <span>Per page:</span>
+            <select
+              className="input"
+              style={{ padding: '2px 6px', fontSize: 12, width: 64 }}
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={page <= 1}
+            onClick={() => setPage(1)}
+            title="First Page"
+          >
+            « First
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            title="Previous Page"
+          >
+            ‹ Prev
+          </button>
+
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 4px' }}>
+            Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+          </span>
+
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            title="Next Page"
+          >
+            Next ›
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(totalPages)}
+            title="Last Page"
+          >
+            Last »
+          </button>
+        </div>
       </div>
 
       {/* Detail drawer */}

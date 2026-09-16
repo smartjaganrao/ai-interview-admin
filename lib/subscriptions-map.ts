@@ -8,6 +8,7 @@ export interface SubscriptionInfo {
   // plan type that genuinely never expires.
   planExpiresAt: number | null;
   planType: string | null; // 'subscription' | 'one-time', as written by persistSubscription()
+  status: string; // 'active' | 'expired' | 'refunded' | 'cancelled' | 'inactive'
 }
 
 export type SubscriptionsMap = Map<string, SubscriptionInfo>;
@@ -29,12 +30,13 @@ export async function getSubscriptionsMap(): Promise<SubscriptionsMap> {
     const planExpiresAt = planType === 'one-time'
       ? ((d.expiresAt as number) ?? null)
       : ((d.renewalDate as number) ?? null);
-    map.set(doc.id, { planExpiresAt, planType });
+    const status = (d.status as string) || 'inactive';
+    map.set(doc.id, { planExpiresAt, planType, status });
   }
   return map;
 }
 
 /** Shared-cache wrapper — same TTL/rationale as getCachedActivityMap(). */
 export function getCachedSubscriptionsMap(): Promise<SubscriptionsMap> {
-  return getCached('subscriptions:map', 15 * 60 * 1000, getSubscriptionsMap);
+  return getCached('subscriptions:map', 60 * 60 * 1000, getSubscriptionsMap);
 }

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const cacheKey = `users:list:${page}:${limit}:${search}:${plan}:${status}`;
 
-    return getCached(cacheKey, 15 * 1000, async () => {
+    return getCached(cacheKey, 5 * 60 * 1000, async () => {
       const firestore = db!;
       let queryRef: FirebaseFirestore.Query = firestore.collection('users');
 

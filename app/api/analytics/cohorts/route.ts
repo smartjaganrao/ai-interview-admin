@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session-server';
 import { getCached } from '@/lib/route-cache';
+import { getCachedSubscriptionsMap } from '@/lib/subscriptions-map';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,10 @@ export async function GET() {
 
     const firestore = db;
     return getCached('analytics:cohorts', 15 * 60 * 1000, async () => {
-      const usersSnapshot = await firestore.collection('users').get();
+      const [usersSnapshot, subMap] = await Promise.all([
+        firestore.collection('users').get(),
+        getCachedSubscriptionsMap(),
+      ]);
       const usersByMonth: Record<string, { userId: string; plan: string }[]> = {};
       const userCohorts: Record<string, { signups: number; active: number; retention: number }> = {};
 
@@ -40,20 +44,6 @@ export async function GET() {
           usersByMonth[monthKey] = [];
         }
         usersByMonth[monthKey].push({ userId, plan });
-      });
-
-      // Batch-fetch all subscription docs for this cohort instead of N+1
-      const allUserIds = usersSnapshot.docs.map(d => d.id);
-      const subPromises = allUserIds.map(uid =>
-        firestore.collection('subscriptions').doc(uid).get().catch(() => null)
-      );
-      const subSnaps = await Promise.all(subPromises);
-      const subMap = new Map<string, { status?: string }>();
-      subSnaps.forEach((snap, idx) => {
-        if (snap?.exists) {
-          const d = snap.data() as Record<string, unknown>;
-          subMap.set(allUserIds[idx], { status: (d.status as string) || 'inactive' });
-        }
       });
 
       for (const [month, users] of Object.entries(usersByMonth)) {

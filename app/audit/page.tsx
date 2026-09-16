@@ -28,6 +28,8 @@ function fmt(d: Record<string,unknown>|string): string {
 }
 
 export default function AuditPage() {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -35,15 +37,34 @@ export default function AuditPage() {
   const [clearConfirm, setClearConfirm] = useState('');
   const [clearStatus, setClearStatus] = useState<'idle'|'deleting'|'done'>('idle');
 
-  const url = `/api/audit/logs?limit=100${actionFilter !== 'all' ? `&action=${actionFilter}` : ''}`;
-  const { data: logs, loading, reason, refetch, dataUpdatedAt } = useAdminData<Log[]>(url, [], (json) => {
-    const arr = (json as { logs?: ApiLog[] }).logs || [];
-    return arr.map((l) => ({
-      id: l.id, admin: l.adminEmail, action: l.action, target: l.targetUserEmail || '—',
-      details: fmt(l.details), timestamp: l.timestamp ? new Date(l.timestamp).toLocaleString() : '—',
-      ip: l.ipAddress || '—',
-    }));
+  const url = `/api/audit/logs?page=${page}&limit=${limit}${actionFilter !== 'all' ? `&action=${actionFilter}` : ''}&admin=${encodeURIComponent(search.trim())}`;
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{
+    logs: Log[];
+    total: number;
+    totalPages: number;
+  }>(url, { logs: [], total: 0, totalPages: 1 }, (json) => {
+    const j = json as { logs?: ApiLog[]; total?: number; totalPages?: number };
+    const arr = j.logs || [];
+    return {
+      total: j.total ?? arr.length,
+      totalPages: j.totalPages ?? 1,
+      logs: arr.map((l) => ({
+        id: l.id, admin: l.adminEmail, action: l.action, target: l.targetUserEmail || '—',
+        details: fmt(l.details), timestamp: l.timestamp ? new Date(l.timestamp).toLocaleString() : '—',
+        ip: l.ipAddress || '—',
+      })),
+    };
   });
+
+  const logs = data.logs;
+  const totalLogs = data.total;
+  const totalPages = data.totalPages || Math.ceil(totalLogs / limit) || 1;
+  const startIdx = totalLogs > 0 ? (page - 1) * limit + 1 : 0;
+  const endIdx = Math.min(page * limit, totalLogs);
+
+  const handleSearchChange = (val: string) => { setSearch(val); setPage(1); };
+  const handleActionFilterChange = (val: string) => { setActionFilter(val); setPage(1); };
+  const handleLimitChange = (val: number) => { setLimit(val); setPage(1); };
 
   const shouldGate = loading || reason === 'unauthorized' || reason === 'not-configured';
   const hasCached = reason === 'error' && logs.length > 0;
@@ -54,11 +75,6 @@ export default function AuditPage() {
     }
     return <AdminShell title="Audit Logs" subtitle="Record of all admin actions"><Loader label="Loading audit logs…" /></AdminShell>;
   }
-
-  const filtered = logs.filter((l) => {
-    const s = search.toLowerCase();
-    return l.target.toLowerCase().includes(s) || l.admin.toLowerCase().includes(s);
-  });
 
   const deleteLog = async (id: string | number) => {
     if (!window.confirm('Delete this audit entry?')) return;
@@ -126,9 +142,9 @@ export default function AuditPage() {
           <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input className="input" placeholder="Search by admin or target…" value={search} onChange={(e) => setSearch(e.target.value)}/>
+          <input className="input" placeholder="Search by admin or target…" value={search} onChange={(e) => handleSearchChange(e.target.value)}/>
         </div>
-        <select className="input" style={{ width: 180 }} value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+        <select className="input" style={{ width: 180 }} value={actionFilter} onChange={(e) => handleActionFilterChange(e.target.value)}>
           <option value="all">All Actions</option>
           <option value="user_upgrade">Plan Upgrade</option>
           <option value="quota_reset">Quota Reset</option>
@@ -152,7 +168,7 @@ export default function AuditPage() {
               <tr><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Timestamp</th><th>IP Address</th><th></th></tr>
             </thead>
             <tbody>
-              {filtered.map((log) => (
+              {logs.map((log) => (
                 <tr key={log.id}>
                   <td><span className="font-medium">{log.admin}</span></td>
                   <td><span className={`badge ${ACTION_BADGE[log.action] || 'badge-slate'}`}>{log.action.replace(/_/g,' ')}</span></td>
@@ -172,14 +188,73 @@ export default function AuditPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">{logs.length === 0 ? 'No audit entries yet' : 'No entries match your filters'}</div></div></td></tr>
+              {logs.length === 0 && (
+                <tr><td colSpan={7}><div className="empty-state"><div className="empty-state-text">No audit entries match your filters</div></div></td></tr>
               )}
             </tbody>
           </table>
         </div>
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)' }}>
-          {filtered.length} entries
+        {/* Pagination Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Showing <strong>{startIdx}–{endIdx}</strong> of <strong>{totalLogs}</strong> logs
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>Per page:</span>
+              <select
+                className="input"
+                style={{ padding: '2px 6px', fontSize: 12, width: 64 }}
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+            >
+              « First
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              title="Previous Page"
+            >
+              ‹ Prev
+            </button>
+
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 4px' }}>
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              title="Next Page"
+            >
+              Next ›
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+            >
+              Last »
+            </button>
+          </div>
         </div>
       </div>
     </AdminShell>
