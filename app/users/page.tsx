@@ -99,18 +99,36 @@ function openWhatsApp(phone: string, name: string, templateKey: string) {
 }
 
 export default function UsersPage() {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState<string[]>([]);
   const [detail, setDetail] = useState<User | null>(null);
 
-  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{ list: User[]; stats: UserStats }>(
-    '/api/users/list?limit=100', { list: [], stats: { total: 0, active: 0, paid: 0, banned: 0 } },
+  const apiUrl = `/api/users/list?page=${page}&limit=${limit}&search=${encodeURIComponent(search.trim())}&plan=${planFilter}&status=${statusFilter}`;
+
+  const { data, loading, reason, refetch, dataUpdatedAt } = useAdminData<{
+    list: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasMore: boolean;
+    stats: UserStats;
+  }>(
+    apiUrl,
+    { list: [], total: 0, page: 1, limit: 25, totalPages: 1, hasMore: false, stats: { total: 0, active: 0, paid: 0, banned: 0 } },
     (json) => {
-      const j = json as { users?: ApiUser[]; stats?: UserStats };
+      const j = json as { users?: ApiUser[]; total?: number; page?: number; limit?: number; totalPages?: number; hasMore?: boolean; stats?: UserStats };
       const arr = j.users || [];
       return {
+        total: j.total ?? arr.length,
+        page: j.page ?? 1,
+        limit: j.limit ?? 25,
+        totalPages: j.totalPages ?? 1,
+        hasMore: j.hasMore ?? false,
         stats: j.stats || { total: arr.length, active: arr.length, paid: 0, banned: 0 },
         list: arr.map((u) => ({
           uid: u.id, email: u.email, name: u.name || u.email?.split('@')[0] || 'User',
@@ -129,7 +147,11 @@ export default function UsersPage() {
       };
     }
   );
-   const users = data.list;
+  const users = data.list;
+  const totalUsers = data.total;
+  const totalPages = data.totalPages || Math.ceil(totalUsers / limit) || 1;
+  const startIdx = totalUsers > 0 ? (page - 1) * limit + 1 : 0;
+  const endIdx = Math.min(page * limit, totalUsers);
 
   const [planChoice, setPlanChoice] = useState('');
   const [countTowardRevenue, setCountTowardRevenue] = useState(false);
@@ -156,19 +178,15 @@ export default function UsersPage() {
     return <AdminShell title="Users" subtitle="Manage accounts, plans &amp; access"><Loader label="Loading users…" /></AdminShell>;
   }
 
-  const filtered = users.filter((u) => {
-    const s = search.toLowerCase();
-    return (
-      (u.email.toLowerCase().includes(s) || u.name.toLowerCase().includes(s)) &&
-      (planFilter === 'all' || u.plan === planFilter) &&
-      (statusFilter === 'all' || u.status === statusFilter)
-    );
-  });
+  const handleSearchChange = (val: string) => { setSearch(val); setPage(1); };
+  const handlePlanFilterChange = (val: string) => { setPlanFilter(val); setPage(1); };
+  const handleStatusFilterChange = (val: string) => { setStatusFilter(val); setPage(1); };
+  const handleLimitChange = (val: number) => { setLimit(val); setPage(1); };
 
   const toggle = (uid: string) =>
     setSelected((p) => p.includes(uid) ? p.filter((x) => x !== uid) : [...p, uid]);
   const toggleAll = () =>
-    setSelected(selected.length === filtered.length ? [] : filtered.map((u) => u.uid));
+    setSelected(selected.length === users.length ? [] : users.map((u) => u.uid));
 
   const counts = data.stats;
 
@@ -340,12 +358,12 @@ export default function UsersPage() {
           <svg className="input-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input className="input" placeholder="Search users…" value={search} onChange={(e) => setSearch(e.target.value)}/>
+          <input className="input" placeholder="Search users…" value={search} onChange={(e) => handleSearchChange(e.target.value)}/>
         </div>
-        <select className="input" style={{ width: 130 }} value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
+        <select className="input" style={{ width: 130 }} value={planFilter} onChange={(e) => handlePlanFilterChange(e.target.value)}>
           <option value="all">All Plans</option><option value="free">Free</option><option value="quick_pass">Quick Pass</option><option value="pro">Pro</option><option value="power">Power</option>
         </select>
-        <select className="input" style={{ width: 130 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <select className="input" style={{ width: 130 }} value={statusFilter} onChange={(e) => handleStatusFilterChange(e.target.value)}>
           <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="banned">Banned</option>
         </select>
         {selected.length > 0 && (
@@ -376,15 +394,15 @@ export default function UsersPage() {
               <tr>
                 <th style={{ width: 32, color: 'var(--text-muted)', fontSize: 11 }}>#</th>
                 <th style={{ width: 40 }}>
-                  <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
+                  <input type="checkbox" checked={selected.length === users.length && users.length > 0} onChange={toggleAll}/>
                 </th>
                 <th>User</th><th>Phone</th><th>Plan</th><th>Expires</th><th>Last active</th><th>OS</th><th>Source</th><th>Joined</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u, idx) => (
+              {users.map((u, idx) => (
                 <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => { setDetail(u); setPlanChoice(''); setCountTowardRevenue(false); }}>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{idx + 1}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>{startIdx + idx}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={selected.includes(u.uid)} onChange={() => toggle(u.uid)}/>
                   </td>
@@ -451,11 +469,6 @@ export default function UsersPage() {
                      </div>
                    </td>
                   <td style={{ fontSize: 11 }}>
-                    {/* Color class on this inner span, not the <td> — .data-table
-                        td's own `color` rule (specificity 0,1,1) otherwise beats
-                        a bare utility class (0,1,0) on the cell, silently
-                        no-op'ing the red (confirmed live: an actually-past-due
-                        expiry rendered in the same muted color as a future one). */}
                     <span className={u.planExpiresAt && isPastExpiry(u.planExpiresAt) ? 'text-red-400' : 'text-muted'}>
                       {u.plan === 'free' ? '—' : (u.planExpiresAt ? expiryLabel(u.planExpiresAt) : '—')}
                     </span>
@@ -475,8 +488,8 @@ export default function UsersPage() {
                   <td className="text-muted">{u.joined}</td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div></td></tr>
+              {users.length === 0 && (
+                <tr><td colSpan={10}><div className="empty-state"><div className="empty-state-text">No users match your search/filter criteria</div></div></td></tr>
               )}
             </tbody>
           </table>
@@ -484,16 +497,16 @@ export default function UsersPage() {
 
         {/* Card list (mobile) */}
         <div className="md:hidden">
-          {filtered.length > 0 && (
+          {users.length > 0 && (
             <div className="flex items-center justify-between" style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
               <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll}/>
+                <input type="checkbox" checked={selected.length === users.length && users.length > 0} onChange={toggleAll}/>
                 Select all
               </label>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{filtered.length} users</span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Showing {users.length} users</span>
             </div>
           )}
-          {filtered.map((u, idx) => (
+          {users.map((u, idx) => (
             <div
               key={u.uid}
               onClick={() => { setDetail(u); setPlanChoice(''); setCountTowardRevenue(false); }}
@@ -501,7 +514,7 @@ export default function UsersPage() {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
-                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{idx + 1}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{startIdx + idx}</span>
                   <div className="avatar" style={{ background: AVATAR_COLORS[(u.name?.charCodeAt(0) || 65) % AVATAR_COLORS.length] }}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
@@ -602,16 +615,78 @@ export default function UsersPage() {
               </div>
             </div>
           ))}
-          {filtered.length === 0 && (
-            <div className="empty-state"><div className="empty-state-text">{users.length === 0 ? 'No users yet' : 'No users match your filters'}</div></div>
+          {users.length === 0 && (
+            <div className="empty-state"><div className="empty-state-text">No users match your search/filter criteria</div></div>
           )}
         </div>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Showing {filtered.length} of {users.length} users</span>
-          <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
-            ⚠ Delete All Users
-          </button>
+        {/* Responsive Pagination Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Showing <strong>{startIdx}–{endIdx}</strong> of <strong>{totalUsers}</strong> users
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>Per page:</span>
+              <select
+                className="input"
+                style={{ padding: '2px 6px', fontSize: 12, width: 64 }}
+                value={limit}
+                onChange={(e) => handleLimitChange(Number(e.target.value))}
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+            >
+              « First
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              title="Previous Page"
+            >
+              ‹ Prev
+            </button>
+
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 4px' }}>
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              title="Next Page"
+            >
+              Next ›
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+            >
+              Last »
+            </button>
+
+            <div style={{ marginLeft: 8, borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
+              <button className="btn btn-danger btn-sm" onClick={() => { setDeleteAllConfirm(''); setDeleteStatus('idle'); setDeleteResult(null); setShowDeleteAllModal(true); }}>
+                ⚠ Delete All Users
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
