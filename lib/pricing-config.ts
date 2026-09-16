@@ -53,11 +53,11 @@ export const PLANS: PlanConfig[] = [
   {
     id: 'quick_pass',
     name: 'Quick Pass',
-    description: '1-hour full access pass',
+    description: '24-hour full access pass',
     price: 250,
     billingType: 'one_time',
     durationType: 'hours',
-    durationValue: 1,
+    durationValue: 24,
     usageLimit: 1,
     isUnlimited: false,
     features: [
