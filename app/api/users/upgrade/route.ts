@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     const oldPlan = userDoc.data()?.plan || 'free';
     const now = Date.now();
     const renewalDate = now + 30 * 24 * 60 * 60 * 1000;

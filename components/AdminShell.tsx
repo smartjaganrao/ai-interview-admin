@@ -145,6 +145,7 @@ const NAV_SECTIONS: Array<{
     items: [
       { label: 'Audit Logs', href: '/audit', icon: <IconAudit /> },
       { label: 'Support', href: '/support', icon: <IconSupport /> },
+      { label: 'Feedback', href: '/feedback', icon: <IconSupport /> },
       { label: 'AI Answers', href: '/answers', icon: <IconAnswers /> },
       { label: 'Admins', href: '/admins', icon: <IconAdmins /> },
     ],

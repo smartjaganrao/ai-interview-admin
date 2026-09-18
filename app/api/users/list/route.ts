@@ -133,6 +133,9 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Filter out orphan/phantom records that have no email and no auth identity
+      users = users.filter((u) => Boolean(u.email) || (Boolean(u.name) && u.name !== 'User') || u.tokensUsed > 0);
+
       // ── Duplicate email detection ─────────────────────────────────────────
       const emailToIndices = new Map<string, number[]>();
       users.forEach((u, i) => {

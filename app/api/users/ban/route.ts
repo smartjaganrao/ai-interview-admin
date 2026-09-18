@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot ban your own account' }, { status: 400 });
     }
     const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
     await db.collection('users').doc(userId).set(
       { status: shouldBan ? 'banned' : 'active', updatedAt: Date.now() },

@@ -28,16 +28,12 @@ export async function POST(request: NextRequest) {
     for (const uid of userIds) {
       try {
         const userRef = db.collection('users').doc(uid);
-        batch.set(
-          userRef,
-          {
-            profileCompleted: false,
-            profile: null,
-            acquisition: null,
-            updatedAt: Date.now(),
-          },
-          { merge: true }
-        );
+        batch.update(userRef, {
+          profileCompleted: false,
+          profile: null,
+          acquisition: null,
+          updatedAt: Date.now(),
+        });
       } catch {
         failed++;
       }

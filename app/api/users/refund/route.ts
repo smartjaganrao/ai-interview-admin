@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
       { status: 'refunded', plan: 'free', refundedPlan, cancelAtPeriodEnd: false, refundedAt: now, updatedAt: now },
       { merge: true },
     );
-    await db.collection('users').doc(userId).set({ plan: 'free', updatedAt: now }, { merge: true });
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+      await userRef.update({ plan: 'free', updatedAt: now });
+    }
 
     // Mark the matching payments/{paymentId} ledger entry (see
     // persistSubscription in ai-interview-landing/lib/firebase-admin.ts) so
