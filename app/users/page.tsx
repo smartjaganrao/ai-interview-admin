@@ -90,9 +90,9 @@ const WHATSAPP_TEMPLATES: Record<string, (firstName: string) => string> = {
     `🍎 Mac install: https://www.youtube.com/watch?v=LvCAOrlH8zs\n` +
     `▶️ All videos (YouTube channel): https://www.youtube.com/channel/UCWAJd9eDBp9foxfxroxQukA\n\n` +
     `*Your free plan includes (daily):*\n` +
-    `📸 5 screenshot solves\n` +
-    `🔊 10 system-audio (Listen) answers\n` +
-    `🎙️ 10 mic/typed answers\n\n` +
+    `📸 1 screenshot solve\n` +
+    `🔊 1 system-audio (Listen) answer\n` +
+    `🎙️ 1 mic/typed answer\n\n` +
     `*Getting started:*\n` +
     `⌨️ Show/Hide app: Alt+H (Win) / ⌥H (Mac)\n` +
     `📋 Copy last answer: Alt+C (Win) / ⌥C (Mac)\n` +
