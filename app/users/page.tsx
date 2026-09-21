@@ -72,7 +72,37 @@ const AVATAR_COLORS = ['#6366F1','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D
 // WhatsApp Web. See [[whatsapp-welcome-notification]] memory for why the
 // automated version is currently blocked.
 const WHATSAPP_TEMPLATES: Record<string, (firstName: string) => string> = {
-  welcome: (name) => `Hi ${name}! 👋 Thanks for signing up for JavihAI. Ready to try it out? Download here: javihai.in/dashboard — takes less than a minute to set up.`,
+  // Kept in sync with the auto-sent version in ai-interview-landing's
+  // CompleteProfileModal.tsx (fires on profile completion) — same
+  // links/videos/quota copy, since this is the manual fallback an admin
+  // sends when that one didn't land (no WhatsApp number on file yet, etc.).
+  welcome: (name) =>
+    `*Welcome to JavihAI!* 🎉\n\n` +
+    `Hi ${name}! Thanks for signing up.\n\n` +
+    `*Quick-start links:*\n` +
+    `🌐 Website: https://javihai.in\n` +
+    `💻 Install: https://javihai.in/install\n` +
+    `💳 Pricing: https://javihai.in/pricing\n` +
+    `📊 Dashboard: https://javihai.in/dashboard\n\n` +
+    `*Video guides:*\n` +
+    `🚀 Full product tutorial: https://www.youtube.com/watch?v=QeZDYWtKnsY\n` +
+    `🪟 Windows install: https://www.youtube.com/watch?v=uEDFnlf1hiw\n` +
+    `🍎 Mac install: https://www.youtube.com/watch?v=LvCAOrlH8zs\n` +
+    `▶️ All videos (YouTube channel): https://www.youtube.com/channel/UCWAJd9eDBp9foxfxroxQukA\n\n` +
+    `*Your free plan includes (daily):*\n` +
+    `📸 5 screenshot solves\n` +
+    `🔊 10 system-audio (Listen) answers\n` +
+    `🎙️ 10 mic/typed answers\n\n` +
+    `*Getting started:*\n` +
+    `⌨️ Show/Hide app: Alt+H (Win) / ⌥H (Mac)\n` +
+    `📋 Copy last answer: Alt+C (Win) / ⌥C (Mac)\n` +
+    `⚠️ Security warning on install? Windows: click "More info" → "Run anyway". Mac: right-click the app → Open → Open. This is normal for new apps — JavihAI is safe.\n` +
+    `❓ More questions: https://javihai.in/#faq\n\n` +
+    `*Stay in touch:*\n` +
+    `𝕏 Twitter/X: https://x.com/Javih_ai\n` +
+    `💼 LinkedIn: https://www.linkedin.com/in/javih-ai/\n` +
+    `📸 Instagram: https://www.instagram.com/javih.ai/\n` +
+    `✉️ Support email: javihaiofficial@gmail.com`,
   reengage: (name) => `Hi ${name}, noticed you haven't tried JavihAI yet — it's a free AI copilot that listens during your interview calls and gives you answers in real time. Want a quick walkthrough?`,
   update: (name) => `Hi ${name}! JavihAI just got a big update — check out what's new: javihai.in/dashboard`,
   custom: () => '',
