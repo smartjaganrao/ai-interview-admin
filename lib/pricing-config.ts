@@ -37,9 +37,10 @@ export const PLANS: PlanConfig[] = [
     usageLimit: null,
     isUnlimited: false,
     features: [
-      'Limited AI usage',
-      'Explore core features',
-      'Limited trial experience',
+      '15 free answers/day — 5 screenshots, 5 listen, 5 typed',
+      'Full test session: test mic, audio & coding copilot',
+      'Resets every day at 12:00 AM IST',
+      'No credit card required',
     ],
     badge: null,
     isHighlighted: false,
@@ -54,12 +55,12 @@ export const PLANS: PlanConfig[] = [
     id: 'quick_pass',
     name: 'Quick Pass',
     description: '24-hour full access pass',
-    price: 250,
+    price: 349,
     billingType: 'one_time',
     durationType: 'hours',
     durationValue: 24,
-    usageLimit: 1,
-    isUnlimited: false,
+    usageLimit: null,
+    isUnlimited: true,
     features: [
       'Full AI Interview Assistant',
       'Voice Mode',
@@ -80,7 +81,7 @@ export const PLANS: PlanConfig[] = [
     id: 'pro',
     name: 'Pro',
     description: '7-day unlimited pass',
-    price: 1000,
+    price: 1299,
     billingType: 'one_time',
     durationType: 'days',
     durationValue: 7,
@@ -108,7 +109,7 @@ export const PLANS: PlanConfig[] = [
     id: 'power',
     name: 'Power',
     description: 'Unlimited monthly subscription',
-    price: 2000,
+    price: 2499,
     billingType: 'subscription',
     durationType: 'month',
     durationValue: 1,
@@ -233,20 +234,19 @@ export function getPlanTagline(plan: AnyPlanId): string {
 export function getPlanUsageLabel(plan: AnyPlanId): string {
   const config = getPlanById(plan);
   if (!config) return '';
-  if (config.id === 'free') return 'Limited trial';
+  if (config.id === 'free') return '15 answers / day · Resets daily';
+  if (config.id === 'quick_pass') return '24 hours full access · Valid for 24h';
+  if (config.id === 'pro') return '7 days unlimited access';
+  if (config.id === 'power') return 'Unlimited monthly access';
   if (config.isUnlimited && config.billingType === 'subscription') return 'Unlimited · Monthly';
   if (config.isUnlimited && config.billingType === 'one_time') {
     if (config.durationType === 'days') return `${config.durationValue} days unlimited`;
     if (config.durationType === 'hours') return `${config.durationValue} hours unlimited`;
     return 'Unlimited';
   }
-  if (config.durationType === 'hours') {
-    const windowHours = config.durationValue * 24;
-    const windowText = windowHours >= 24 ? `${windowHours / 24} day${windowHours / 24 !== 1 ? 's' : ''}` : `${windowHours}h`;
-    return `${config.durationValue} hour${config.durationValue !== 1 ? 's' : ''} total · ${windowText} window`;
-  }
-  if (config.durationType === 'days') return `${config.durationValue} day${config.durationValue !== 1 ? 's' : ''} access`;
-  if (config.durationType === 'month') return `${config.durationValue} month${config.durationValue !== 1 ? 's' : ''} access`;
+  if (config.durationType === 'hours') return `${config.durationValue} hours access`;
+  if (config.durationType === 'days') return `${config.durationValue} days access`;
+  if (config.durationType === 'month') return `${config.durationValue} month access`;
   return '';
 }
 
