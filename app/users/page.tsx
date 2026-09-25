@@ -60,6 +60,15 @@ function expiryLabel(ts: number): string {
 function isPastExpiry(ts: number): boolean {
   return ts < Date.now();
 }
+/** users/{uid}.plan only reverts to 'free' via the once-daily expiry cron
+ * (app/api/email/schedule/route.ts on the landing repo), so a paid plan can
+ * show here as still active for up to ~24h after it actually lapsed — real
+ * access is already cut off in real time (see getUserPlan()'s live expiry
+ * check), this is a display-only lag. Surface it explicitly rather than
+ * letting the plan dropdown/badge silently look current. */
+function isPlanExpired(plan: string, planExpiresAt?: number | null): boolean {
+  return plan !== 'free' && !!planExpiresAt && isPastExpiry(planExpiresAt);
+}
 
 const PLAN_BADGE: Record<string, string> = { free:'badge-slate', quick_pass:'badge-emerald', pro:'badge-indigo', power:'badge-purple' };
 const STATUS_BADGE: Record<string, string> = { active:'badge-green', inactive:'badge-slate', banned:'badge-red' };
@@ -496,6 +505,9 @@ export default function UsersPage() {
                        {u.adminGranted && (
                          <span className="badge badge-orange" style={{ fontSize: 9, padding: '1px 4px' }} title="Plan was set manually by an admin">Admin</span>
                        )}
+                       {isPlanExpired(u.plan, u.planExpiresAt) && (
+                         <span className="badge badge-red" style={{ fontSize: 9, padding: '1px 4px' }} title="Access already reverted to free in real time — this field updates on the next daily cron run">Expired</span>
+                       )}
                      </div>
                    </td>
                   <td style={{ fontSize: 11 }}>
@@ -583,6 +595,9 @@ export default function UsersPage() {
                     </select>
                     {u.adminGranted && (
                       <span className="badge badge-orange" style={{ fontSize: 9, padding: '1px 4px' }} title="Plan was set manually by an admin">Admin</span>
+                    )}
+                    {isPlanExpired(u.plan, u.planExpiresAt) && (
+                      <span className="badge badge-red" style={{ fontSize: 9, padding: '1px 4px' }} title="Access already reverted to free in real time — this field updates on the next daily cron run">Expired</span>
                     )}
                   </div>
                 </div>
@@ -788,6 +803,9 @@ export default function UsersPage() {
                 <span className={`badge ${STATUS_BADGE[detail.status]}`}>{detail.status}</span>
                 {detail.adminGranted && (
                   <span className="badge badge-orange" title="Plan was set manually by an admin">Added by admin</span>
+                )}
+                {isPlanExpired(detail.plan, detail.planExpiresAt) && (
+                  <span className="badge badge-red" title="Access already reverted to free in real time — this field updates on the next daily cron run">Expired</span>
                 )}
               </div>
             </div>
